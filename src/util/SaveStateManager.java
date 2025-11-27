@@ -123,52 +123,34 @@ public class SaveStateManager {
                                  List<Integer> unusedIds, List<PlacementInfo> placementOrder, double progressPercentage, long elapsedTimeMs,
                                  int numFixedPieces, List<PlacementInfo> initialFixedPieces) {
         try {
-            // Créer le répertoire de sauvegarde s'il n'existe pas
+            // Create save directories
             File saveDir = new File(SAVE_DIR);
             if (!saveDir.exists()) {
                 saveDir.mkdirs();
             }
 
-            // Collecter les placements
-            Map<String, PlacementInfo> placements = new HashMap<>();
-            int totalPieces = 0;
-            for (int r = 0; r < board.getRows(); r++) {
-                for (int c = 0; c < board.getCols(); c++) {
-                    if (!board.isEmpty(r, c)) {
-                        Placement p = board.getPlacement(r, c);
-                        placements.put(r + "," + c, new PlacementInfo(r, c, p.getPieceId(), p.getRotation()));
-                        totalPieces++;
-                    }
-                }
-            }
+            // Create SaveState using serializer
+            SaveState state = SaveStateSerializer.createSaveState(puzzleName, board, unusedIds,
+                                                                 placementOrder, numFixedPieces, elapsedTimeMs);
 
-            // Depth = pièces placées par backtracking (hors fixes)
-            int depth = totalPieces - numFixedPieces;
-
-            // Obtenir le sous-répertoire pour ce puzzle
+            // Get puzzle subdirectory
             String puzzleDir = getPuzzleSubDir(puzzleName);
-
-            // Créer le sous-répertoire s'il n'existe pas
             File dir = new File(puzzleDir);
             if (!dir.exists()) {
                 dir.mkdirs();
             }
 
-            // Le elapsedTimeMs passé en paramètre est déjà le temps total cumulé
-            // (il est calculé dans EternitySolver en lisant les sauvegardes au démarrage)
-            // Donc on l'utilise directement sans ajouter quoi que ce soit
-            long totalComputeTime = elapsedTimeMs;
-
-            // TOUJOURS sauvegarder l'état actuel dans "current" avec timestamp
+            // Save current state with timestamp
             long timestamp = System.currentTimeMillis();
             String currentFile = puzzleDir + "current_" + timestamp + ".txt";
-            saveToFile(currentFile, puzzleName, board, depth, placementOrder, unusedIds, progressPercentage, totalComputeTime, numFixedPieces, initialFixedPieces);
+            SaveStateIO.writeToFile(currentFile, puzzleName, board, state.depth,
+                                   placementOrder, unusedIds, progressPercentage,
+                                   elapsedTimeMs, numFixedPieces, initialFixedPieces);
 
-            // Also save in binary format if enabled (for faster loading)
+            // Save in binary format if enabled
             if (useBinaryFormat) {
                 String binaryFile = puzzleDir + "current_" + timestamp + ".bin";
                 try {
-                    // Create pieceUsed array from unusedIds
                     int maxPieceId = allPieces.keySet().stream().max(Integer::compareTo).orElse(0);
                     boolean[] pieceUsed = new boolean[maxPieceId + 1];
                     for (int i = 1; i <= maxPieceId; i++) {
@@ -180,25 +162,23 @@ public class SaveStateManager {
                 }
             }
 
-            // Nettoyer les anciens fichiers "current" (garder seulement le plus récent)
+            // Cleanup old current saves
             cleanupOldCurrentSaves(puzzleDir, currentFile);
 
-            // Sauvegarder dans "best" TOUJOURS si depth >= 10
-            if (depth >= 10) {
-                String bestFile = puzzleDir + "best_" + depth + ".txt";
-                // Ne créer la sauvegarde "best" que si elle n'existe pas déjà
+            // Save best if depth >= 10
+            if (state.depth >= 10) {
+                String bestFile = puzzleDir + "best_" + state.depth + ".txt";
                 File best = new File(bestFile);
                 if (!best.exists()) {
-                    saveToFile(bestFile, puzzleName, board, depth, placementOrder, unusedIds, progressPercentage, totalComputeTime, numFixedPieces, initialFixedPieces);
+                    SaveStateIO.writeToFile(bestFile, puzzleName, board, state.depth,
+                                           placementOrder, unusedIds, progressPercentage,
+                                           elapsedTimeMs, numFixedPieces, initialFixedPieces);
 
-                    // Afficher message seulement si c'est vraiment un nouveau record
-                    if (isNewRecord(puzzleDir, depth)) {
-                        System.out.println("  🏆 Nouveau record: " + bestFile + " (" + depth + " pièces)");
+                    if (isNewRecord(puzzleDir, state.depth)) {
+                        System.out.println("  🏆 Nouveau record: " + bestFile + " (" + state.depth + " pièces)");
                     }
                 }
             }
-
-            // Ne JAMAIS nettoyer les fichiers best_*.txt - on les garde tous pour validation
 
         } catch (IOException e) {
             System.err.println("  ⚠️  Erreur lors de la sauvegarde: " + e.getMessage());
@@ -207,18 +187,20 @@ public class SaveStateManager {
 
     /**
      * Génère un affichage visuel ASCII du plateau AVEC les arêtes détaillées
+     * @deprecated Use SaveBoardRenderer.generateBoardVisualDetailed() instead
      */
+    @Deprecated
     private static void generateBoardVisualDetailed(PrintWriter writer, Board board, Map<Integer, Piece> allPieces) {
-        // Delegate to BoardTextRenderer (refactored for better code organization)
-        BoardTextRenderer.generateBoardVisualDetailed(writer, board, allPieces);
+        SaveBoardRenderer.generateBoardVisualDetailed(writer, board, allPieces);
     }
 
     /**
      * Génère un affichage visuel ASCII du plateau (simple, sans arêtes)
+     * @deprecated Use SaveBoardRenderer.generateBoardVisual() instead
      */
+    @Deprecated
     private static void generateBoardVisual(PrintWriter writer, Board board) {
-        // Delegate to BoardTextRenderer (refactored for better code organization)
-        BoardTextRenderer.generateBoardVisual(writer, board);
+        SaveBoardRenderer.generateBoardVisual(writer, board);
     }
 
     /**
@@ -268,138 +250,15 @@ public class SaveStateManager {
 
     /**
      * Sauvegarde dans un fichier spécifique
+     * @deprecated Use SaveStateIO.writeToFile() instead
      */
+    @Deprecated
     private static void saveToFile(String filename, String puzzleName, Board board, int depth,
                                    List<PlacementInfo> placementOrder, List<Integer> unusedIds, double progressPercentage, long totalComputeTimeMs,
                                    int numFixedPieces, List<PlacementInfo> initialFixedPieces) throws IOException {
-        // Charger toutes les pièces pour l'affichage détaillé
-        Map<Integer, Piece> allPieces = new HashMap<>();
-        for (int r = 0; r < board.getRows(); r++) {
-            for (int c = 0; c < board.getCols(); c++) {
-                if (!board.isEmpty(r, c)) {
-                    Placement p = board.getPlacement(r, c);
-                    // Reconstruire la pièce à partir du placement
-                    int[] edges = new int[4];
-                    // On ne peut pas récupérer les arêtes originales depuis Placement
-                    // On va donc seulement afficher les IDs pour l'instant
-                }
-            }
-        }
-
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
-            // Header
-            writer.println("# Sauvegarde Eternity II");
-            writer.println("# Timestamp: " + System.currentTimeMillis());
-            writer.println("# Date: " + DATE_FORMAT.format(new Date()));
-            writer.println("# Puzzle: " + puzzleName);
-            writer.println("# Dimensions: " + board.getRows() + "x" + board.getCols());
-            writer.println("# Depth: " + depth + " (pièces placées par backtracking, hors fixes)");
-            if (progressPercentage >= 0.0) {
-                writer.println("# Progress: " + String.format("%.8f%%", progressPercentage) + " (estimation basée sur les 5 premières profondeurs)");
-            }
-            // Écrire le temps total de calcul en millisecondes et en format lisible
-            long totalSeconds = totalComputeTimeMs / 1000;
-            long hours = totalSeconds / 3600;
-            long minutes = (totalSeconds % 3600) / 60;
-            long seconds = totalSeconds % 60;
-            writer.println("# TotalComputeTime: " + totalComputeTimeMs + " ms (" +
-                          String.format("%dh %02dm %02ds", hours, minutes, seconds) + ")");
-            writer.println();
-
-            // AFFICHAGE VISUEL SIMPLE DU PLATEAU
-            int numFixedPiecesLocal = (initialFixedPieces != null) ? initialFixedPieces.size() : 0;
-            writer.println("# ═══════════════════════════════════════════════════════════");
-            writer.println("# AFFICHAGE VISUEL DU PLATEAU (" + (depth + numFixedPiecesLocal) + " pièces: " + numFixedPiecesLocal + " fixes + " + depth + " backtracking)");
-            writer.println("# ═══════════════════════════════════════════════════════════");
-            writer.println("#");
-            generateBoardVisual(writer, board);
-            writer.println("#");
-            writer.println("# ═══════════════════════════════════════════════════════════");
-            writer.println();
-
-            // Utiliser le nombre de pièces fixes passé en paramètre (depuis la configuration originale)
-            // Si numFixedPieces est 0 (cas de compatibilité), le récupérer depuis la config
-            if (numFixedPieces == 0) {
-                numFixedPieces = getNumFixedPiecesFromConfig(puzzleName);
-            }
-
-            // Pièces fixes (coins + hints)
-            writer.println("# ═══════════════════════════════════════════════════════════");
-            writer.println("# PIÈCES FIXES (pré-placées au démarrage)");
-            writer.println("# ═══════════════════════════════════════════════════════════");
-            writer.println("#");
-            if (numFixedPieces > 0) {
-                writer.println("# " + numFixedPieces + " pièces fixes (coins + hints - voir fichier de configuration)");
-            } else {
-                writer.println("# (aucune pièce fixe)");
-            }
-            writer.println("#");
-            writer.println("# ═══════════════════════════════════════════════════════════");
-            writer.println();
-
-            // Ordre de pose des pièces PAR LE BACKTRACKING (toutes les pièces de placementOrder)
-            int fixedCountHeader = (initialFixedPieces != null) ? initialFixedPieces.size() : 0;
-            int backtrackingPiecesCount = (placementOrder != null) ? Math.max(0, placementOrder.size() - fixedCountHeader) : 0;
-            writer.println("# ═══════════════════════════════════════════════════════════");
-            writer.println("# ORDRE DE POSE (backtracking) - " + backtrackingPiecesCount + " pièces");
-            writer.println("# ═══════════════════════════════════════════════════════════");
-            writer.println("#");
-            if (placementOrder != null && placementOrder.size() > fixedCountHeader) {
-                writer.println("# Étape  Position    Pièce  Rotation");
-                writer.println("# ────── ─────────── ────── ────────");
-                for (int i = fixedCountHeader; i < placementOrder.size(); i++) {
-                    PlacementInfo info = placementOrder.get(i);
-                    writer.println(String.format("# %4d   (%2d,%2d)     %3d      %d (×90°)",
-                        (i - fixedCountHeader + 1), info.row, info.col, info.pieceId, info.rotation));
-                }
-            } else {
-                writer.println("# (aucune pièce placée par backtracking)");
-            }
-            writer.println("#");
-            writer.println("# ═══════════════════════════════════════════════════════════");
-            writer.println();
-
-            // Format de données pour le parser (ancien format conservé pour compatibilité)
-            writer.println("# Fixed Pieces (row,col pieceId rotation) - pré-placées");
-            // Utiliser initialFixedPieces (les vraies pièces fixes du config) au lieu des premières de placementOrder
-            if (initialFixedPieces != null && !initialFixedPieces.isEmpty()) {
-                for (PlacementInfo info : initialFixedPieces) {
-                    writer.println(info.row + "," + info.col + " " + info.pieceId + " " + info.rotation);
-                }
-            }
-            writer.println();
-
-            // Ordre de pose des pièces PAR LE BACKTRACKING (hors fixes)
-            writer.println("# Placement Order (row,col pieceId rotation) - ordre chronologique du backtracking");
-            // Utiliser le nombre réel de pièces fixes initiales pour calculer l'offset
-            int fixedCount = (initialFixedPieces != null) ? initialFixedPieces.size() : 0;
-            if (placementOrder != null && placementOrder.size() > fixedCount) {
-                for (int i = fixedCount; i < placementOrder.size(); i++) {
-                    PlacementInfo info = placementOrder.get(i);
-                    writer.println(info.row + "," + info.col + " " + info.pieceId + " " + info.rotation);
-                }
-            }
-            writer.println();
-
-            // Placements (positions actuelles)
-            writer.println("# Placements (row,col pieceId rotation)");
-            for (int r = 0; r < board.getRows(); r++) {
-                for (int c = 0; c < board.getCols(); c++) {
-                    if (!board.isEmpty(r, c)) {
-                        Placement p = board.getPlacement(r, c);
-                        writer.println(r + "," + c + " " + p.getPieceId() + " " + p.getRotation());
-                    }
-                }
-            }
-            writer.println();
-
-            // Pièces non utilisées
-            writer.println("# Unused pieces");
-            for (int id : unusedIds) {
-                writer.print(id + " ");
-            }
-            writer.println();
-        }
+        // Delegated to SaveStateIO (refactored for better code organization)
+        SaveStateIO.writeToFile(filename, puzzleName, board, depth, placementOrder, unusedIds,
+                               progressPercentage, totalComputeTimeMs, numFixedPieces, initialFixedPieces);
     }
 
     /**
@@ -504,138 +363,16 @@ public class SaveStateManager {
         // Charger la sauvegarde la plus récente
         File saveFile = saveFiles[0];
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(saveFile))) {
-            String line;
-            int rows = 0, cols = 0;
-            long timestamp = 0;
-            int depth = 0;
-            Map<String, PlacementInfo> placements = new HashMap<>();
-            java.util.List<PlacementInfo> placementOrder = new ArrayList<>();
-            Set<Integer> unusedPieceIds = new HashSet<>();
-
-            boolean readingPlacementOrder = false;
-            boolean readingPlacements = false;
-            boolean readingUnused = false;
-
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-
-                // Ignorer les lignes vides
-                if (line.isEmpty()) {
-                    continue;
-                }
-
-                // Parser les métadonnées
-                if (line.startsWith("# Timestamp:")) {
-                    timestamp = Long.parseLong(line.substring(12).trim());
-                } else if (line.startsWith("# Dimensions:")) {
-                    String dims = line.substring(13).trim();
-                    String[] parts = dims.split("x");
-                    rows = Integer.parseInt(parts[0]);
-                    cols = Integer.parseInt(parts[1]);
-                } else if (line.startsWith("# Depth:")) {
-                    // Extract depth number (may have description after, e.g. "54 (pièces...)")
-                    String depthStr = line.substring(8).trim();
-                    int spaceIdx = depthStr.indexOf(' ');
-                    if (spaceIdx > 0) {
-                        depthStr = depthStr.substring(0, spaceIdx);
-                    }
-                    depth = Integer.parseInt(depthStr);
-                } else if (line.startsWith("# Placement Order")) {
-                    readingPlacementOrder = true;
-                    readingPlacements = false;
-                    readingUnused = false;
-                } else if (line.startsWith("# Placements")) {
-                    readingPlacementOrder = false;
-                    readingPlacements = true;
-                    readingUnused = false;
-                } else if (line.startsWith("# Unused")) {
-                    readingPlacementOrder = false;
-                    readingPlacements = false;
-                    readingUnused = true;
-                } else if (!line.startsWith("#")) {
-                    // Données
-                    if (readingPlacementOrder) {
-                        String[] parts = line.split("\\s+");
-                        if (parts.length >= 3) {
-                            String[] coords = parts[0].split(",");
-                            if (coords.length == 2) {
-                                int r = Integer.parseInt(coords[0]);
-                                int c = Integer.parseInt(coords[1]);
-                                int pieceId = Integer.parseInt(parts[1]);
-                                int rotation = Integer.parseInt(parts[2]);
-                                placementOrder.add(new PlacementInfo(r, c, pieceId, rotation));
-                            }
-                        }
-                    } else if (readingPlacements) {
-                        String[] parts = line.split("\\s+");
-                        if (parts.length >= 3) {
-                            // Format: "row,col pieceId rotation"
-                            String[] coords = parts[0].split(",");
-                            if (coords.length == 2) {
-                                int r = Integer.parseInt(coords[0]);
-                                int c = Integer.parseInt(coords[1]);
-                                int pieceId = Integer.parseInt(parts[1]);
-                                int rotation = Integer.parseInt(parts[2]);
-                                placements.put(r + "," + c, new PlacementInfo(r, c, pieceId, rotation));
-                            }
-                        }
-                    } else if (readingUnused) {
-                        String[] parts = line.split("\\s+");
-                        for (String part : parts) {
-                            if (!part.isEmpty()) {
-                                unusedPieceIds.add(Integer.parseInt(part));
-                            }
-                        }
-                    }
-                }
-            }
-
-            System.out.println("  📂 Sauvegarde chargée: " + saveFile.getName() + " (" + depth + " pièces)");
-            System.out.println("  📅 Date: " + DATE_FORMAT.format(new Date(timestamp)));
-            System.out.println("  📋 Ordre de pose: " + placementOrder.size() + " placements trackés");
-
-            return new SaveState(puzzleName, rows, cols, placements, placementOrder, unusedPieceIds, timestamp, depth);
-
-        } catch (IOException e) {
-            System.err.println("  ⚠️  Erreur lors du chargement: " + e.getMessage());
-            return null;
-        }
+        // Delegate to SaveStateIO for actual file reading (refactored for better code organization)
+        return SaveStateIO.readFromFile(saveFile, puzzleName);
     }
 
     /**
      * Restaure l'état sur un board à partir d'une sauvegarde
      */
     public static boolean restoreState(SaveState state, Board board, Map<Integer, Piece> allPieces) {
-        try {
-            // Vérifier les dimensions
-            if (board.getRows() != state.rows || board.getCols() != state.cols) {
-                System.err.println("  ⚠️  Dimensions incompatibles!");
-                return false;
-            }
-
-            // Placer les pièces
-            for (Map.Entry<String, PlacementInfo> entry : state.placements.entrySet()) {
-                String[] coords = entry.getKey().split(",");
-                int r = Integer.parseInt(coords[0]);
-                int c = Integer.parseInt(coords[1]);
-                PlacementInfo info = entry.getValue();
-
-                Piece piece = allPieces.get(info.pieceId);
-                if (piece != null) {
-                    board.place(r, c, piece, info.rotation);
-                } else {
-                    System.err.println("  ⚠️  Pièce " + info.pieceId + " introuvable!");
-                    return false;
-                }
-            }
-
-            return true;
-
-        } catch (Exception e) {
-            System.err.println("  ⚠️  Erreur lors de la restauration: " + e.getMessage());
-            return false;
-        }
+        // Delegate to SaveStateSerializer (refactored for better code organization)
+        return SaveStateSerializer.restoreStateToBoard(state, board, allPieces);
     }
 
     /**
@@ -759,135 +496,8 @@ public class SaveStateManager {
      * @return l'état chargé ou null si échec
      */
     public static SaveState loadStateFromFile(File saveFile, String puzzleName) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(saveFile))) {
-            String line;
-            int rows = 0, cols = 0;
-            long timestamp = 0;
-            int depth = 0;
-            Map<String, PlacementInfo> placements = new HashMap<>();
-            java.util.List<PlacementInfo> placementOrder = new ArrayList<>();
-            Set<Integer> unusedPieceIds = new HashSet<>();
-
-            boolean readingPlacementOrder = false;
-            boolean readingPlacements = false;
-            boolean readingUnused = false;
-
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-
-                if (line.isEmpty()) {
-                    continue;
-                }
-
-                if (line.startsWith("# Timestamp:")) {
-                    timestamp = Long.parseLong(line.substring(12).trim());
-                } else if (line.startsWith("# Dimensions:")) {
-                    String dims = line.substring(13).trim();
-                    String[] parts = dims.split("x");
-                    rows = Integer.parseInt(parts[0]);
-                    cols = Integer.parseInt(parts[1]);
-                } else if (line.startsWith("# Depth:")) {
-                    // Extract depth number (may have description after, e.g. "54 (pièces...)")
-                    String depthStr = line.substring(8).trim();
-                    int spaceIdx = depthStr.indexOf(' ');
-                    if (spaceIdx > 0) {
-                        depthStr = depthStr.substring(0, spaceIdx);
-                    }
-                    depth = Integer.parseInt(depthStr);
-                } else if (line.startsWith("# Placement Order")) {
-                    readingPlacementOrder = true;
-                    readingPlacements = false;
-                    readingUnused = false;
-                } else if (line.startsWith("# Placements")) {
-                    readingPlacementOrder = false;
-                    readingPlacements = true;
-                    readingUnused = false;
-                } else if (line.startsWith("# Unused")) {
-                    readingPlacementOrder = false;
-                    readingPlacements = false;
-                    readingUnused = true;
-                } else if (!line.startsWith("#")) {
-                    if (readingPlacementOrder) {
-                        String[] parts = line.split("\\s+");
-                        if (parts.length >= 3) {
-                            String[] coords = parts[0].split(",");
-                            if (coords.length == 2) {
-                                int r = Integer.parseInt(coords[0]);
-                                int c = Integer.parseInt(coords[1]);
-                                int pieceId = Integer.parseInt(parts[1]);
-                                int rotation = Integer.parseInt(parts[2]);
-                                placementOrder.add(new PlacementInfo(r, c, pieceId, rotation));
-                            }
-                        }
-                    } else if (readingPlacements) {
-                        String[] parts = line.split("\\s+");
-                        if (parts.length >= 3) {
-                            String[] coords = parts[0].split(",");
-                            if (coords.length == 2) {
-                                int r = Integer.parseInt(coords[0]);
-                                int c = Integer.parseInt(coords[1]);
-                                int pieceId = Integer.parseInt(parts[1]);
-                                int rotation = Integer.parseInt(parts[2]);
-                                placements.put(r + "," + c, new PlacementInfo(r, c, pieceId, rotation));
-                            }
-                        }
-                    } else if (readingUnused) {
-                        String[] parts = line.split("\\s+");
-                        for (String part : parts) {
-                            if (!part.isEmpty()) {
-                                unusedPieceIds.add(Integer.parseInt(part));
-                            }
-                        }
-                    }
-                }
-            }
-
-            // CORRECTION DU BUG: Reconstruire placementOrder complet depuis placements si incomplet
-            // Le placementOrder parsé peut être incomplet (ne contient que certaines pièces trackées).
-            // On reconstruit un ordre complet en incluant TOUTES les pièces du plateau.
-            // Note: L'ordre ne sera pas le chronologique exact (on utilise row,col croissant),
-            // mais c'est mieux qu'un ordre incomplet qui empêche le backtracking.
-
-            List<PlacementInfo> finalOrder = placementOrder;
-
-            // Vérifier si l'ordre est incomplet
-            if (placements.size() > placementOrder.size()) {
-                System.out.println("  ⚠️  PlacementOrder incomplet: " + placementOrder.size() +
-                                 " entrées vs " + placements.size() + " pièces sur plateau");
-                System.out.println("  ✓  Reconstruction ordre complet (approximatif row,col)...");
-
-                // Créer un Set des pièces déjà dans placementOrder
-                Set<String> existingKeys = new HashSet<>();
-                for (PlacementInfo p : placementOrder) {
-                    existingKeys.add(p.row + "," + p.col);
-                }
-
-                // Trier tous les placements par (row, col)
-                List<PlacementInfo> sortedAll = new ArrayList<>(placements.values());
-                sortedAll.sort((p1, p2) -> {
-                    if (p1.row != p2.row) return Integer.compare(p1.row, p2.row);
-                    return Integer.compare(p1.col, p2.col);
-                });
-
-                // Reconstruire: garder l'ordre existant autant que possible, ajouter manquants
-                List<PlacementInfo> reconstructed = new ArrayList<>(placementOrder);
-                for (PlacementInfo p : sortedAll) {
-                    String key = p.row + "," + p.col;
-                    if (!existingKeys.contains(key)) {
-                        reconstructed.add(p);
-                    }
-                }
-
-                finalOrder = reconstructed;
-                System.out.println("  ✓  Ordre reconstruit: " + finalOrder.size() + " pièces");
-            }
-
-            return new SaveState(puzzleName, rows, cols, placements, finalOrder, unusedPieceIds, timestamp, depth);
-
-        } catch (IOException e) {
-            System.err.println("  ⚠️  Erreur lors du chargement de " + saveFile.getName() + ": " + e.getMessage());
-            return null;
-        }
+        // Delegate to SaveStateIO (refactored for better code organization)
+        return SaveStateIO.readFromFile(saveFile, puzzleName);
     }
 
     /**

@@ -87,6 +87,27 @@ public class BacktrackingSolver {
             long randomSeed,
             long startTimeMs) {
 
+        // Validate required parameters (null checks)
+        if (solver == null) {
+            throw new IllegalArgumentException("solver cannot be null");
+        }
+        if (stats == null) {
+            throw new IllegalArgumentException("stats cannot be null");
+        }
+        if (solutionFound == null) {
+            throw new IllegalArgumentException("solutionFound cannot be null");
+        }
+        if (configManager == null) {
+            throw new IllegalArgumentException("configManager cannot be null");
+        }
+        if (singletonStrategy == null) {
+            throw new IllegalArgumentException("singletonStrategy cannot be null");
+        }
+        if (mrvStrategy == null) {
+            throw new IllegalArgumentException("mrvStrategy cannot be null");
+        }
+        // Note: recordManager and autoSaveManager can be null (optional features)
+
         this.solver = solver;
         this.stats = stats;
         this.solutionFound = solutionFound;
@@ -140,9 +161,11 @@ public class BacktrackingSolver {
 
             if (recordResult != null) {
                 // Save record to disk if new record achieved
+                // Note: Auto-save is optional - record is saved only if autoSaveManager is provided
+                // This allows running without save functionality for testing or memory-constrained scenarios
                 if (autoSaveManager != null) {
                     autoSaveManager.saveRecord(board, pieceUsed, totalPieces, stats, currentDepth);
-                }
+                } // Intentionally silent if null - save is optional feature
 
                 // Display record if it should be shown
                 if (recordManager.shouldShowRecord(recordResult, currentDepth)) {

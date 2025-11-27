@@ -107,8 +107,6 @@ public class EternitySolver {
 
     // Randomisation pour éviter le thrashing
     Random random = new Random(); // Package-private for ParallelSolverOrchestrator
-    private double randomizationProbability = SolverConstants.DEFAULT_RANDOMIZATION_PROBABILITY;
-    private int stagnationThreshold = SolverConstants.DEFAULT_STAGNATION_THRESHOLD;
 
     // Parallel search - MIGRATED to ParallelSearchManager (Sprint 4)
     // Keep minimal references for backward compatibility
@@ -188,8 +186,6 @@ public class EternitySolver {
 
     // Sauvegarde périodique par thread
     long randomSeed = 0; // Seed du random pour ce thread (package-private for ParallelSolverOrchestrator)
-    private long lastThreadSaveTime = 0; // Timestamp de la dernière sauvegarde thread
-    private static final long THREAD_SAVE_INTERVAL = SolverConstants.THREAD_SAVE_INTERVAL_MS;
 
     // Sauvegarde automatique périodique (nouveau système)
     // puzzleName removed - use configManager.getPuzzleName() (Refactoring #15)
@@ -356,24 +352,6 @@ public class EternitySolver {
         return validator.fits(board, r, c, candidateEdges);
     }
 
-    /**
-     * Forward Checking : vérifie qu'un placement ne va pas créer de dead-end chez les voisins vides.
-     *
-     * @param board grille actuelle
-     * @param r ligne où on veut placer
-     * @param c colonne où on veut placer
-     * @param candidateEdges edges de la pièce qu'on veut placer
-     * @param piecesById toutes les pièces disponibles
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param excludePieceId ID de la pièce qu'on est en train de tester (à exclure)
-     * @return true si le placement est safe, false s'il créerait un dead-end
-     */
-    private boolean forwardCheck(Board board, int r, int c, int[] candidateEdges,
-                                  Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces, int excludePieceId) {
-        // Delegate to PlacementValidator (refactored for better code organization)
-        return validator.forwardCheck(board, r, c, candidateEdges, piecesById, pieceUsed, totalPieces, excludePieceId);
-    }
 
     /**
      * Parallel search task using Fork/Join framework
@@ -640,12 +618,6 @@ public class EternitySolver {
         configManager.setVerbose(enabled);
     }
 
-    /**
-     * Vérifie si l'optimisation singleton est activée.
-     */
-    public boolean isUsingSingletons() {
-        return configManager.isUseSingletons();
-    }
 
     /**
      * Réinitialise le solveur pour une nouvelle résolution.

@@ -53,10 +53,10 @@ public class SaveManager {
                 writer.println("END_PLACEMENTS");
             }
 
-            System.out.println("💾 Sauvegarde effectuée: " + depth + " pièces (Thread " + threadId + ")");
+            SolverLogger.save("Sauvegarde effectuée: {} pièces (Thread {})", depth, threadId);
 
         } catch (IOException e) {
-            System.err.println("Erreur lors de la sauvegarde: " + e.getMessage());
+            SolverLogger.error("Erreur lors de la sauvegarde: {}", e.getMessage());
         }
     }
 
@@ -96,7 +96,7 @@ public class SaveManager {
             }
 
             if (board == null) {
-                System.err.println("Erreur: taille du board non trouvée dans la sauvegarde");
+                SolverLogger.error("Erreur: taille du board non trouvée dans la sauvegarde");
                 return null;
             }
 
@@ -121,11 +121,11 @@ public class SaveManager {
                 }
             }
 
-            System.out.println("📂 Sauvegarde chargée: " + depth + " pièces (Thread " + threadId + ")");
+            SolverLogger.save("Sauvegarde chargée: {} pièces (Thread {})", depth, threadId);
             return new Object[]{board, usedPieceIds, depth, threadId};
 
         } catch (IOException | NumberFormatException e) {
-            System.err.println("Erreur lors du chargement: " + e.getMessage());
+            SolverLogger.error("Erreur lors du chargement: {}", e.getMessage());
             return null;
         }
     }
@@ -177,7 +177,7 @@ public class SaveManager {
             }
 
         } catch (IOException e) {
-            System.err.println("Erreur sauvegarde thread " + threadId + ": " + e.getMessage());
+            SolverLogger.error("Erreur sauvegarde thread {}: {}", threadId, e.getMessage());
         }
     }
 
@@ -217,7 +217,7 @@ public class SaveManager {
             }
 
             if (board == null) {
-                System.err.println("Erreur: taille du board non trouvée pour thread " + threadId);
+                SolverLogger.error("Erreur: taille du board non trouvée pour thread {}", threadId);
                 return null;
             }
 
@@ -245,7 +245,7 @@ public class SaveManager {
             return new Object[]{board, usedPieceIds, depth, randomSeed};
 
         } catch (IOException | NumberFormatException e) {
-            System.err.println("Erreur chargement thread " + threadId + ": " + e.getMessage());
+            SolverLogger.error("Erreur chargement thread {}: {}", threadId, e.getMessage());
             return null;
         }
     }

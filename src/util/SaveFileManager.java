@@ -60,7 +60,7 @@ public class SaveFileManager {
                 saveFiles[i].delete();
             }
         } catch (Exception e) {
-            System.err.println("  ⚠️  Erreur lors du nettoyage des sauvegardes: " + e.getMessage());
+            SolverLogger.warn("Erreur lors du nettoyage des sauvegardes: {}", e.getMessage());
         }
     }
 
@@ -99,7 +99,7 @@ public class SaveFileManager {
                 bestFiles[i].delete();
             }
         } catch (Exception e) {
-            System.err.println("  ⚠️  Erreur lors du nettoyage des best saves: " + e.getMessage());
+            SolverLogger.warn("Erreur lors du nettoyage des best saves: {}", e.getMessage());
         }
     }
 
@@ -132,7 +132,7 @@ public class SaveFileManager {
                 }
             }
         } catch (Exception e) {
-            System.err.println("  ⚠️  Erreur lors du nettoyage des current saves: " + e.getMessage());
+            SolverLogger.warn("Erreur lors du nettoyage des current saves: {}", e.getMessage());
         }
     }
 

@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up JDK 11
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Build JAR
+      run: ./build_jar.sh
+
+    - name: Verify JAR
+      run: |
+        ls -lh eternity-solver-*.jar
+        java -jar eternity-solver-*.jar --version
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        cat > release_notes.md << 'EOF'
+        # Eternity Solver ${{ steps.get_version.outputs.VERSION }}
+
+        ## 📦 Installation
+
+        Download `eternity-solver-${{ steps.get_version.outputs.VERSION }}.jar` and run:
+
+        ```bash
+        java -jar eternity-solver-${{ steps.get_version.outputs.VERSION }}.jar example_3x3
+        ```
+
+        ## 📖 Usage
+
+        ```bash
+        # Get help
+        java -jar eternity-solver-${{ steps.get_version.outputs.VERSION }}.jar --help
+
+        # Solve a puzzle
+        java -jar eternity-solver-${{ steps.get_version.outputs.VERSION }}.jar example_3x3
+
+        # Parallel search
+        java -jar eternity-solver-${{ steps.get_version.outputs.VERSION }}.jar -v -p example_4x4
+        ```
+
+        ## 🙏 Requirements
+
+        - Java 11 or higher
+
+        ## 📚 Documentation
+
+        See the [README](https://github.com/${{ github.repository }}) for complete documentation.
+        EOF
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release v${{ steps.get_version.outputs.VERSION }}
+        body_path: release_notes.md
+        files: |
+          eternity-solver-*.jar
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload JAR to release assets
+      run: |
+        echo "✓ Release v${{ steps.get_version.outputs.VERSION }} created successfully"
+        echo "Download: https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.VERSION }}/eternity-solver-${{ steps.get_version.outputs.VERSION }}.jar"

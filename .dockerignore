@@ -1,0 +1,45 @@
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Build artifacts
+bin/
+build/
+out/
+*.class
+
+# Test artifacts
+test-output/
+
+# Saves (runtime generated)
+saves/**/current_*.txt
+saves/**/best_*.txt
+saves/**/thread_*.txt
+
+# Documentation (not needed in runtime)
+docs/
+*.md
+!data/README.md
+
+# Scripts not needed in container
+run_tests.sh
+install.sh
+generate_javadoc.sh
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# GitHub
+.github/

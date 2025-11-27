@@ -1,0 +1,50 @@
+# Sauvegarde Eternity II
+# Timestamp: 1764238693660
+# Date: 2025-11-27_11-18-13
+# Puzzle: integration_test
+# Dimensions: 3x3
+# Depth: 2 (pièces placées par backtracking, hors fixes)
+# Progress: 0,00000000% (estimation basée sur les 5 premières profondeurs)
+# TotalComputeTime: 1 ms (0h 00m 00s)
+
+# ═══════════════════════════════════════════════════════════
+# AFFICHAGE VISUEL DU PLATEAU (2 pièces: 0 fixes + 2 backtracking)
+# ═══════════════════════════════════════════════════════════
+#
+#   1_0   2_1   .   
+#   .     .     .   
+#   .     .     .   
+#
+# ═══════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════
+# PIÈCES FIXES (pré-placées au démarrage)
+# ═══════════════════════════════════════════════════════════
+#
+# (aucune pièce fixe)
+#
+# ═══════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════
+# ORDRE DE POSE (backtracking) - 2 pièces
+# ═══════════════════════════════════════════════════════════
+#
+# Étape  Position    Pièce  Rotation
+# ────── ─────────── ────── ────────
+#    1   ( 0, 0)       1      0 (×90°)
+#    2   ( 0, 1)       2      1 (×90°)
+#
+# ═══════════════════════════════════════════════════════════
+
+# Fixed Pieces (row,col pieceId rotation) - pré-placées
+
+# Placement Order (row,col pieceId rotation) - ordre chronologique du backtracking
+0,0 1 0
+0,1 2 1
+
+# Placements (row,col pieceId rotation)
+0,0 1 0
+0,1 2 1
+
+# Unused pieces
+3 4 5 

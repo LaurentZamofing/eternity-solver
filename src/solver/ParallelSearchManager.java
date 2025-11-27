@@ -1,0 +1,541 @@
+package solver;
+
+import model.Board;
+import model.Piece;
+import model.Placement;
+import util.SaveManager;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+/**
+ * Gère l'exécution de recherche parallèle pour le solveur de puzzle Eternity.
+ * Gère le parallélisme par vol de travail (work-stealing), la coordination des threads, l'état global,
+ * et les stratégies de diversification pour la résolution multi-thread.
+ *
+ * Extrait de EternitySolver pour séparer la complexité parallèle de l'algorithme séquentiel.
+ */
+public class ParallelSearchManager {
+
+    // État global pour la résolution parallèle
+    private static AtomicBoolean solutionFound = new AtomicBoolean(false);
+    private static AtomicInteger globalMaxDepth = new AtomicInteger(0);
+    private static AtomicInteger globalBestScore = new AtomicInteger(0);
+    private static AtomicInteger globalBestThreadId = new AtomicInteger(-1);
+    private static AtomicReference<Board> globalBestBoard = new AtomicReference<>(null);
+    private static AtomicReference<Map<Integer, Piece>> globalBestPieces = new AtomicReference<>(null);
+    private static final Object lockObject = new Object();
+
+    // Parallélisme par vol de travail
+    private static ForkJoinPool workStealingPool = null;
+    public static final int WORK_STEALING_DEPTH_THRESHOLD = 5;
+    private static final long THREAD_SAVE_INTERVAL = 60000; // 1 minute
+
+    // Dépendances
+    private final DomainManager domainManager;
+
+    /**
+     * Constructeur avec les dépendances requises.
+     */
+    public ParallelSearchManager(DomainManager domainManager) {
+        this.domainManager = domainManager;
+    }
+
+    /**
+     * Active le parallélisme par vol de travail pour un seul puzzle.
+     */
+    public void enableWorkStealing(int numThreads) {
+        if (workStealingPool == null || workStealingPool.isShutdown()) {
+            workStealingPool = new ForkJoinPool(numThreads);
+        }
+    }
+
+    /**
+     * Réinitialise toutes les variables d'état global statiques.
+     * Doit être appelé entre les puzzles dans les exécutions séquentielles.
+     */
+    public static void resetGlobalState() {
+        solutionFound.set(false);
+        globalMaxDepth.set(0);
+        globalBestScore.set(0);
+        globalBestThreadId.set(-1);
+        globalBestBoard.set(null);
+        globalBestPieces.set(null);
+        if (workStealingPool != null && !workStealingPool.isShutdown()) {
+            workStealingPool.shutdown();
+            workStealingPool = null;
+        }
+    }
+
+    /**
+     * Obtient l'objet verrou global pour les opérations synchronisées.
+     */
+    public static Object getLockObject() {
+        return lockObject;
+    }
+
+    /**
+     * Obtient le booléen atomique indiquant si une solution a été trouvée (rétrocompatibilité).
+     */
+    public static AtomicBoolean getSolutionFound() {
+        return solutionFound;
+    }
+
+    /**
+     * Obtient le pool de vol de travail (rétrocompatibilité).
+     */
+    public static ForkJoinPool getWorkStealingPool() {
+        return workStealingPool;
+    }
+
+    /**
+     * Vérifie si une solution a été trouvée par un thread.
+     */
+    public static boolean isSolutionFound() {
+        return solutionFound.get();
+    }
+
+    /**
+     * Marque qu'une solution a été trouvée.
+     */
+    public static void markSolutionFound() {
+        solutionFound.set(true);
+    }
+
+    /**
+     * Obtient l'entier atomique de profondeur maximale globale (rétrocompatibilité).
+     */
+    public static AtomicInteger getGlobalMaxDepth() {
+        return globalMaxDepth;
+    }
+
+    /**
+     * Met à jour la profondeur maximale globale si la nouvelle profondeur est plus grande.
+     */
+    public static boolean updateGlobalMaxDepth(int depth) {
+        int current;
+        do {
+            current = globalMaxDepth.get();
+            if (depth <= current) return false;
+        } while (!globalMaxDepth.compareAndSet(current, depth));
+        return true;
+    }
+
+    /**
+     * Obtient l'entier atomique du meilleur score global (rétrocompatibilité).
+     */
+    public static AtomicInteger getGlobalBestScore() {
+        return globalBestScore;
+    }
+
+    /**
+     * Met à jour le meilleur score global si le nouveau score est meilleur.
+     */
+    public static boolean updateGlobalBestScore(int score) {
+        int current;
+        do {
+            current = globalBestScore.get();
+            if (score <= current) return false;
+        } while (!globalBestScore.compareAndSet(current, score));
+        return true;
+    }
+
+    /**
+     * Obtient l'entier atomique de l'ID du meilleur thread (rétrocompatibilité).
+     */
+    public static AtomicInteger getGlobalBestThreadId() {
+        return globalBestThreadId;
+    }
+
+    /**
+     * Définit l'ID du thread qui a trouvé la meilleure solution.
+     */
+    public static void setGlobalBestThreadId(int threadId) {
+        globalBestThreadId.set(threadId);
+    }
+
+    /**
+     * Obtient la référence atomique du meilleur plateau global (rétrocompatibilité).
+     */
+    public static AtomicReference<Board> getGlobalBestBoard() {
+        return globalBestBoard;
+    }
+
+    /**
+     * Définit le meilleur plateau global.
+     */
+    public static void setGlobalBestBoard(Board board) {
+        globalBestBoard.set(board);
+    }
+
+    /**
+     * Obtient la référence atomique des meilleures pièces globales (rétrocompatibilité).
+     */
+    public static AtomicReference<Map<Integer, Piece>> getGlobalBestPieces() {
+        return globalBestPieces;
+    }
+
+    /**
+     * Définit la map des meilleures pièces globales.
+     */
+    public static void setGlobalBestPieces(Map<Integer, Piece> pieces) {
+        globalBestPieces.set(pieces);
+    }
+
+    /**
+     * Résout le puzzle en utilisant le parallélisme par vol de travail (framework Fork/Join).
+     * Cette méthode crée une tâche parallèle et la soumet au pool de vol de travail.
+     *
+     * @param board état initial du plateau
+     * @param pieces toutes les pièces disponibles
+     * @param pieceUsed bitset suivant les pièces utilisées
+     * @param totalPieces nombre total de pièces
+     * @param sequentialSolver référence au solveur séquentiel pour les recherches profondes
+     * @return true si une solution est trouvée
+     */
+    public boolean solveWithWorkStealing(Board board, Map<Integer, Piece> pieces,
+                                         BitSet pieceUsed, int totalPieces,
+                                         SequentialSolver sequentialSolver) {
+        if (workStealingPool == null) {
+            throw new IllegalStateException("Pool de vol de travail non activé. Appelez enableWorkStealing() d'abord.");
+        }
+
+        ParallelSearchTask task = new ParallelSearchTask(
+            board, pieces, pieceUsed, totalPieces, 0, domainManager, sequentialSolver
+        );
+        return workStealingPool.invoke(task);
+    }
+
+    /**
+     * Interface pour le callback du solveur séquentiel.
+     */
+    public interface SequentialSolver {
+        boolean solve(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces);
+    }
+
+    /**
+     * Tâche récursive pour le parallélisme Fork/Join avec vol de travail.
+     */
+    private static class ParallelSearchTask extends RecursiveTask<Boolean> {
+        private final Board board;
+        private final Map<Integer, Piece> piecesById;
+        private final BitSet pieceUsed;
+        private final int totalPieces;
+        private final int currentDepth;
+        private final DomainManager domainManager;
+        private final SequentialSolver sequentialSolver;
+
+        ParallelSearchTask(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed,
+                           int totalPieces, int currentDepth, DomainManager domainManager,
+                           SequentialSolver sequentialSolver) {
+            this.board = board;
+            this.piecesById = piecesById;
+            this.pieceUsed = (BitSet) pieceUsed.clone();
+            this.totalPieces = totalPieces;
+            this.currentDepth = currentDepth;
+            this.domainManager = domainManager;
+            this.sequentialSolver = sequentialSolver;
+        }
+
+        @Override
+        protected Boolean compute() {
+            // Vérifier si une solution a déjà été trouvée
+            if (solutionFound.get()) {
+                return false;
+            }
+
+            // Si la profondeur est assez faible, fourcher les tâches
+            if (currentDepth < WORK_STEALING_DEPTH_THRESHOLD && workStealingPool != null) {
+                // Trouver la prochaine cellule vide avec l'heuristique MRV (version simplifiée)
+                int[] cell = findNextEmptyCell(board);
+
+                // Si aucune cellule trouvée, vérifier si le plateau est complet
+                if (cell == null) {
+                    int usedCount = pieceUsed.cardinality();
+                    return usedCount == totalPieces;
+                }
+
+                int r = cell[0], c = cell[1];
+                List<DomainManager.ValidPlacement> validPlacements =
+                    domainManager.computeDomain(board, r, c, piecesById, pieceUsed, totalPieces);
+
+                // Créer des tâches parallèles pour les différents placements de pièces
+                List<ParallelSearchTask> tasks = new ArrayList<>();
+                for (DomainManager.ValidPlacement vp : validPlacements) {
+                    try {
+                        // Créer une copie profonde du plateau
+                        Board boardCopy = copyBoard(board, piecesById);
+
+                        Piece piece = piecesById.get(vp.pieceId);
+                        if (piece != null) {
+                            boardCopy.place(r, c, piece, vp.rotation);
+                            BitSet usedCopy = (BitSet) pieceUsed.clone();
+                            usedCopy.set(vp.pieceId);
+
+                            ParallelSearchTask task = new ParallelSearchTask(
+                                boardCopy, piecesById, usedCopy, totalPieces,
+                                currentDepth + 1, domainManager, sequentialSolver
+                            );
+                            tasks.add(task);
+                            task.fork(); // Soumettre au pool de vol de travail
+                        }
+                    } catch (Exception e) {
+                        // Continuer avec le prochain placement si la copie échoue
+                    }
+                }
+
+                // Attendre qu'une tâche trouve une solution
+                for (ParallelSearchTask task : tasks) {
+                    try {
+                        if (task.join() && !solutionFound.get()) {
+                            solutionFound.set(true);
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        // Continuer avec la prochaine tâche
+                    }
+                }
+                return false;
+            } else {
+                // Assez profond - utiliser la recherche séquentielle
+                return sequentialSolver.solve(board, piecesById, pieceUsed, totalPieces);
+            }
+        }
+
+        /**
+         * Trouve la prochaine cellule vide en ordre ligne-majeur.
+         */
+        private int[] findNextEmptyCell(Board board) {
+            for (int r = 0; r < board.getRows(); r++) {
+                for (int c = 0; c < board.getCols(); c++) {
+                    if (board.isEmpty(r, c)) {
+                        return new int[]{r, c};
+                    }
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Crée une copie profonde du plateau.
+         */
+        private Board copyBoard(Board original, Map<Integer, Piece> pieces) {
+            Board copy = new Board(original.getRows(), original.getCols());
+            for (int r = 0; r < original.getRows(); r++) {
+                for (int c = 0; c < original.getCols(); c++) {
+                    if (!original.isEmpty(r, c)) {
+                        Placement p = original.getPlacement(r, c);
+                        Piece piece = pieces.get(p.getPieceId());
+                        if (piece != null) {
+                            copy.place(r, c, piece, p.getRotation());
+                        }
+                    }
+                }
+            }
+            return copy;
+        }
+    }
+
+    /**
+     * Résout le puzzle avec plusieurs threads parallèles (basé sur un pool de threads)
+     * Chaque thread reçoit sa propre copie du plateau et explore indépendamment.
+     *
+     * @param board état initial du plateau
+     * @param allPieces toutes les pièces du puzzle
+     * @param availablePieces pièces disponibles à placer
+     * @param numThreads nombre de threads parallèles
+     * @param puzzleName nom du puzzle pour la sauvegarde
+     * @param sequentialSolver callback vers le solveur séquentiel
+     * @return true si un thread a trouvé une solution
+     */
+    public boolean solveParallel(Board board, Map<Integer, Piece> allPieces,
+                                Map<Integer, Piece> availablePieces, int numThreads,
+                                String puzzleName, SequentialSolver sequentialSolver) {
+        System.out.println("\n╔══════════════════════════════════════════════════════════╗");
+        System.out.println("║           RECHERCHE PARALLÈLE AVEC " + numThreads + " THREADS            ║");
+        System.out.println("╚══════════════════════════════════════════════════════════╝\n");
+
+        // Réinitialiser les drapeaux globaux
+        solutionFound.set(false);
+        globalMaxDepth.set(0);
+
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        List<Future<Boolean>> futures = new ArrayList<>();
+
+        // Lancer numThreads workers avec des seeds différentes
+        for (int i = 0; i < numThreads; i++) {
+            final int threadId = i;
+
+            Future<Boolean> future = executor.submit(() -> {
+                try {
+                    Board localBoard;
+                    Map<Integer, Piece> localPieces;
+                    List<Integer> unusedIds;
+                    long seed = System.currentTimeMillis() + threadId * 1000;
+                    boolean loadedFromSave = false;
+
+                    // Vérifier si ce thread a un état sauvegardé
+                    if (SaveManager.hasThreadState(threadId)) {
+                        Object[] savedState = SaveManager.loadThreadState(threadId, allPieces);
+                        if (savedState != null) {
+                            localBoard = (Board) savedState[0];
+                            @SuppressWarnings("unchecked")
+                            Set<Integer> usedPieceIds = (Set<Integer>) savedState[1];
+                            int savedDepth = (int) savedState[2];
+                            seed = (long) savedState[3];
+
+                            localPieces = new HashMap<>(allPieces);
+                            unusedIds = new ArrayList<>();
+                            for (int pid : allPieces.keySet()) {
+                                if (!usedPieceIds.contains(pid)) {
+                                    unusedIds.add(pid);
+                                }
+                            }
+
+                            loadedFromSave = true;
+                            synchronized (System.out) {
+                                System.out.println("📂 Thread " + threadId + " restauré depuis sauvegarde: "
+                                    + savedDepth + " pièces placées");
+                            }
+                        } else {
+                            // Erreur de chargement, démarrer normalement
+                            localBoard = copyBoard(board, allPieces);
+                            localPieces = new HashMap<>(allPieces);
+                            unusedIds = new ArrayList<>(availablePieces.keySet());
+                        }
+                    } else {
+                        // Pas de sauvegarde - créer une copie du plateau pour ce thread
+                        localBoard = copyBoard(board, allPieces);
+                        localPieces = new HashMap<>(allPieces);
+                        unusedIds = new ArrayList<>(availablePieces.keySet());
+                    }
+
+                    // Créer le BitSet pieceUsed
+                    int totalPieces = localPieces.size();
+                    int maxPieceId = localPieces.keySet().stream().max(Integer::compareTo).orElse(totalPieces);
+                    BitSet pieceUsed = new BitSet(maxPieceId + 1);
+                    for (int pid : localPieces.keySet()) {
+                        if (!unusedIds.contains(pid)) {
+                            pieceUsed.set(pid);
+                        }
+                    }
+
+                    // Stratégie de diversification : pré-placer un coin différent pour chaque thread
+                    if (!loadedFromSave) {
+                        diversifySearchStrategy(threadId, localBoard, localPieces, unusedIds, pieceUsed);
+                    }
+
+                    // Résoudre avec la configuration de ce thread
+                    return sequentialSolver.solve(localBoard, localPieces, pieceUsed, totalPieces);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            });
+
+            futures.add(future);
+        }
+
+        // Attendre tous les threads et vérifier si l'un a trouvé une solution
+        boolean solved = false;
+        for (Future<Boolean> future : futures) {
+            try {
+                if (future.get()) {
+                    solved = true;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        executor.shutdown();
+        try {
+            executor.awaitTermination(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        return solved;
+    }
+
+    /**
+     * Applique une stratégie de diversification en pré-plaçant différentes pièces de coin
+     * pour que différents threads explorent différentes branches de recherche.
+     */
+    private void diversifySearchStrategy(int threadId, Board board, Map<Integer, Piece> pieces,
+                                        List<Integer> unusedIds, BitSet pieceUsed) {
+        if (threadId >= 4 || unusedIds.size() <= 10) {
+            return; // Diversifier uniquement les 4 premiers threads et si assez de pièces
+        }
+
+        // Identifier les pièces de coin (avec 2 bords à zéro)
+        List<Integer> cornerPieces = new ArrayList<>();
+        for (int pid : unusedIds) {
+            Piece p = pieces.get(pid);
+            int[] edges = p.getEdges();
+            int zeroCount = 0;
+            for (int e : edges) {
+                if (e == 0) zeroCount++;
+            }
+            if (zeroCount == 2) {
+                cornerPieces.add(pid);
+            }
+        }
+
+        if (threadId >= cornerPieces.size()) {
+            return;
+        }
+
+        int cornerPieceId = cornerPieces.get(threadId);
+        int cornerRow = -1, cornerCol = -1;
+
+        // Position basée sur l'ID du thread
+        switch (threadId) {
+            case 0: cornerRow = 0; cornerCol = 0; break;      // Haut-gauche
+            case 1: cornerRow = 0; cornerCol = 15; break;     // Haut-droit
+            case 2: cornerRow = 15; cornerCol = 0; break;     // Bas-gauche
+            case 3: cornerRow = 15; cornerCol = 15; break;    // Bas-droit
+        }
+
+        Piece cornerPiece = pieces.get(cornerPieceId);
+        // Trouver la rotation qui place les zéros aux bons bords
+        for (int rot = 0; rot < 4; rot++) {
+            int[] rotEdges = cornerPiece.edgesRotated(rot);
+            boolean valid = false;
+
+            if (cornerRow == 0 && cornerCol == 0 && rotEdges[0] == 0 && rotEdges[3] == 0) valid = true;
+            if (cornerRow == 0 && cornerCol == 15 && rotEdges[0] == 0 && rotEdges[1] == 0) valid = true;
+            if (cornerRow == 15 && cornerCol == 0 && rotEdges[2] == 0 && rotEdges[3] == 0) valid = true;
+            if (cornerRow == 15 && cornerCol == 15 && rotEdges[2] == 0 && rotEdges[1] == 0) valid = true;
+
+            if (valid) {
+                board.place(cornerRow, cornerCol, cornerPiece, rot);
+                pieceUsed.set(cornerPieceId);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Méthode auxiliaire pour copier un plateau
+     */
+    private Board copyBoard(Board original, Map<Integer, Piece> pieces) {
+        Board copy = new Board(original.getRows(), original.getCols());
+        for (int r = 0; r < original.getRows(); r++) {
+            for (int c = 0; c < original.getCols(); c++) {
+                if (!original.isEmpty(r, c)) {
+                    Placement p = original.getPlacement(r, c);
+                    Piece piece = pieces.get(p.getPieceId());
+                    if (piece != null) {
+                        copy.place(r, c, piece, p.getRotation());
+                    }
+                }
+            }
+        }
+        return copy;
+    }
+}

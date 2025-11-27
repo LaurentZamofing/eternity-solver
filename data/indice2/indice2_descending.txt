@@ -1,0 +1,84 @@
+# Puzzle Indice 2 (12×6)
+# Type: indice2_descending
+# Dimensions: 6x12
+# Total pièces: 72
+# Difficulté: moyen
+# Verbose: false
+# PrioritizeBorders: false
+# SortOrder: descending
+# SeuillAffichage: 999
+#
+
+1 0 5 2 8  # GOCV
+2 7 7 7 2  # UUUC
+3 3 2 4 4  # FCII
+4 0 5 2 8  # GOCV
+5 2 7 4 7  # CUIU
+6 4 4 2 7  # IICU
+7 0 0 8 1  # GGVB
+8 2 2 2 2  # CCCC
+9 7 7 7 3  # UUUF
+10 0 6 3 1  # GRFB
+11 7 2 3 3  # UCFF
+12 4 3 7 7  # IFUU
+13 3 2 2 7  # FCCU
+14 2 2 2 3  # CCCF
+15 7 4 2 2  # UICC
+16 0 6 2 1  # GRCB
+17 0 5 7 1  # GOUB
+18 0 5 2 6  # GOCR
+19 2 2 7 7  # CCUU
+20 0 1 2 8  # GBCV
+21 0 8 2 5  # GVCO
+22 0 8 2 8  # GVCV
+23 0 8 2 1  # GVCB
+24 7 7 2 2  # UUCC
+25 7 2 4 2  # UCIC
+26 7 4 7 2  # UIUC
+27 0 6 2 5  # GRCO
+28 0 0 1 1  # GGBB
+29 2 7 3 4  # CUFI
+30 0 5 7 5  # GOUO
+31 2 2 3 7  # CCFU
+32 0 0 1 1  # GGBB
+33 2 7 7 7  # CUUU
+34 7 7 7 3  # UUUF
+35 0 5 3 5  # GOFO
+36 0 8 7 5  # GVUO
+37 0 6 7 8  # GRUV
+38 2 7 2 7  # CUCU
+39 4 3 3 7  # IFFU
+40 7 4 2 2  # UICC
+41 4 4 2 7  # IICU
+42 2 2 3 7  # CCFU
+43 2 7 2 7  # CUCU
+44 0 0 6 6  # GGRR
+45 0 8 7 6  # GVUR
+46 2 2 7 7  # CCUU
+47 0 1 7 6  # GBUR
+48 3 4 2 7  # FICU
+49 0 8 2 5  # GVCO
+50 2 7 7 7  # CUUU
+51 2 2 7 7  # CCUU
+52 7 7 7 2  # UUUC
+53 0 8 2 1  # GVCB
+54 0 1 2 5  # GBCO
+55 2 2 2 7  # CCCU
+56 0 5 7 6  # GOUR
+57 0 6 4 6  # GRIR
+58 7 2 2 4  # UCCI
+59 0 1 7 8  # GBUV
+60 2 2 7 7  # CCUU
+61 0 1 3 6  # GBFR
+62 2 2 2 4  # CCCI
+63 3 7 7 7  # FUUU
+64 2 2 7 7  # CCUU
+65 2 7 7 7  # CUUU
+66 3 2 7 7  # FCUU
+67 0 6 2 5  # GRCO
+68 7 2 2 7  # UCCU
+69 0 1 2 8  # GBCV
+70 7 4 4 3  # UIIF
+71 0 5 2 6  # GOCR
+72 0 6 7 8  # GRUV
+

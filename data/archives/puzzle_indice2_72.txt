@@ -1,0 +1,14 @@
+# ETERNITY II - PUZZLE INDICE 2 (72 pièces)
+# Source: EternityII/Documents/Puzzle indice 2 72/
+# ⚠️ FORMAT: Fichiers Excel (.xls) uniquement - PAS de CSV disponible
+
+# FICHIERS DISPONIBLES:
+# - Angles.xls (4 coins)
+# - Centres.xls (68 centres)
+# - Solution indice 2.jpg (image de la solution)
+# - Indice2.jpg (image du puzzle)
+
+# NOTE: Les fichiers .xls doivent être convertis en CSV ou lus avec un parser Excel
+# pour extraire les données des pièces.
+
+# TODO: Convertir les fichiers .xls en format texte pour intégration

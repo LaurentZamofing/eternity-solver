@@ -1,0 +1,84 @@
+# Puzzle Indice 4 (12×6)
+# Type: indice4_descending_border
+# Dimensions: 6x12
+# Total pièces: 72
+# Difficulté: difficile
+# Verbose: false
+# PrioritizeBorders: true
+# SortOrder: descending
+# SeuillAffichage: 999
+#
+
+1 9 7 6 1  # XTSA
+2 6 1 7 1  # SATA
+3 0 8 6 4  # GVSO
+4 6 1 7 7  # SATT
+5 1 1 6 6  # AASS
+6 0 0 2 5  # GGBR
+7 6 7 7 1  # STTA
+8 7 6 6 6  # TSSS
+9 6 7 1 1  # STAA
+10 6 1 1 1  # SAAA
+11 1 7 7 6  # ATTS
+12 0 0 3 5  # GGLR
+13 7 7 1 1  # TTAA
+14 7 6 6 6  # TSSS
+15 9 1 6 6  # XASS
+16 1 6 7 7  # ASTT
+17 1 7 7 7  # ATTT
+18 7 1 1 1  # TAAA
+19 0 2 7 8  # GBTV
+20 0 8 1 3  # GVAL
+21 9 6 6 6  # XSSS
+22 1 1 7 7  # AATT
+23 6 6 7 7  # SSTT
+24 0 5 6 3  # GRSL
+25 1 6 6 6  # ASSS
+26 6 7 7 9  # STTX
+27 0 5 7 4  # GRTO
+28 7 1 1 1  # TAAA
+29 0 4 7 8  # GOTV
+30 1 7 1 7  # ATAT
+31 7 1 1 6  # TAAS
+32 0 2 6 2  # GBSB
+33 7 6 1 6  # TSAS
+34 7 1 6 6  # TASS
+35 6 7 1 1  # STAA
+36 0 8 6 8  # GVSV
+37 0 8 6 8  # GVSV
+38 6 1 1 1  # SAAA
+39 7 6 6 1  # TSSA
+40 1 7 7 7  # ATTT
+41 0 4 7 8  # GOTV
+42 0 4 1 2  # GOAB
+43 1 9 6 6  # AXSS
+44 0 3 7 3  # GLTL
+45 0 3 6 4  # GLSO
+46 1 6 1 7  # ASAT
+47 0 2 6 8  # GBSV
+48 7 1 1 6  # TAAS
+49 0 5 1 4  # GRAO
+50 0 8 1 5  # GVAR
+51 6 1 7 7  # SATT
+52 0 2 1 4  # GBAO
+53 0 4 1 5  # GOAR
+54 0 5 6 3  # GRSL
+55 1 6 1 6  # ASAS
+56 0 0 4 4  # GGOO
+57 0 5 1 3  # GRAL
+58 6 1 1 1  # SAAA
+59 6 7 1 7  # STAT
+60 0 4 7 2  # GOTB
+61 0 8 7 2  # GVTB
+62 0 5 6 8  # GRSV
+63 6 7 6 7  # STST
+64 0 3 6 2  # GLSB
+65 0 3 7 2  # GLTB
+66 6 7 1 7  # STAT
+67 0 3 9 3  # GLXL
+68 7 6 1 6  # TSAS
+69 0 0 3 5  # GGLR
+70 6 6 7 7  # SSTT
+71 0 8 1 5  # GVAR
+72 0 2 7 3  # GBTL
+

@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs -I {} sh -c 'echo \"\"\"\"=== {} ===\"\"\"\" && head -10 {}')",
+      "Bash(mvn clean compile:*)",
+      "Bash(/tmp/sources.txt)",
+      "Bash(awk:*)",
+      "Bash(src/solver/EternitySolver.java)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(curl:*)",
+      "Bash(./run_tests.sh:*)",
+      "Bash(bash:*)",
+      "Bash(git log:*)",
+      "Bash(timeout 20 java:*)",
+      "Bash(sed:*)",
+      "Bash(javac:*)",
+      "Bash(find:*)",
+      "Bash(sort:*)",
+      "Bash(mvn test:*)",
+      "Bash(java:*)",
+      "Bash(1)",
+      "Bash(timeout 10 java:*)",
+      "Bash(xargs:*)",
+      "Bash(timeout:*)",
+      "Bash(mvn dependency:resolve:*)",
+      "Bash(chmod:*)",
+      "Bash(./compile.sh:*)",
+      "Bash(./build_jar.sh)",
+      "Bash(test:*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

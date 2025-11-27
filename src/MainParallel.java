@@ -1,6 +1,7 @@
 import model.Board;
 import model.Piece;
 import solver.EternitySolver;
+import util.ConfigurationUtils;
 import util.SaveStateManager;
 
 import java.io.*;
@@ -77,7 +78,7 @@ public class MainParallel {
                 if (config == null) continue;
 
                 // Extraire le configId depuis le nom du fichier
-                String configId = extractConfigId(file.getAbsolutePath());
+                String configId = ConfigurationUtils.extractConfigId(file.getAbsolutePath());
 
                 // Chercher une sauvegarde current pour cette config
                 File currentSave = SaveStateManager.findCurrentSave(configId);
@@ -101,34 +102,8 @@ public class MainParallel {
         return configs;
     }
 
-    /**
-     * Extrait un ID de configuration depuis le chemin du fichier
-     * Ex: "data/puzzle_eternity2_p01_1_2_3_4_ascending.txt" -> "eternity2_p01_ascending"
-     */
-    private static String extractConfigId(String filepath) {
-        String filename = new File(filepath).getName();
-        // Extraire: eternity2_p01_ascending.txt -> eternity2_p01_ascending
-        // Ou: eternity2_p01_ascending_border.txt -> eternity2_p01_ascending_border
-
-        // Enlever ".txt" à la fin
-        if (filename.endsWith(".txt")) {
-            return filename.substring(0, filename.length() - 4);
-        }
-
-        // Fallback: retourner le nom tel quel
-        return filename;
-    }
-
-    /**
-     * Crée un label pour identifier le thread dans les logs
-     * Ex: "[T1-p01_asc] "
-     */
-    private static String createThreadLabel(int threadId, String configId) {
-        // Extraire pXX et order depuis configId
-        // Ex: "eternity2_p01_ascending" -> "p01_asc"
-        String shortLabel = configId.replace("eternity2_", "").replace("ascending", "asc").replace("descending", "desc");
-        return "[T" + threadId + "-" + shortLabel + "] ";
-    }
+    // Removed: ConfigurationUtils.extractConfigId() - now using ConfigurationUtils.ConfigurationUtils.extractConfigId()
+    // Removed: ConfigurationUtils.createThreadLabel() - now using ConfigurationUtils.ConfigurationUtils.createThreadLabel()
 
     /**
      * Affiche les statistiques des configurations
@@ -190,7 +165,7 @@ public class MainParallel {
                 PuzzleConfig config = configInfo.config;
 
                 // Créer un ID unique basé sur le nom du fichier (ex: eternity2_p01_ascending)
-                String configId = extractConfigId(configInfo.filepath);
+                String configId = ConfigurationUtils.extractConfigId(configInfo.filepath);
 
                 // Chercher une sauvegarde current pour cette config spécifique
                 File currentSave = SaveStateManager.findCurrentSave(configId);
@@ -224,7 +199,7 @@ public class MainParallel {
                             solver.setSortOrder(config.getSortOrder());
                             solver.setPrioritizeBorders(config.isPrioritizeBorders());
                             solver.setNumFixedPieces(config.getFixedPieces().size());
-                            solver.setThreadLabel(createThreadLabel(threadId, configId));
+                            solver.setThreadLabel(ConfigurationUtils.createThreadLabel(threadId, configId));
 
                             System.out.println("   [Thread " + threadId + "] Reprise: " + saveState.depth + " pièces placées");
 
@@ -265,7 +240,7 @@ public class MainParallel {
                 solver.setPuzzleName(configId);
                 solver.setSortOrder(config.getSortOrder());
                 solver.setPrioritizeBorders(config.isPrioritizeBorders());
-                solver.setThreadLabel(createThreadLabel(threadId, configId));
+                solver.setThreadLabel(ConfigurationUtils.createThreadLabel(threadId, configId));
                 solver.setMaxExecutionTime(timeoutMs); // Configurer le timeout
 
                 System.out.println("   [Thread " + threadId + "] Pièces à placer: " + allPieces.size() + " pièces");
@@ -314,7 +289,7 @@ public class MainParallel {
 
                 // Filtrer les configs déjà résolues ou en cours d'exécution
                 for (ConfigInfo config : configs) {
-                    String cid = extractConfigId(config.filepath);
+                    String cid = ConfigurationUtils.extractConfigId(config.filepath);
                     if (!solvedConfigs.contains(cid) && !runningConfigs.contains(cid)) {
                         nextConfig = config;
                         configId = cid;

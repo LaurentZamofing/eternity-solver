@@ -2,6 +2,8 @@ import model.Board;
 import model.Piece;
 import model.Placement;
 import solver.EternitySolver;
+import util.ConfigurationUtils;
+import util.FormattingUtils;
 import util.SaveStateManager;
 import java.io.*;
 import java.util.*;
@@ -14,24 +16,7 @@ public class MainSequential {
 
     private static final String DATA_DIR = "data/";
 
-    /**
-     * Extrait un ID de configuration depuis le chemin du fichier
-     * Ex: "data/puzzle_eternity2_p01_1_2_3_4_ascending.txt" -> "eternity2_p01_ascending"
-     * Ex: "data/puzzle_online.txt" -> "online"
-     */
-    private static String extractConfigId(String filepath) {
-        String filename = new File(filepath).getName();
-        // Extraire: eternity2_p01_ascending.txt -> eternity2_p01_ascending
-        // Ou: eternity2_p01_ascending_border.txt -> eternity2_p01_ascending_border
-
-        // Enlever ".txt" à la fin
-        if (filename.endsWith(".txt")) {
-            return filename.substring(0, filename.length() - 4);
-        }
-
-        // Fallback: retourner le nom tel quel
-        return filename;
-    }
+    // Removed: extractConfigId() - now using ConfigurationUtils.extractConfigId()
 
     // Liste des puzzles dans l'ordre de résolution
     private static final String[] PUZZLE_FILES = {
@@ -179,7 +164,7 @@ public class MainSequential {
                 List<Integer> unusedIds = new ArrayList<>(saveState.unusedPieceIds);
 
                 // Trier selon l'ordre configuré (ascending/descending)
-                sortPiecesByOrder(unusedIds, config.getSortOrder());
+                ConfigurationUtils.sortPiecesByOrder(unusedIds, config.getSortOrder());
 
                 System.out.println("  → " + unusedIds.size() + " pièces restantes à placer");
                 System.out.println("  → Ordre de tri: " + config.getSortOrder());
@@ -236,7 +221,7 @@ public class MainSequential {
                 EternitySolver.resetGlobalState();
                 EternitySolver solver = new EternitySolver();
                 solver.setDisplayConfig(config.isVerbose(), config.getMinDepthToShowRecords());
-                String configId = extractConfigId(filepath);
+                String configId = ConfigurationUtils.extractConfigId(filepath);
                 solver.setPuzzleName(configId);
                 solver.setSortOrder(config.getSortOrder());
 
@@ -369,7 +354,7 @@ public class MainSequential {
             EternitySolver.resetGlobalState();
             EternitySolver solver = new EternitySolver();
             solver.setDisplayConfig(config.isVerbose(), config.getMinDepthToShowRecords());
-            String configId = extractConfigId(filepath);
+            String configId = ConfigurationUtils.extractConfigId(filepath);
             solver.setPuzzleName(configId);
             solver.setSortOrder(config.getSortOrder());
 
@@ -422,18 +407,7 @@ public class MainSequential {
         }
     }
 
-    /**
-     * Trie les pièces selon l'ordre configuré (ascending ou descending)
-     * @param pieces liste des IDs de pièces à trier
-     * @param sortOrder "ascending" ou "descending"
-     */
-    private static void sortPiecesByOrder(List<Integer> pieces, String sortOrder) {
-        if ("descending".equalsIgnoreCase(sortOrder)) {
-            Collections.sort(pieces, Collections.reverseOrder());
-        } else {
-            Collections.sort(pieces);
-        }
-    }
+    // Removed: sortPiecesByOrder() - now using ConfigurationUtils.sortPiecesByOrder()
 
     /**
      * Affiche la solution d'un plateau (version simple, rétro-compatible)
@@ -502,7 +476,7 @@ public class MainSequential {
             String status = result.solved ? "✓" : "✗";
             String name = String.format("%-35s", result.name);
             String pieces = String.format("%3d pièces", result.pieceCount);
-            String time = String.format("%12s", formatDuration(result.duration));
+            String time = String.format("%12s", FormattingUtils.formatDuration(result.duration));
 
             System.out.println("║ " + status + " " + name + " " + pieces + " " + time + " ║");
 
@@ -511,25 +485,12 @@ public class MainSequential {
 
         System.out.println("╠═══════════════════════════════════════════════════════════════════╣");
         System.out.println("║ Résolus: " + String.format("%-58s", solved + " / " + total) + " ║");
-        System.out.println("║ Temps total: " + String.format("%-52s", formatDuration(totalDuration)) + " ║");
+        System.out.println("║ Temps total: " + String.format("%-52s", FormattingUtils.formatDuration(totalDuration)) + " ║");
         System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
         System.out.println();
     }
 
-    /**
-     * Formate une durée en ms
-     */
-    private static String formatDuration(long ms) {
-        if (ms < 1000) {
-            return ms + " ms";
-        } else if (ms < 60000) {
-            return String.format("%.2f s", ms / 1000.0);
-        } else if (ms < 3600000) {
-            return String.format("%.2f min", ms / 60000.0);
-        } else {
-            return String.format("%.2f h", ms / 3600000.0);
-        }
-    }
+    // Removed: formatDuration() - now using FormattingUtils.formatDuration()
 
     /**
      * Classe interne pour stocker les résultats

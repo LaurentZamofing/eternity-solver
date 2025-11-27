@@ -59,7 +59,7 @@ public class EternitySolver {
     private SolverStateManager stateManager = new SolverStateManager();
     Statistics stats = new Statistics(); // Package-private for ParallelSolverOrchestrator
     // useSingletons removed - use configManager.isUseSingletons() (Refactoring #15)
-    private boolean verbose = true; // Activer/désactiver l'affichage détaillé
+    // verbose removed - use configManager.isVerbose() (Refactoring #15)
     // minDepthToShowRecords removed - use configManager.getMinDepthToShowRecords() (Refactoring #15)
     // fixedPositions removed - use configManager.getFixedPositions() (Refactoring #15)
     // numFixedPieces removed - use configManager.getNumFixedPieces() (Refactoring #15)
@@ -149,8 +149,7 @@ public class EternitySolver {
      */
     public void setDisplayConfig(boolean verbose, int minDepth) {
         configManager.setDisplayConfig(verbose, minDepth);
-        this.verbose = verbose; // Keep for backward compatibility
-        // minDepthToShowRecords removed - ConfigurationManager is now single source of truth (Refactoring #15)
+        // verbose and minDepthToShowRecords removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -159,7 +158,7 @@ public class EternitySolver {
      */
     public void setPuzzleName(String name) {
         configManager.setPuzzleName(name);
-        this.puzzleName = name; // Keep for backward compatibility
+        // puzzleName removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -199,7 +198,7 @@ public class EternitySolver {
     private static final long THREAD_SAVE_INTERVAL = SolverConstants.THREAD_SAVE_INTERVAL_MS;
 
     // Sauvegarde automatique périodique (nouveau système)
-    String puzzleName = "eternity2"; // Nom du puzzle pour le fichier de sauvegarde (package-private for ParallelSolverOrchestrator)
+    // puzzleName removed - use configManager.getPuzzleName() (Refactoring #15)
 
     // threadLabel removed - use configManager.getThreadLabel() (Refactoring #15)
     // sortOrder removed - use configManager.getSortOrder() (Refactoring #15)
@@ -291,11 +290,11 @@ public class EternitySolver {
      */
     private void initializePlacementStrategies() {
         this.singletonStrategy = new SingletonPlacementStrategy(
-            singletonDetector, configManager.isUseSingletons(), verbose,
+            singletonDetector, configManager.isUseSingletons(), configManager.isVerbose(),
             symmetryBreakingManager, constraintPropagator, domainManager
         );
         this.mrvStrategy = new MRVPlacementStrategy(
-            verbose, valueOrderer, symmetryBreakingManager,
+            configManager.isVerbose(), valueOrderer, symmetryBreakingManager,
             constraintPropagator, domainManager
         );
     }
@@ -574,7 +573,7 @@ public class EternitySolver {
             // Aucune case vide -> solution trouvée
             solutionFound.set(true); // Signaler aux autres threads
             stats.end();
-            if (verbose) {
+            if (configManager.isVerbose()) {
                 System.out.println("\n========================================");
                 System.out.println("SOLUTION TROUVÉE !");
                 System.out.println("========================================");
@@ -611,7 +610,7 @@ public class EternitySolver {
                                      List<Integer> unusedIds,
                                      List<SaveStateManager.PlacementInfo> preloadedOrder) {
         // Récupérer le temps déjà cumulé depuis les sauvegardes précédentes
-        long previousComputeTime = SaveStateManager.readTotalComputeTime(puzzleName);
+        long previousComputeTime = SaveStateManager.readTotalComputeTime(configManager.getPuzzleName());
         stats.start(previousComputeTime);
 
         // Initialiser PlacementOrderTracker avec l'historique fourni
@@ -622,7 +621,7 @@ public class EternitySolver {
         // Pour l'instant, aucune position n'est vraiment "fixe" - on peut tout backtracker
 
         // Initialiser numFixedPieces et initialFixedPieces depuis le fichier de configuration
-        int numFixed = configManager.calculateNumFixedPieces(puzzleName);
+        int numFixed = configManager.calculateNumFixedPieces(configManager.getPuzzleName());
         configManager.buildInitialFixedPieces(preloadedOrder, numFixed);
 
         // fixedPositions and initialFixedPieces removed - use configManager directly (Refactoring #15)
@@ -653,7 +652,7 @@ public class EternitySolver {
         }
 
         // Initialize all helper components using SolverInitializer
-        SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), verbose,
+        SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), configManager.isVerbose(),
             configManager.isPrioritizeBorders(), configManager.getFixedPositions());
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
             board, allPieces, pieceUsed, totalPieces);
@@ -682,11 +681,11 @@ public class EternitySolver {
         // Initialize placement strategies (Sprint 6 - Strategy Pattern)
         // CRITICAL: Must be initialized before solveBacktracking() is called
         this.singletonStrategy = new SingletonPlacementStrategy(
-            singletonDetector, configManager.isUseSingletons(), verbose,
+            singletonDetector, configManager.isUseSingletons(), configManager.isVerbose(),
             symmetryBreakingManager, constraintPropagator, domainManager
         );
         this.mrvStrategy = new MRVPlacementStrategy(
-            verbose, valueOrderer, symmetryBreakingManager,
+            configManager.isVerbose(), valueOrderer, symmetryBreakingManager,
             constraintPropagator, domainManager
         );
 
@@ -748,7 +747,7 @@ public class EternitySolver {
             globalBestScore, globalBestThreadId, globalBestBoard, globalBestPieces);
 
         // Initialize all helper components using SolverInitializer
-        SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), verbose,
+        SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), configManager.isVerbose(),
             configManager.isPrioritizeBorders(), configManager.getFixedPositions());
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
             board, pieces, pieceUsed, totalPieces);
@@ -779,7 +778,7 @@ public class EternitySolver {
 
         if (!solved) {
             stats.end();
-            if (verbose) {
+            if (configManager.isVerbose()) {
                 System.out.println("\n========================================");
                 System.out.println("PAS DE SOLUTION TROUVÉE");
                 System.out.println("========================================");
@@ -803,7 +802,7 @@ public class EternitySolver {
         this.symmetryBreakingManager = new SymmetryBreakingManager(
             board.getRows(),
             board.getCols(),
-            verbose
+            configManager.isVerbose()
         );
 
         // Log configuration
@@ -884,7 +883,7 @@ public class EternitySolver {
      */
     public void setVerbose(boolean enabled) {
         configManager.setVerbose(enabled);
-        this.verbose = enabled; // Keep for backward compatibility
+        // verbose removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -917,7 +916,7 @@ public class EternitySolver {
         ParallelSolverOrchestrator orchestrator = new ParallelSolverOrchestrator(
             this,
             allPieces,
-            puzzleName,
+            configManager.getPuzzleName(),
             useDomainCache,
             solutionFound,
             globalMaxDepth,

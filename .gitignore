@@ -30,6 +30,9 @@ test-output/
 save_*.txt
 eternity2_*.txt
 indice_*.txt
+saves/**/current_*.txt
+saves/**/best_*.txt
+saves/**/thread_*.txt
 
 # Temporary files
 /tmp/

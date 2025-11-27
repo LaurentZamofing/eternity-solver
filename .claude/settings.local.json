@@ -39,7 +39,12 @@
       "Bash(done)",
       "Bash(src/util/SaveManager.java)",
       "Bash(for file in src/solver/SolverStatistics.java src/solver/RecordManager.java src/util/SaveFileManager.java src/util/SaveManager.java)",
-      "Bash(do:*)"
+      "Bash(do:*)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)",
+      "Bash(cat:*)",
+      "Bash(/dev/null)",
+      "Bash(git config:*)"
     ],
     "deny": [],
     "ask": []

@@ -326,14 +326,10 @@ public class EternitySolver {
     }
 
     /**
-     * Initializes domains (cache and AC-3).
+     * Initializes domains (AC-3 only - domain cache removed as unused).
      * Extracted to eliminate duplication between solve() and solveWithHistory().
      */
     private void initializeDomains(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
-        if (useDomainCache) {
-            initializeDomainCache(board, pieces, pieceUsed, totalPieces);
-        }
-
         if (useAC3) {
             this.domainManager.initializeAC3Domains(board, pieces, pieceUsed, totalPieces);
         }
@@ -616,48 +612,6 @@ public class EternitySolver {
 
         // Log configuration
         symmetryBreakingManager.logConfiguration();
-    }
-
-    /**
-     * Initialise le cache des domaines pour toutes les cases vides.
-     */
-    void initializeDomainCache(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) { // Package-private for ParallelSolverOrchestrator
-        int cols = board.getCols();
-        for (int r = 0; r < board.getRows(); r++) {
-            for (int c = 0; c < cols; c++) {
-                if (board.isEmpty(r, c)) {
-                    int key = r * cols + c;
-                }
-            }
-        }
-    }
-    /**
-     * Initialize AC-3 domains for all empty cells.
-     * This computes the initial valid placements for each empty cell and groups them by piece ID.
-     */
-    @SuppressWarnings("unchecked")
-    /**
-     * Filter an existing domain to keep only placements compatible with a neighbor constraint.
-     * This is more efficient than recomputing the entire domain from scratch.
-     *
-     * @param currentDomain existing domain to filter
-     * @param requiredEdge the edge value that must match
-     * @param edgeIndex which edge of the piece must match (0=N, 1=E, 2=S, 3=W)
-     * @param piecesById map of all pieces
-     * @return filtered list of valid placements
-     */
-    private List<DomainManager.ValidPlacement> filterDomain(List<DomainManager.ValidPlacement> currentDomain, int requiredEdge,
-                                               int edgeIndex, Map<Integer, Piece> piecesById) {
-        if (currentDomain == null || currentDomain.isEmpty()) return new ArrayList<>();
-
-        List<DomainManager.ValidPlacement> filtered = new ArrayList<>();
-        for (DomainManager.ValidPlacement vp : currentDomain) {
-            int[] edges = piecesById.get(vp.pieceId).edgesRotated(vp.rotation);
-            if (edges[edgeIndex] == requiredEdge) {
-                filtered.add(vp);
-            }
-        }
-        return filtered;
     }
 
     /**

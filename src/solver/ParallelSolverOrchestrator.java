@@ -290,7 +290,7 @@ public class ParallelSolverOrchestrator {
         localSolver.random = new Random(seed);
         localSolver.randomSeed = seed;
         localSolver.threadId = threadId;
-        localSolver.puzzleName = puzzleName;
+        localSolver.setPuzzleName(puzzleName); // Use setter instead of direct field access (Refactoring #15)
         localSolver.setVerbose(false);
         localSolver.setUseSingletons(true);
         return localSolver;

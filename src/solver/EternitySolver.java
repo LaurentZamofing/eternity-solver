@@ -149,7 +149,6 @@ public class EternitySolver {
      */
     public void setDisplayConfig(boolean verbose, int minDepth) {
         configManager.setDisplayConfig(verbose, minDepth);
-        // verbose and minDepthToShowRecords removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -158,7 +157,6 @@ public class EternitySolver {
      */
     public void setPuzzleName(String name) {
         configManager.setPuzzleName(name);
-        // puzzleName removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -167,12 +165,10 @@ public class EternitySolver {
      */
     public void setSortOrder(String order) {
         configManager.setSortOrder(order);
-        // sortOrder removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     public void setNumFixedPieces(int num) {
         configManager.setNumFixedPieces(num);
-        // numFixedPieces removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -180,7 +176,6 @@ public class EternitySolver {
      */
     public void setMaxExecutionTime(long timeMs) {
         configManager.setMaxExecutionTime(timeMs);
-        // maxExecutionTimeMs removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -189,7 +184,6 @@ public class EternitySolver {
      */
     public void setThreadLabel(String label) {
         configManager.setThreadLabel(label);
-        // threadLabel removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     // Sauvegarde périodique par thread
@@ -627,7 +621,6 @@ public class EternitySolver {
      */
     public void setUseSingletons(boolean enabled) {
         configManager.setUseSingletons(enabled);
-        // useSingletons removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -637,7 +630,6 @@ public class EternitySolver {
      */
     public void setPrioritizeBorders(boolean enabled) {
         configManager.setPrioritizeBorders(enabled);
-        // prioritizeBorders removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -646,7 +638,6 @@ public class EternitySolver {
      */
     public void setVerbose(boolean enabled) {
         configManager.setVerbose(enabled);
-        // verbose removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**

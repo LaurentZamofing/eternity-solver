@@ -150,12 +150,6 @@ public class EternitySolver {
     // Sauvegarde périodique par thread
     long randomSeed = 0; // Seed du random pour ce thread (package-private for ParallelSolverOrchestrator)
 
-    // Sauvegarde automatique périodique (nouveau système)
-    // puzzleName removed - use configManager.getPuzzleName() (Refactoring #15)
-
-    // threadLabel removed - use configManager.getThreadLabel() (Refactoring #15)
-    // sortOrder removed - use configManager.getSortOrder() (Refactoring #15)
-
     /**
      * Affiche le board de manière compacte avec les valeurs des arêtes et les bordures.
      * @param board grille actuelle
@@ -315,11 +309,6 @@ public class EternitySolver {
         return validator.fits(board, r, c, candidateEdges);
     }
 
-
-    /**
-     * Parallel search task using Fork/Join framework
-     */
-    // ParallelSearchTask REMOVED - now fully delegated to ParallelSearchManager (Sprint 4)
 
     /**
      * Compte le nombre de pièces uniques qui peuvent être placées (sans considérer les rotations multiples).

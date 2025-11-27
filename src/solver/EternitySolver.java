@@ -104,8 +104,8 @@ public class EternitySolver {
 
     // Randomisation pour éviter le thrashing
     private Random random = new Random();
-    private double randomizationProbability = 0.3; // 30% de chance de mélanger l'ordre
-    private int stagnationThreshold = 50000; // Seuil de backtracks sans progrès avant restart partiel
+    private double randomizationProbability = SolverConstants.DEFAULT_RANDOMIZATION_PROBABILITY;
+    private int stagnationThreshold = SolverConstants.DEFAULT_STAGNATION_THRESHOLD;
 
     // Parallel search - MIGRATED to ParallelSearchManager (Sprint 4)
     // Keep minimal references for backward compatibility
@@ -193,7 +193,7 @@ public class EternitySolver {
     // Sauvegarde périodique par thread
     private long randomSeed = 0; // Seed du random pour ce thread
     private long lastThreadSaveTime = 0; // Timestamp de la dernière sauvegarde thread
-    private static final long THREAD_SAVE_INTERVAL = 60000; // 1 minute en millisecondes
+    private static final long THREAD_SAVE_INTERVAL = SolverConstants.THREAD_SAVE_INTERVAL_MS;
 
     // Sauvegarde automatique périodique (nouveau système)
     private String puzzleName = "eternity2"; // Nom du puzzle pour le fichier de sauvegarde

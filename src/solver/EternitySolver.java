@@ -1124,6 +1124,17 @@ public class EternitySolver {
             this.domainManager.initializeAC3Domains(board, allPieces, pieceUsed, totalPieces);
         }
 
+        // Initialize placement strategies (Sprint 6 - Strategy Pattern)
+        // CRITICAL: Must be initialized before solveBacktracking() is called
+        this.singletonStrategy = new SingletonPlacementStrategy(
+            singletonDetector, useSingletons, verbose,
+            symmetryBreakingManager, constraintPropagator, domainManager
+        );
+        this.mrvStrategy = new MRVPlacementStrategy(
+            verbose, valueOrderer, symmetryBreakingManager,
+            constraintPropagator, domainManager
+        );
+
         System.out.println("  → Reprise avec " + preloadedOrder.size() + " pièces pré-chargées");
         System.out.println("  → Le backtracking pourra remonter à travers TOUTES les pièces");
 

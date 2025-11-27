@@ -55,9 +55,8 @@ public class EternitySolver {
         // Empty class - all functionality inherited from StatisticsManager
     }
 
-    private int stepCount = 0;
-    private int lastPlacedRow = -1;
-    private int lastPlacedCol = -1;
+    // State management (Refactoring #11 - extracted to SolverStateManager)
+    private SolverStateManager stateManager = new SolverStateManager();
     private Statistics stats = new Statistics();
     private boolean useSingletons = true; // Activer/désactiver l'optimisation singleton
     private boolean verbose = true; // Activer/désactiver l'affichage détaillé
@@ -260,58 +259,13 @@ public class EternitySolver {
 
     // ==================== Step Count and Last Placed Accessors ====================
 
-    /**
-     * Get the current step count.
-     */
-    public int getStepCount() {
-        return stepCount;
-    }
-
-    /**
-     * Increment the step count.
-     */
-    public void incrementStepCount() {
-        stepCount++;
-    }
-
-    /**
-     * Set the last placed position.
-     */
-    public void setLastPlaced(int row, int col) {
-        this.lastPlacedRow = row;
-        this.lastPlacedCol = col;
-    }
-
-    /**
-     * Get the last placed row.
-     */
-    public int getLastPlacedRow() {
-        return lastPlacedRow;
-    }
-
-    /**
-     * Get the last placed column.
-     */
-    public int getLastPlacedCol() {
-        return lastPlacedCol;
-    }
-
-    /**
-     * Find and set the last placed position by scanning the board.
-     */
-    public void findAndSetLastPlaced(Board board) {
-        lastPlacedRow = -1;
-        lastPlacedCol = -1;
-        outer: for (int rr = board.getRows() - 1; rr >= 0; rr--) {
-            for (int cc = board.getCols() - 1; cc >= 0; cc--) {
-                if (!board.isEmpty(rr, cc)) {
-                    lastPlacedRow = rr;
-                    lastPlacedCol = cc;
-                    break outer;
-                }
-            }
-        }
-    }
+    // State management methods - delegate to SolverStateManager (Refactoring #11)
+    public int getStepCount() { return stateManager.getStepCount(); }
+    public void incrementStepCount() { stateManager.incrementStepCount(); }
+    public void setLastPlaced(int row, int col) { stateManager.setLastPlaced(row, col); }
+    public int getLastPlacedRow() { return stateManager.getLastPlacedRow(); }
+    public int getLastPlacedCol() { return stateManager.getLastPlacedCol(); }
+    public void findAndSetLastPlaced(Board board) { stateManager.findAndSetLastPlaced(board); }
 
     // ==================== End Step Count and Last Placed Accessors ====================
 
@@ -790,7 +744,8 @@ public class EternitySolver {
                     if (!pieceUsed.get(i)) availableCount++;
                 }
                 System.out.println("\n╔════════════════════════════════════════╗");
-                System.out.println("║  Étape " + (++stepCount) + " - SINGLETON FORCÉ");
+                stateManager.incrementStepCount();
+                System.out.println("║  Étape " + stateManager.getStepCount() + " - SINGLETON FORCÉ");
                 System.out.println("║  Pièce " + pid + " → Case (" + r + ", " + c + ")");
                 System.out.println("║  Pièces disponibles : " + availableCount);
                 System.out.println("╚════════════════════════════════════════╝");
@@ -809,8 +764,7 @@ public class EternitySolver {
             // Placer
             board.place(r, c, piece, rot);
             pieceUsed.set(pid);
-            lastPlacedRow = r;
-            lastPlacedCol = c;
+            stateManager.setLastPlaced(r, c);
             stats.placements++;
             stats.singletonsPlaced++;
 
@@ -832,7 +786,7 @@ public class EternitySolver {
 
             // Afficher le board
             if (verbose) {
-                printBoardWithCounts(board, piecesById, pieceUsed, totalPieces, lastPlacedRow, lastPlacedCol);
+                printBoardWithCounts(board, piecesById, pieceUsed, totalPieces, stateManager.getLastPlacedRow(), stateManager.getLastPlacedCol());
                 System.out.println("✓ Singleton posé : ID=" + pid + ", Rotation=" + (rot * 90) + "°, Arêtes=" + java.util.Arrays.toString(candidate));
             }
 
@@ -857,17 +811,7 @@ public class EternitySolver {
             domainManager.restoreAC3Domains(board, r, c, piecesById, pieceUsed, totalPieces);
 
             // Trouver la vraie dernière pièce posée
-            lastPlacedRow = -1;
-            lastPlacedCol = -1;
-            outer1: for (int rr = board.getRows() - 1; rr >= 0; rr--) {
-                for (int cc = board.getCols() - 1; cc >= 0; cc--) {
-                    if (!board.isEmpty(rr, cc)) {
-                        lastPlacedRow = rr;
-                        lastPlacedCol = cc;
-                        break outer1;
-                    }
-                }
-            }
+            stateManager.findAndSetLastPlaced(board);
 
             return false; // Le singleton n'a pas mené à une solution
         }
@@ -885,7 +829,8 @@ public class EternitySolver {
             }
 
             System.out.println("\n╔════════════════════════════════════════╗");
-            System.out.println("║  Étape " + (++stepCount) + " - Case (" + r + ", " + c + ")");
+            stateManager.incrementStepCount();
+            System.out.println("║  Étape " + stateManager.getStepCount() + " - Case (" + r + ", " + c + ")");
             System.out.println("║  Pièces disponibles : " + availableCount);
             System.out.println("║  Pièces possibles ici : " + uniquePieces);
             System.out.println("╚════════════════════════════════════════╝");
@@ -894,7 +839,7 @@ public class EternitySolver {
             stats.printCompact();
 
             // Afficher le board avec les comptes
-            printBoardWithCounts(board, piecesById, pieceUsed, totalPieces, lastPlacedRow, lastPlacedCol);
+            printBoardWithCounts(board, piecesById, pieceUsed, totalPieces, stateManager.getLastPlacedRow(), stateManager.getLastPlacedCol());
         }
 
         // Essayer chaque pièce non utilisée
@@ -975,8 +920,7 @@ public class EternitySolver {
                     }
 
                     // Mettre à jour la position de la dernière pièce posée
-                    lastPlacedRow = r;
-                    lastPlacedCol = c;
+                    stateManager.setLastPlaced(r, c);
 
                     if (verbose) {
                         System.out.println("✓ Pièce posée : ID=" + pid + ", Rotation=" + (rot * 90) + "°, Arêtes=" + java.util.Arrays.toString(candidate));
@@ -1006,17 +950,7 @@ public class EternitySolver {
                     domainManager.restoreAC3Domains(board, r, c, piecesById, pieceUsed, totalPieces);
 
                     // Trouver la vraie dernière pièce posée sur le board
-                    lastPlacedRow = -1;
-                    lastPlacedCol = -1;
-                    outer2: for (int rr = board.getRows() - 1; rr >= 0; rr--) {
-                        for (int cc = board.getCols() - 1; cc >= 0; cc--) {
-                            if (!board.isEmpty(rr, cc)) {
-                                lastPlacedRow = rr;
-                                lastPlacedCol = cc;
-                                break outer2;
-                            }
-                        }
-                    }
+                    stateManager.findAndSetLastPlaced(board);
                 }
             }
         }
@@ -1365,9 +1299,7 @@ public class EternitySolver {
      */
     public void reset() {
         stats = new Statistics();
-        stepCount = 0;
-        lastPlacedRow = -1;
-        lastPlacedCol = -1;
+        stateManager.reset();
     }
 
     /**

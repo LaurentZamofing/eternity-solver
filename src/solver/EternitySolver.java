@@ -61,9 +61,9 @@ public class EternitySolver {
     // useSingletons removed - use configManager.isUseSingletons() (Refactoring #15)
     private boolean verbose = true; // Activer/désactiver l'affichage détaillé
     // minDepthToShowRecords removed - use configManager.getMinDepthToShowRecords() (Refactoring #15)
-    private Set<String> fixedPositions = new HashSet<>(); // Positions des pièces fixes (format: "row,col")
+    // fixedPositions removed - use configManager.getFixedPositions() (Refactoring #15)
     // numFixedPieces removed - use configManager.getNumFixedPieces() (Refactoring #15)
-    private List<SaveStateManager.PlacementInfo> initialFixedPieces = new ArrayList<>(); // Pièces fixes INITIALES (du config)
+    // initialFixedPieces removed - use configManager.getInitialFixedPieces() (Refactoring #15)
     // prioritizeBorders removed - use configManager.isPrioritizeBorders() (Refactoring #15)
 
     // Timeout management
@@ -619,15 +619,13 @@ public class EternitySolver {
         this.placementOrderTracker.initializeWithHistory(preloadedOrder);
 
         // Détecter les positions fixes (celles qu'on ne doit JAMAIS backtracker)
-        this.fixedPositions = new HashSet<>();
         // Pour l'instant, aucune position n'est vraiment "fixe" - on peut tout backtracker
 
         // Initialiser numFixedPieces et initialFixedPieces depuis le fichier de configuration
         int numFixed = configManager.calculateNumFixedPieces(puzzleName);
         configManager.buildInitialFixedPieces(preloadedOrder, numFixed);
 
-        // Update local fields for backward compatibility
-        initialFixedPieces = new ArrayList<>(configManager.getInitialFixedPieces());
+        // fixedPositions and initialFixedPieces removed - use configManager directly (Refactoring #15)
 
         // Initialize AutoSaveManager (AFTER fixed pieces calculation)
         this.autoSaveManager = configManager.createAutoSaveManager(
@@ -656,7 +654,7 @@ public class EternitySolver {
 
         // Initialize all helper components using SolverInitializer
         SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), verbose,
-            configManager.isPrioritizeBorders(), fixedPositions);
+            configManager.isPrioritizeBorders(), configManager.getFixedPositions());
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
             board, allPieces, pieceUsed, totalPieces);
 
@@ -737,10 +735,7 @@ public class EternitySolver {
         configManager.detectFixedPiecesFromBoard(board, pieceUsed,
             placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>());
 
-        // Update local fields for backward compatibility
-        fixedPositions = new HashSet<>(configManager.getFixedPositions());
-        // numFixedPieces removed - use configManager directly (Refactoring #15)
-        initialFixedPieces = new ArrayList<>(configManager.getInitialFixedPieces());
+        // fixedPositions, numFixedPieces, initialFixedPieces removed - use configManager directly (Refactoring #15)
 
         // Initialize AutoSaveManager (AFTER fixed pieces detection)
         this.autoSaveManager = configManager.createAutoSaveManager(
@@ -754,7 +749,7 @@ public class EternitySolver {
 
         // Initialize all helper components using SolverInitializer
         SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), verbose,
-            configManager.isPrioritizeBorders(), fixedPositions);
+            configManager.isPrioritizeBorders(), configManager.getFixedPositions());
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
             board, pieces, pieceUsed, totalPieces);
 

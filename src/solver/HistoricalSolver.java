@@ -61,12 +61,6 @@ public class HistoricalSolver {
         int numFixed = solver.configManager.calculateNumFixedPieces(solver.configManager.getPuzzleName());
         solver.configManager.buildInitialFixedPieces(preloadedOrder, numFixed);
 
-        // Initialize BacktrackingHistoryManager (before other initialization)
-        BacktrackingHistoryManager backtrackingHistoryManager = new BacktrackingHistoryManager(
-            null, // validator will be set after component initialization
-            solver.configManager.getThreadLabel(),
-            solver.stats);
-
         // Créer le tableau pieceUsed depuis unusedIds
         int totalPieces = allPieces.size();
         BitSet pieceUsed = solver.createPieceUsedBitSet(allPieces);
@@ -76,20 +70,18 @@ public class HistoricalSolver {
             }
         }
 
-        // Initialize managers, components, and strategies
+        // Initialize managers, components, and strategies FIRST
+        // This ensures validator is available before creating BacktrackingHistoryManager
         solver.initializeManagers(allPieces);
         solver.initializeComponents(board, allPieces, pieceUsed, totalPieces);
-
-        // Update BacktrackingHistoryManager with initialized validator
-        if (backtrackingHistoryManager != null) {
-            backtrackingHistoryManager = new BacktrackingHistoryManager(
-                solver.validator,
-                solver.configManager.getThreadLabel(),
-                solver.stats);
-        }
-
         solver.initializeDomains(board, allPieces, pieceUsed, totalPieces);
         solver.initializePlacementStrategies();
+
+        // Now create BacktrackingHistoryManager with valid validator (no redundant creation)
+        BacktrackingHistoryManager backtrackingHistoryManager = new BacktrackingHistoryManager(
+            solver.validator,  // validator is now properly initialized
+            solver.configManager.getThreadLabel(),
+            solver.stats);
 
         System.out.println("  → Reprise avec " + preloadedOrder.size() + " pièces pré-chargées");
         System.out.println("  → Le backtracking pourra remonter à travers TOUTES les pièces");

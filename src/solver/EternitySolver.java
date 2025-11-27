@@ -62,12 +62,12 @@ public class EternitySolver {
     private boolean verbose = true; // Activer/désactiver l'affichage détaillé
     // minDepthToShowRecords removed - use configManager.getMinDepthToShowRecords() (Refactoring #15)
     private Set<String> fixedPositions = new HashSet<>(); // Positions des pièces fixes (format: "row,col")
-    private int numFixedPieces = 0; // Nombre de pièces fixes au démarrage
+    // numFixedPieces removed - use configManager.getNumFixedPieces() (Refactoring #15)
     private List<SaveStateManager.PlacementInfo> initialFixedPieces = new ArrayList<>(); // Pièces fixes INITIALES (du config)
     private boolean prioritizeBorders = false; // Prioriser le remplissage des bords avant l'intérieur
 
     // Timeout management
-    private long maxExecutionTimeMs = Long.MAX_VALUE; // Temps maximum d'exécution (défaut: illimité)
+    // maxExecutionTimeMs removed - use configManager.getMaxExecutionTimeMs() (Refactoring #15)
     private long startTimeMs = 0; // Temps de démarrage de la résolution
 
     // Configuration flags
@@ -168,12 +168,12 @@ public class EternitySolver {
      */
     public void setSortOrder(String order) {
         configManager.setSortOrder(order);
-        this.sortOrder = order; // Keep for backward compatibility
+        // sortOrder removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     public void setNumFixedPieces(int num) {
         configManager.setNumFixedPieces(num);
-        this.numFixedPieces = num; // Keep for backward compatibility
+        // numFixedPieces removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -181,7 +181,7 @@ public class EternitySolver {
      */
     public void setMaxExecutionTime(long timeMs) {
         configManager.setMaxExecutionTime(timeMs);
-        this.maxExecutionTimeMs = timeMs; // Keep for backward compatibility
+        // maxExecutionTimeMs removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -202,9 +202,7 @@ public class EternitySolver {
     String puzzleName = "eternity2"; // Nom du puzzle pour le fichier de sauvegarde (package-private for ParallelSolverOrchestrator)
 
     // threadLabel removed - use configManager.getThreadLabel() (Refactoring #15)
-
-    // Ordre de tri des pièces pour parallélisation
-    private String sortOrder = "ascending"; // "ascending" ou "descending"
+    // sortOrder removed - use configManager.getSortOrder() (Refactoring #15)
 
     /**
      * Affiche le board de manière compacte avec les valeurs des arêtes et les bordures.
@@ -411,7 +409,7 @@ public class EternitySolver {
         }
 
         // Iterate pieces in order specified by sortOrder (using PieceIterator to eliminate duplication)
-        for (int pid : PieceIterator.create(sortOrder, totalPieces, pieceUsed)) {
+        for (int pid : PieceIterator.create(configManager.getSortOrder(), totalPieces, pieceUsed)) {
             // Early rejection: if this piece can't match neighbors, skip entirely
             if (candidatePieces != null && !candidatePieces.contains(pid)) {
                 stats.fitChecks++;  // Count as rejected fit check
@@ -504,7 +502,7 @@ public class EternitySolver {
         for (int i = 1; i <= totalPieces; i++) {
             if (pieceUsed.get(i)) usedCount++;
         }
-        int currentDepth = usedCount - numFixedPieces;
+        int currentDepth = usedCount - configManager.getNumFixedPieces();
 
         // Check and update records using RecordManager
         if (recordManager != null) {
@@ -565,8 +563,8 @@ public class EternitySolver {
         }
 
         // Vérifier le timeout
-        if (currentTime - startTimeMs > maxExecutionTimeMs) {
-            System.out.println("⏱️  " + configManager.getThreadLabel() + " Timeout atteint (" + (maxExecutionTimeMs / 1000) + "s) - arrêt de la recherche");
+        if (currentTime - startTimeMs > configManager.getMaxExecutionTimeMs()) {
+            System.out.println("⏱️  " + configManager.getThreadLabel() + " Timeout atteint (" + (configManager.getMaxExecutionTimeMs() / 1000) + "s) - arrêt de la recherche");
             return false; // Timeout atteint
         }
 
@@ -586,7 +584,7 @@ public class EternitySolver {
 
         // Create backtracking context for strategies
         BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, totalPieces, stats, numFixedPieces
+            board, piecesById, pieceUsed, totalPieces, stats, configManager.getNumFixedPieces()
         );
 
         // ÉTAPE 1 : Try singleton placement strategy first (most constrained)
@@ -625,8 +623,8 @@ public class EternitySolver {
         // Pour l'instant, aucune position n'est vraiment "fixe" - on peut tout backtracker
 
         // Initialiser numFixedPieces et initialFixedPieces depuis le fichier de configuration
-        numFixedPieces = configManager.calculateNumFixedPieces(puzzleName);
-        configManager.buildInitialFixedPieces(preloadedOrder, numFixedPieces);
+        int numFixed = configManager.calculateNumFixedPieces(puzzleName);
+        configManager.buildInitialFixedPieces(preloadedOrder, numFixed);
 
         // Update local fields for backward compatibility
         initialFixedPieces = new ArrayList<>(configManager.getInitialFixedPieces());
@@ -657,7 +655,7 @@ public class EternitySolver {
         }
 
         // Initialize all helper components using SolverInitializer
-        SolverInitializer initializer = new SolverInitializer(this, stats, sortOrder, verbose,
+        SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), verbose,
             prioritizeBorders, fixedPositions);
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
             board, allPieces, pieceUsed, totalPieces);
@@ -741,7 +739,7 @@ public class EternitySolver {
 
         // Update local fields for backward compatibility
         fixedPositions = new HashSet<>(configManager.getFixedPositions());
-        numFixedPieces = configManager.getNumFixedPieces();
+        // numFixedPieces removed - use configManager directly (Refactoring #15)
         initialFixedPieces = new ArrayList<>(configManager.getInitialFixedPieces());
 
         // Initialize AutoSaveManager (AFTER fixed pieces detection)
@@ -755,7 +753,7 @@ public class EternitySolver {
             globalBestScore, globalBestThreadId, globalBestBoard, globalBestPieces);
 
         // Initialize all helper components using SolverInitializer
-        SolverInitializer initializer = new SolverInitializer(this, stats, sortOrder, verbose,
+        SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), verbose,
             prioritizeBorders, fixedPositions);
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
             board, pieces, pieceUsed, totalPieces);

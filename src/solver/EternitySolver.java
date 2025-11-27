@@ -58,13 +58,13 @@ public class EternitySolver {
     // State management (Refactoring #11 - extracted to SolverStateManager)
     private SolverStateManager stateManager = new SolverStateManager();
     Statistics stats = new Statistics(); // Package-private for ParallelSolverOrchestrator
-    private boolean useSingletons = true; // Activer/désactiver l'optimisation singleton
+    // useSingletons removed - use configManager.isUseSingletons() (Refactoring #15)
     private boolean verbose = true; // Activer/désactiver l'affichage détaillé
     // minDepthToShowRecords removed - use configManager.getMinDepthToShowRecords() (Refactoring #15)
     private Set<String> fixedPositions = new HashSet<>(); // Positions des pièces fixes (format: "row,col")
     // numFixedPieces removed - use configManager.getNumFixedPieces() (Refactoring #15)
     private List<SaveStateManager.PlacementInfo> initialFixedPieces = new ArrayList<>(); // Pièces fixes INITIALES (du config)
-    private boolean prioritizeBorders = false; // Prioriser le remplissage des bords avant l'intérieur
+    // prioritizeBorders removed - use configManager.isPrioritizeBorders() (Refactoring #15)
 
     // Timeout management
     // maxExecutionTimeMs removed - use configManager.getMaxExecutionTimeMs() (Refactoring #15)
@@ -291,7 +291,7 @@ public class EternitySolver {
      */
     private void initializePlacementStrategies() {
         this.singletonStrategy = new SingletonPlacementStrategy(
-            singletonDetector, useSingletons, verbose,
+            singletonDetector, configManager.isUseSingletons(), verbose,
             symmetryBreakingManager, constraintPropagator, domainManager
         );
         this.mrvStrategy = new MRVPlacementStrategy(
@@ -656,7 +656,7 @@ public class EternitySolver {
 
         // Initialize all helper components using SolverInitializer
         SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), verbose,
-            prioritizeBorders, fixedPositions);
+            configManager.isPrioritizeBorders(), fixedPositions);
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
             board, allPieces, pieceUsed, totalPieces);
 
@@ -684,7 +684,7 @@ public class EternitySolver {
         // Initialize placement strategies (Sprint 6 - Strategy Pattern)
         // CRITICAL: Must be initialized before solveBacktracking() is called
         this.singletonStrategy = new SingletonPlacementStrategy(
-            singletonDetector, useSingletons, verbose,
+            singletonDetector, configManager.isUseSingletons(), verbose,
             symmetryBreakingManager, constraintPropagator, domainManager
         );
         this.mrvStrategy = new MRVPlacementStrategy(
@@ -754,7 +754,7 @@ public class EternitySolver {
 
         // Initialize all helper components using SolverInitializer
         SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), verbose,
-            prioritizeBorders, fixedPositions);
+            configManager.isPrioritizeBorders(), fixedPositions);
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
             board, pieces, pieceUsed, totalPieces);
 
@@ -870,7 +870,7 @@ public class EternitySolver {
      */
     public void setUseSingletons(boolean enabled) {
         configManager.setUseSingletons(enabled);
-        this.useSingletons = enabled; // Keep for backward compatibility
+        // useSingletons removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -880,7 +880,7 @@ public class EternitySolver {
      */
     public void setPrioritizeBorders(boolean enabled) {
         configManager.setPrioritizeBorders(enabled);
-        this.prioritizeBorders = enabled; // Keep for backward compatibility
+        // prioritizeBorders removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -896,7 +896,7 @@ public class EternitySolver {
      * Vérifie si l'optimisation singleton est activée.
      */
     public boolean isUsingSingletons() {
-        return useSingletons;
+        return configManager.isUseSingletons();
     }
 
     /**

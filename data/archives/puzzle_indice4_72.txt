@@ -1,0 +1,87 @@
+# ETERNITY II - PUZZLE INDICE 4 (8x9 ou 9x8 = 72 pièces)
+# Source: EternityII/Documents/Puzzle indice 4 72/*.csv
+# Format: piece_id north east south west
+# 0 = bordure (GG)
+# ⚠️ ATTENTION: Ce puzzle a un format CSV différent (seule rotation 0° fournie)
+# Les valeurs S et W sont mises à 0 par défaut
+
+# Coins (4 pièces)
+6 0 253 0 0
+12 0 254 0 0
+56 0 254 0 0
+69 0 253 0 0
+
+# Centres (68 pièces - mais format incomplet dans CSV)
+1 104 199 0 0
+2 199 96 0 0
+3 36 255 0 0
+4 199 96 0 0
+5 96 199 0 0
+7 199 256 0 0
+8 199 199 0 0
+9 199 256 0 0
+10 199 96 0 0
+11 96 257 0 0
+13 257 96 0 0
+14 199 199 0 0
+15 258 96 0 0
+16 96 199 0 0
+17 96 257 0 0
+18 256 96 0 0
+19 16 258 0 0
+20 36 259 0 0
+21 258 199 0 0
+22 96 257 0 0
+23 199 257 0 0
+24 27 260 0 0
+25 96 199 0 0
+26 199 257 0 0
+27 27 261 0 0
+28 256 96 0 0
+29 5 258 0 0
+30 96 96 0 0
+31 256 96 0 0
+32 16 199 0 0
+33 199 96 0 0
+34 256 199 0 0
+35 199 256 0 0
+36 36 199 0 0
+37 36 199 0 0
+38 199 96 0 0
+39 199 199 0 0
+40 96 257 0 0
+41 5 258 0 0
+42 5 96 0 0
+43 96 258 0 0
+44 47 262 0 0
+45 47 255 0 0
+46 96 199 0 0
+47 16 199 0 0
+48 256 96 0 0
+49 27 44 0 0
+50 36 263 0 0
+51 255 257 0 0
+52 16 44 0 0
+53 5 263 0 0
+54 27 258 0 0
+55 96 96 0 0
+57 27 49 0 0
+58 255 234 0 0
+59 199 158 0 0
+60 5 264 0 0
+61 36 264 0 0
+62 27 15 0 0
+63 199 199 0 0
+64 47 52 0 0
+65 47 264 0 0
+66 199 158 0 0
+67 47 20 0 0
+68 104 96 0 0
+70 151 257 0 0
+71 36 263 0 0
+72 16 262 0 0
+
+# ⚠️ NOTE IMPORTANTE:
+# Ce puzzle a un format CSV incomplet - seules les arêtes N et E sont fournies
+# Il faudra compléter manuellement les arêtes S et W en fonction des rotations
+# possibles dans le CSV original

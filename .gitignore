@@ -1,0 +1,45 @@
+# Compiled class files
+*.class
+bin/
+build/
+
+# JAR files (keep the release JAR but ignore temporary builds)
+# eternity-solver-*.jar
+
+# Log files
+*.log
+logs/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test output
+test-output/
+*.tmp
+
+# Puzzle state saves
+save_*.txt
+eternity2_*.txt
+indice_*.txt
+
+# Temporary files
+/tmp/
+*.swp
+*.swo
+*~
+
+# Maven target (if used)
+target/
+
+# Coverage and report files
+coverage/
+reports/

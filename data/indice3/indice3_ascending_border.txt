@@ -1,0 +1,48 @@
+# Puzzle Indice 3 (6×6)
+# Type: indice3_ascending_border
+# Dimensions: 6x6
+# Total pièces: 36
+# Difficulté: moyen
+# Verbose: false
+# PrioritizeBorders: true
+# SortOrder: ascending
+# SeuillAffichage: 999
+#
+
+1 0 6 9 8  # GOYV
+2 0 0 5 5  # GGLL
+3 0 0 7 1  # GGRB
+4 2 9 9 9  # CYYY
+5 0 1 2 1  # GBCB
+6 3 9 2 2  # FYCC
+7 0 1 2 5  # GBCL
+8 0 7 9 1  # GRYB
+9 4 2 2 2  # JCCC
+10 2 9 9 9  # CYYY
+11 3 9 2 9  # FYCY
+12 0 6 9 5  # GOYL
+13 9 2 9 2  # YCYC
+14 4 9 9 2  # JYYC
+15 0 5 3 5  # GLFL
+16 0 5 2 6  # GLCO
+17 0 0 8 6  # GGVO
+18 9 9 2 2  # YYCC
+19 0 7 2 8  # GRCV
+20 9 9 2 2  # YYCC
+21 0 8 2 7  # GVCR
+22 9 2 9 2  # YCYC
+23 0 1 2 6  # GBCO
+24 9 9 2 2  # YYCC
+25 0 8 2 7  # GVCR
+26 0 5 2 8  # GLCV
+27 4 9 9 9  # JYYY
+28 0 7 9 6  # GRYO
+29 4 9 9 2  # JYYC
+30 0 0 1 7  # GGBR
+31 9 2 2 2  # YCCC
+32 0 6 9 7  # GOYR
+33 3 2 2 2  # FCCC
+34 0 8 9 1  # GVYB
+35 0 6 2 8  # GOCV
+36 2 9 9 9  # CYYY
+

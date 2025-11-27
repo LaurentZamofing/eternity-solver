@@ -1,0 +1,49 @@
+# ETERNITY II - PUZZLE INDICE 1 (6x6 = 36 pièces)
+# Source: EternityII/Documents/Puzzle indice 1 36/*.csv
+# Format: piece_id north east south west
+# 0 = bordure (GG)
+
+# Coins (4 pièces)
+26 0 1 1 0
+14 0 2 2 0
+34 0 3 3 0
+36 0 1 1 0
+
+# Bordures (16 pièces)
+11 0 4 5 6
+23 0 7 8 9
+12 0 10 11 12
+16 0 13 14 15
+20 0 16 17 18
+18 0 16 19 20
+15 0 21 17 22
+22 0 13 23 24
+25 0 10 25 26
+7 0 21 27 28
+13 0 29 14 30
+31 0 16 31 32
+10 0 16 33 34
+21 0 21 35 36
+28 0 7 37 38
+17 0 29 39 40
+
+# Centres (16 pièces)
+6 41 42 43 44
+1 45 46 47 48
+8 45 46 47 48
+24 45 46 47 48
+32 49 50 51 52
+35 49 50 51 52
+9 53 54 55 56
+27 53 54 55 56
+29 57 58 59 60
+30 61 62 63 64
+19 65 66 67 68
+2 65 66 67 68
+3 69 70 71 72
+5 69 70 71 72
+33 73 74 75 76
+4 73 74 75 76
+
+# NOTE: Les codes d'arêtes sont mappés selon le système trouvé dans les CSV
+# Les valeurs exactes peuvent différer du puzzle 256 complet

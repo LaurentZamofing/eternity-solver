@@ -60,7 +60,7 @@ public class EternitySolver {
     Statistics stats = new Statistics(); // Package-private for ParallelSolverOrchestrator
     private boolean useSingletons = true; // Activer/désactiver l'optimisation singleton
     private boolean verbose = true; // Activer/désactiver l'affichage détaillé
-    private int minDepthToShowRecords = 0; // Profondeur min pour afficher les records (0 = toujours afficher)
+    // minDepthToShowRecords removed - use configManager.getMinDepthToShowRecords() (Refactoring #15)
     private Set<String> fixedPositions = new HashSet<>(); // Positions des pièces fixes (format: "row,col")
     private int numFixedPieces = 0; // Nombre de pièces fixes au démarrage
     private List<SaveStateManager.PlacementInfo> initialFixedPieces = new ArrayList<>(); // Pièces fixes INITIALES (du config)
@@ -150,7 +150,7 @@ public class EternitySolver {
     public void setDisplayConfig(boolean verbose, int minDepth) {
         configManager.setDisplayConfig(verbose, minDepth);
         this.verbose = verbose; // Keep for backward compatibility
-        this.minDepthToShowRecords = minDepth; // Keep for backward compatibility
+        // minDepthToShowRecords removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     /**
@@ -190,7 +190,7 @@ public class EternitySolver {
      */
     public void setThreadLabel(String label) {
         configManager.setThreadLabel(label);
-        this.threadLabel = label; // Keep for backward compatibility
+        // threadLabel removed - ConfigurationManager is now single source of truth (Refactoring #15)
     }
 
     // Sauvegarde périodique par thread
@@ -201,8 +201,7 @@ public class EternitySolver {
     // Sauvegarde automatique périodique (nouveau système)
     String puzzleName = "eternity2"; // Nom du puzzle pour le fichier de sauvegarde (package-private for ParallelSolverOrchestrator)
 
-    // Label du thread pour les logs (ex: "[Thread 1 - p01_asc]")
-    private String threadLabel = "";
+    // threadLabel removed - use configManager.getThreadLabel() (Refactoring #15)
 
     // Ordre de tri des pièces pour parallélisation
     private String sortOrder = "ascending"; // "ascending" ou "descending"
@@ -567,7 +566,7 @@ public class EternitySolver {
 
         // Vérifier le timeout
         if (currentTime - startTimeMs > maxExecutionTimeMs) {
-            System.out.println("⏱️  " + threadLabel + " Timeout atteint (" + (maxExecutionTimeMs / 1000) + "s) - arrêt de la recherche");
+            System.out.println("⏱️  " + configManager.getThreadLabel() + " Timeout atteint (" + (maxExecutionTimeMs / 1000) + "s) - arrêt de la recherche");
             return false; // Timeout atteint
         }
 
@@ -645,7 +644,7 @@ public class EternitySolver {
         // Initialize BacktrackingHistoryManager
         this.backtrackingHistoryManager = new BacktrackingHistoryManager(
             null, // validator will be set after SolverInitializer
-            threadLabel,
+            configManager.getThreadLabel(),
             stats);
 
         // Créer le tableau pieceUsed depuis unusedIds (Refactoring #14 - extracted to helper)
@@ -670,7 +669,7 @@ public class EternitySolver {
         if (this.backtrackingHistoryManager != null) {
             this.backtrackingHistoryManager = new BacktrackingHistoryManager(
                 this.validator,
-                threadLabel,
+                configManager.getThreadLabel(),
                 stats);
         }
 

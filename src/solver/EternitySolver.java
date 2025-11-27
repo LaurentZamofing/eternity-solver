@@ -57,7 +57,7 @@ public class EternitySolver {
 
     // State management (Refactoring #11 - extracted to SolverStateManager)
     private SolverStateManager stateManager = new SolverStateManager();
-    private Statistics stats = new Statistics();
+    Statistics stats = new Statistics(); // Package-private for ParallelSolverOrchestrator
     private boolean useSingletons = true; // Activer/désactiver l'optimisation singleton
     private boolean verbose = true; // Activer/désactiver l'affichage détaillé
     private int minDepthToShowRecords = 0; // Profondeur min pour afficher les records (0 = toujours afficher)
@@ -106,7 +106,7 @@ public class EternitySolver {
     private CellConstraints[][] cellConstraints;
 
     // Randomisation pour éviter le thrashing
-    private Random random = new Random();
+    Random random = new Random(); // Package-private for ParallelSolverOrchestrator
     private double randomizationProbability = SolverConstants.DEFAULT_RANDOMIZATION_PROBABILITY;
     private int stagnationThreshold = SolverConstants.DEFAULT_STAGNATION_THRESHOLD;
 
@@ -119,7 +119,7 @@ public class EternitySolver {
     private static AtomicReference<Board> globalBestBoard = ParallelSearchManager.getGlobalBestBoard();
     private static AtomicReference<Map<Integer, Piece>> globalBestPieces = ParallelSearchManager.getGlobalBestPieces();
     private static final Object lockObject = ParallelSearchManager.getLockObject();
-    private int threadId = -1; // ID du thread pour ce solveur
+    int threadId = -1; // ID du thread pour ce solveur (package-private for ParallelSolverOrchestrator)
 
     // Work-stealing parallelism - MIGRATED to ParallelSearchManager (Sprint 4)
     private static ForkJoinPool workStealingPool = ParallelSearchManager.getWorkStealingPool();
@@ -194,12 +194,12 @@ public class EternitySolver {
     }
 
     // Sauvegarde périodique par thread
-    private long randomSeed = 0; // Seed du random pour ce thread
+    long randomSeed = 0; // Seed du random pour ce thread (package-private for ParallelSolverOrchestrator)
     private long lastThreadSaveTime = 0; // Timestamp de la dernière sauvegarde thread
     private static final long THREAD_SAVE_INTERVAL = SolverConstants.THREAD_SAVE_INTERVAL_MS;
 
     // Sauvegarde automatique périodique (nouveau système)
-    private String puzzleName = "eternity2"; // Nom du puzzle pour le fichier de sauvegarde
+    String puzzleName = "eternity2"; // Nom du puzzle pour le fichier de sauvegarde (package-private for ParallelSolverOrchestrator)
 
     // Label du thread pour les logs (ex: "[Thread 1 - p01_asc]")
     private String threadLabel = "";
@@ -811,7 +811,7 @@ public class EternitySolver {
     /**
      * Initialise le cache des domaines pour toutes les cases vides.
      */
-    private void initializeDomainCache(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
+    void initializeDomainCache(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) { // Package-private for ParallelSolverOrchestrator
         int cols = board.getCols();
         for (int r = 0; r < board.getRows(); r++) {
             for (int c = 0; c < cols; c++) {
@@ -911,294 +911,21 @@ public class EternitySolver {
      * @return true si une solution a été trouvée
      */
     public boolean solveParallel(Board board, Map<Integer, Piece> allPieces, Map<Integer, Piece> availablePieces, int numThreads) {
-        System.out.println("\n╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║           RECHERCHE PARALLÈLE AVEC " + numThreads + " THREADS            ║");
-        System.out.println("╚══════════════════════════════════════════════════════════╝\n");
-
-        // Réinitialiser les flags globaux
-        solutionFound.set(false);
-        globalMaxDepth.set(0);
-
-        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        List<Future<Boolean>> futures = new ArrayList<>();
-
-        // Lancer numThreads workers avec des seeds différentes
-        for (int i = 0; i < numThreads; i++) {
-            final int threadId = i;
-
-            Future<Boolean> future = executor.submit(() -> {
-                try {
-                    Board localBoard;
-                    Map<Integer, Piece> localPieces;
-                    List<Integer> unusedIds;
-                    long seed = System.currentTimeMillis() + threadId * 1000;
-                    boolean loadedFromSave = false;
-
-                    // Vérifier si ce thread a une sauvegarde
-                    if (SaveManager.hasThreadState(threadId)) {
-                        // Charger l'état sauvegardé du thread
-                        Object[] savedState = SaveManager.loadThreadState(threadId, allPieces);
-                        if (savedState != null) {
-                            localBoard = (Board) savedState[0];
-                            @SuppressWarnings("unchecked")
-                            Set<Integer> usedPieceIds = (Set<Integer>) savedState[1];
-                            int savedDepth = (int) savedState[2];
-                            seed = (long) savedState[3]; // Restaurer le seed original
-
-                            // Créer la liste des pièces non utilisées
-                            // IMPORTANT: localPieces doit contenir TOUTES les pièces (pour récupérer par ID)
-                            localPieces = new HashMap<>(allPieces);
-                            unusedIds = new ArrayList<>();
-
-                            // Ajouter seulement les pièces non utilisées à unusedIds
-                            for (int pid : allPieces.keySet()) {
-                                if (!usedPieceIds.contains(pid)) {
-                                    unusedIds.add(pid);
-                                }
-                            }
-
-                            loadedFromSave = true;
-                            synchronized (System.out) {
-                                System.out.println("📂 Thread " + threadId + " restauré depuis sauvegarde: " + savedDepth + " pièces placées");
-                            }
-                        } else {
-                            // Erreur de chargement, commencer normalement
-                            localBoard = new Board(board.getRows(), board.getCols());
-                            for (int r = 0; r < board.getRows(); r++) {
-                                for (int c = 0; c < board.getCols(); c++) {
-                                    if (!board.isEmpty(r, c)) {
-                                        Placement p = board.getPlacement(r, c);
-                                        Piece piece = allPieces.get(p.getPieceId());
-                                        if (piece != null) {
-                                            localBoard.place(r, c, piece, p.getRotation());
-                                        }
-                                    }
-                                }
-                            }
-                            localPieces = new HashMap<>(allPieces);
-                            unusedIds = new ArrayList<>(availablePieces.keySet());
-                        }
-                    } else {
-                        // Pas de sauvegarde - créer une copie du board pour ce thread
-                        localBoard = new Board(board.getRows(), board.getCols());
-
-                        // Copier les pièces déjà placées (hint)
-                        for (int r = 0; r < board.getRows(); r++) {
-                            for (int c = 0; c < board.getCols(); c++) {
-                                if (!board.isEmpty(r, c)) {
-                                    Placement p = board.getPlacement(r, c);
-                                    Piece piece = allPieces.get(p.getPieceId());
-                                    if (piece != null) {
-                                        localBoard.place(r, c, piece, p.getRotation());
-                                    }
-                                }
-                            }
-                        }
-
-                        // Créer une copie des pièces disponibles
-                        localPieces = new HashMap<>(allPieces);
-                        unusedIds = new ArrayList<>(availablePieces.keySet());
-                    }
-
-                    // Créer le tableau pieceUsed - dimensionner selon MAX piece ID
-                    int totalPieces = localPieces.size();
-                    int maxPieceId = localPieces.keySet().stream().max(Integer::compareTo).orElse(totalPieces);
-                    BitSet pieceUsed = new BitSet(maxPieceId + 1);
-                    // Marquer les pièces déjà utilisées
-                    for (int pid : localPieces.keySet()) {
-                        if (!unusedIds.contains(pid)) {
-                            pieceUsed.set(pid);
-                        }
-                    }
-
-                    // Stratégie de diversification: pré-placer un coin différent pour chaque thread
-                    // Cela force les threads à explorer des branches complètement différentes
-                    // Seulement si on n'a pas chargé depuis une sauvegarde
-                    Integer cornerPieceId = null;
-                    int cornerRow = -1, cornerCol = -1, cornerRot = -1;
-
-                    if (!loadedFromSave && threadId < 4 && unusedIds.size() > 10) {
-                        // Les 4 premiers threads: fixer les 4 coins avec des pièces différentes
-                        // Identifier les pièces de coin (avec 2 bords à 0)
-                        List<Integer> cornerPieces = new ArrayList<>();
-                        for (int pid : unusedIds) {
-                            Piece p = localPieces.get(pid);
-                            int[] edges = p.getEdges();
-                            int zeroCount = 0;
-                            for (int e : edges) {
-                                if (e == 0) zeroCount++;
-                            }
-                            if (zeroCount == 2) {
-                                cornerPieces.add(pid);
-                            }
-                        }
-
-                        if (threadId < cornerPieces.size()) {
-                            cornerPieceId = cornerPieces.get(threadId);
-                            // Position du coin selon le thread
-                            switch (threadId) {
-                                case 0: cornerRow = 0; cornerCol = 0; break;           // Haut-gauche
-                                case 1: cornerRow = 0; cornerCol = 15; break;          // Haut-droite
-                                case 2: cornerRow = 15; cornerCol = 0; break;          // Bas-gauche
-                                case 3: cornerRow = 15; cornerCol = 15; break;         // Bas-droite
-                            }
-
-                            Piece cornerPiece = localPieces.get(cornerPieceId);
-                            // Trouver la rotation qui met les 0 aux bons bords
-                            for (int rot = 0; rot < 4; rot++) {
-                                int[] rotEdges = cornerPiece.edgesRotated(rot);
-                                boolean valid = false;
-                                if (cornerRow == 0 && cornerCol == 0 && rotEdges[0] == 0 && rotEdges[3] == 0) valid = true;      // N=0, W=0
-                                if (cornerRow == 0 && cornerCol == 15 && rotEdges[0] == 0 && rotEdges[1] == 0) valid = true;     // N=0, E=0
-                                if (cornerRow == 15 && cornerCol == 0 && rotEdges[2] == 0 && rotEdges[3] == 0) valid = true;     // S=0, W=0
-                                if (cornerRow == 15 && cornerCol == 15 && rotEdges[2] == 0 && rotEdges[1] == 0) valid = true;    // S=0, E=0
-
-                                if (valid) {
-                                    cornerRot = rot;
-                                    localBoard.place(cornerRow, cornerCol, cornerPiece, rot);
-                                    pieceUsed.set(cornerPieceId);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    // Créer un solveur local avec une seed différente
-                    EternitySolver localSolver = new EternitySolver();
-                    localSolver.random = new Random(seed);
-                    localSolver.randomSeed = seed; // Sauvegarder le seed pour la sauvegarde
-                    localSolver.threadId = threadId; // Définir l'ID du thread
-                    localSolver.puzzleName = puzzleName; // CRITIQUE: Nécessaire pour la sauvegarde des records
-                    // Note: AutoSaveManager will be initialized with allPieces in solve()
-                    localSolver.setVerbose(false); // Désactiver l'affichage pour les threads
-                    localSolver.setUseSingletons(true);
-
-                    synchronized (System.out) {
-                        if (cornerPieceId != null) {
-                            System.out.println("🚀 Thread " + threadId + " démarré (seed=" + seed + ") - Coin fixé: pièce " + cornerPieceId + " à (" + cornerRow + "," + cornerCol + ")");
-                        } else {
-                            System.out.println("🚀 Thread " + threadId + " démarré (seed=" + seed + ")");
-                        }
-                    }
-
-                    // Initialiser le cache si activé
-                    if (useDomainCache) {
-                        localSolver.initializeDomainCache(localBoard, localPieces, pieceUsed, totalPieces);
-                    }
-
-                    // Lancer la recherche
-                    localSolver.stats.start();
-                    boolean solved = localSolver.solveBacktracking(localBoard, localPieces, pieceUsed, totalPieces);
-
-                    if (solved) {
-                        synchronized (System.out) {
-                            System.out.println("\n" + "=".repeat(60));
-                            System.out.println("🎉 Thread " + threadId + " a trouvé une SOLUTION! 🎉");
-                            System.out.println("=".repeat(60));
-                        }
-
-                        synchronized (lockObject) {
-                            globalBestBoard.set(localBoard);
-                            globalBestPieces.set(localPieces);
-                        }
-
-                        return true;
-                    }
-
-                    synchronized (System.out) {
-                        System.out.println("✗ Thread " + threadId + " terminé sans solution");
-                    }
-                    return false;
-
-                } catch (Exception e) {
-                    synchronized (System.err) {
-                        System.err.println("✗ Thread " + threadId + " erreur: " + e.getMessage());
-                        e.printStackTrace();
-                    }
-                    return false;
-                }
-            });
-
-            futures.add(future);
-        }
-
-        // Lancer un thread moniteur pour afficher le progrès
-        Thread monitor = new Thread(() -> {
-            try {
-                while (!solutionFound.get() && !Thread.interrupted()) {
-                    Thread.sleep(1800000); // Toutes les 30 minutes (1800000 ms)
-                    int depth = globalMaxDepth.get();
-                    int score = globalBestScore.get();
-
-                    if (depth > 0) {
-                        // Calculer le score maximal théorique pour un board 16x16
-                        int maxScore = 480; // 480 arêtes internes seulement
-                        double percentage = maxScore > 0 ? (score * 100.0 / maxScore) : 0.0;
-
-                        System.out.println("\n╔════════════════════════════════════════════════════════╗");
-                        System.out.println("║                  PROGRÈS - 30 minutes                  ║");
-                        System.out.println("╚════════════════════════════════════════════════════════╝");
-                        System.out.println("📊 Profondeur max:  " + depth + " pièces placées");
-                        System.out.println("⭐ Meilleur score:  " + score + "/" + maxScore + " arêtes internes (" + String.format("%.1f%%", percentage) + ")");
-                        System.out.println();
-                    }
-                }
-            } catch (InterruptedException e) {
-                // Normal lors de l'arrêt
-            }
-        });
-        monitor.setDaemon(true);
-        monitor.start();
-
-        // Attendre que tous les threads se terminent ou qu'une solution soit trouvée
-        boolean solved = false;
-        try {
-            for (Future<Boolean> future : futures) {
-                try {
-                    Boolean result = future.get();
-                    if (result) {
-                        solved = true;
-                        // Annuler les autres threads
-                        executor.shutdownNow();
-                        monitor.interrupt();
-                        break;
-                    }
-                } catch (Exception e) {
-                    synchronized (System.err) {
-                        System.err.println("Erreur dans un thread: " + e.getMessage());
-                    }
-                }
-            }
-
-            // Si aucune solution trouvée, attendre que tous terminent proprement
-            if (!solved) {
-                executor.shutdown();
-                executor.awaitTermination(1, TimeUnit.HOURS);
-            }
-
-        } catch (InterruptedException e) {
-            System.err.println("Interruption: " + e.getMessage());
-            executor.shutdownNow();
-        }
-
-        Board bestBoard = globalBestBoard.get();
-        Map<Integer, Piece> bestPieces = globalBestPieces.get();
-        if (solved && bestBoard != null) {
-            // Copier la solution trouvée dans le board original
-            synchronized (lockObject) {
-                for (int r = 0; r < bestBoard.getRows(); r++) {
-                    for (int c = 0; c < bestBoard.getCols(); c++) {
-                        if (!bestBoard.isEmpty(r, c)) {
-                            Placement p = bestBoard.getPlacement(r, c);
-                            Piece piece = bestPieces.get(p.getPieceId());
-                            board.place(r, c, piece, p.getRotation());
-                        }
-                    }
-                }
-            }
-        }
-
-        return solved;
+        // Delegate to ParallelSolverOrchestrator (Refactoring #13)
+        ParallelSolverOrchestrator orchestrator = new ParallelSolverOrchestrator(
+            this,
+            allPieces,
+            puzzleName,
+            useDomainCache,
+            solutionFound,
+            globalMaxDepth,
+            globalBestScore,
+            globalBestThreadId,
+            globalBestBoard,
+            globalBestPieces,
+            lockObject
+        );
+        return orchestrator.solve(board, availablePieces, numThreads);
     }
 
     /**

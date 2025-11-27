@@ -36,7 +36,10 @@
       "Bash(gh release create:*)",
       "Bash(eternity-solver-1.0.0.jar)",
       "Bash(git commit:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(src/util/SaveManager.java)",
+      "Bash(for file in src/solver/SolverStatistics.java src/solver/RecordManager.java src/util/SaveFileManager.java src/util/SaveManager.java)",
+      "Bash(do:*)"
     ],
     "deny": [],
     "ask": []

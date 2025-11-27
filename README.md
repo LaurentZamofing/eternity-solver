@@ -1,9 +1,12 @@
 # Eternity Solver
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](.)
+[![CI](https://github.com/LaurentZamofing/eternity-solver/workflows/CI/badge.svg)](https://github.com/LaurentZamofing/eternity-solver/actions)
+[![Release](https://img.shields.io/github/v/release/LaurentZamofing/eternity-solver)](https://github.com/LaurentZamofing/eternity-solver/releases)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-323%20passing-brightgreen.svg)](./test)
 [![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen.svg)](./docs/MAINTENANCE_REPORT.md)
 [![Java](https://img.shields.io/badge/java-11%2B-orange.svg)](https://openjdk.java.net/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](Dockerfile)
 
 A high-performance solver for edge-matching puzzles inspired by Eternity II, featuring advanced backtracking algorithms, constraint propagation, and parallel search capabilities.
 
@@ -58,6 +61,19 @@ sudo ./install.sh
 
 # Now run from anywhere
 eternity-solver example_3x3
+```
+
+### Docker (Optional)
+
+```bash
+# Build Docker image
+docker build -t eternity-solver:1.0.0 .
+
+# Run with Docker
+docker run --rm eternity-solver:1.0.0 example_3x3
+
+# Run with volume for saves
+docker run --rm -v $(pwd)/saves:/app/saves eternity-solver:1.0.0 -v example_4x4
 ```
 
 ## 📖 Usage

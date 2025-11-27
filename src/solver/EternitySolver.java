@@ -488,111 +488,21 @@ public class EternitySolver {
      * @return true si une solution a été trouvée
      */
     public boolean solveBacktracking(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
-        stats.recursiveCalls++;
-
-        // Vérifier si un autre thread a trouvé la solution
-        if (solutionFound.get()) {
-            return false; // Arrêter cette branche
-        }
-
-        // Vérifier si on a atteint un nouveau record de profondeur
-        // IMPORTANT: exclure les pièces fixes du calcul (on compte seulement les pièces posées par le backtracking)
-        int usedCount = 0;
-        for (int i = 1; i <= totalPieces; i++) {
-            if (pieceUsed.get(i)) usedCount++;
-        }
-        int currentDepth = usedCount - configManager.getNumFixedPieces();
-
-        // Check and update records using RecordManager
-        if (recordManager != null) {
-            RecordManager.RecordCheckResult recordResult =
-                recordManager.checkAndUpdateRecord(board, piecesById, currentDepth, stats.backtracks);
-
-            if (recordResult != null) {
-                // Save record to disk if new record achieved
-                if (autoSaveManager != null) {
-                    autoSaveManager.saveRecord(board, pieceUsed, totalPieces, stats, currentDepth);
-                }
-
-                // Display record if it should be shown
-                if (recordManager.shouldShowRecord(recordResult, currentDepth)) {
-                    recordManager.displayRecord(recordResult, usedCount, stats);
-                }
-            }
-        }
-
-        // Affichage verbose désactivé pour réduire les logs console
-        // if (verbose && currentDepth >= minDepthToShowRecords) {
-        //     // Nettoyer l'écran (clear terminal)
-        //     System.out.print("\033[H\033[2J");
-        //     System.out.flush();
-        //
-        //     System.out.println("\n" + "=".repeat(60));
-        //     System.out.println("🏆 NOUVEAU RECORD ! " + currentDepth + " pièces placées sur " + piecesById.size());
-        //     System.out.println("=".repeat(60));
-        //
-        //     // Afficher les statistiques
-        //     System.out.println("╔════════════════ STATISTIQUES ═══════════════════╗");
-        //     System.out.println("║ Temps écoulé       : " + String.format("%.2f", (System.currentTimeMillis() - stats.startTime) / 1000.0) + " secondes");
-        //     System.out.println("║ Appels récursifs   : " + stats.recursiveCalls);
-        //     System.out.println("║ Placements testés  : " + stats.placements);
-        //     System.out.println("║ Backtracks         : " + stats.backtracks);
-        //     System.out.println("║ Vérifications fit  : " + stats.fitChecks);
-        //     System.out.println("║ Singletons trouvés : " + stats.singletonsFound);
-        //     System.out.println("║ Singletons posés   : " + stats.singletonsPlaced);
-        //     System.out.println("║ Dead-ends détectés : " + stats.deadEndsDetected);
-        //     System.out.println("╚══════════════════════════════════════════════════╝");
-        //
-        //     // Afficher le board actuel
-        //     System.out.println("\nPuzzle actuel:");
-        //     printBoardCompact(board, piecesById, unusedIds);
-        //     System.out.println();
-        // }
-
-        // Sauvegarde périodique de l'état du thread (tous les 5 minutes)
-        long currentTime = System.currentTimeMillis();
-        if (threadId >= 0 && (currentTime - lastThreadSaveTime > THREAD_SAVE_INTERVAL)) {
-            lastThreadSaveTime = currentTime;
-            SaveManager.saveThreadState(board, piecesById, currentDepth, threadId, randomSeed);
-        }
-
-        // Sauvegarde automatique périodique (tous les 10 minutes)
-        if (autoSaveManager != null) {
-            autoSaveManager.checkAndSave(board, pieceUsed, totalPieces, stats);
-        }
-
-        // Vérifier le timeout
-        if (currentTime - startTimeMs > configManager.getMaxExecutionTimeMs()) {
-            System.out.println("⏱️  " + configManager.getThreadLabel() + " Timeout atteint (" + (configManager.getMaxExecutionTimeMs() / 1000) + "s) - arrêt de la recherche");
-            return false; // Timeout atteint
-        }
-
-        // Vérifier s'il reste des cases vides
-        int[] cell = findNextCellMRV(board, piecesById, pieceUsed, totalPieces);
-        if (cell == null) {
-            // Aucune case vide -> solution trouvée
-            solutionFound.set(true); // Signaler aux autres threads
-            stats.end();
-            if (configManager.isVerbose()) {
-                System.out.println("\n========================================");
-                System.out.println("SOLUTION TROUVÉE !");
-                System.out.println("========================================");
-            }
-            return true;
-        }
-
-        // Create backtracking context for strategies
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, totalPieces, stats, configManager.getNumFixedPieces()
+        // Delegate to BacktrackingSolver (Refactoring #16 - extracted backtracking algorithm)
+        BacktrackingSolver backtrackingSolver = new BacktrackingSolver(
+            this,
+            stats,
+            solutionFound,
+            configManager,
+            recordManager,
+            autoSaveManager,
+            singletonStrategy,
+            mrvStrategy,
+            threadId,
+            randomSeed,
+            startTimeMs
         );
-
-        // ÉTAPE 1 : Try singleton placement strategy first (most constrained)
-        if (singletonStrategy.tryPlacement(context, this)) {
-            return true;
-        }
-
-        // ÉTAPE 2 : Try MRV placement strategy
-        return mrvStrategy.tryPlacement(context, this);
+        return backtrackingSolver.solve(board, piecesById, pieceUsed, totalPieces);
     }
 
     /**

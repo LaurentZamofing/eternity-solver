@@ -58,16 +58,6 @@ public class EternitySolver {
     // State management (Refactoring #11 - extracted to SolverStateManager)
     private SolverStateManager stateManager = new SolverStateManager();
     Statistics stats = new Statistics(); // Package-private for ParallelSolverOrchestrator
-    // useSingletons removed - use configManager.isUseSingletons() (Refactoring #15)
-    // verbose removed - use configManager.isVerbose() (Refactoring #15)
-    // minDepthToShowRecords removed - use configManager.getMinDepthToShowRecords() (Refactoring #15)
-    // fixedPositions removed - use configManager.getFixedPositions() (Refactoring #15)
-    // numFixedPieces removed - use configManager.getNumFixedPieces() (Refactoring #15)
-    // initialFixedPieces removed - use configManager.getInitialFixedPieces() (Refactoring #15)
-    // prioritizeBorders removed - use configManager.isPrioritizeBorders() (Refactoring #15)
-
-    // Timeout management
-    // maxExecutionTimeMs removed - use configManager.getMaxExecutionTimeMs() (Refactoring #15)
     private long startTimeMs = 0; // Temps de démarrage de la résolution
 
     // Configuration flags
@@ -88,7 +78,6 @@ public class EternitySolver {
     private RecordManager recordManager;
 
     // Sprint 3 extractions
-    private ParallelSearchManager parallelSearchManager;
     private PlacementOrderTracker placementOrderTracker;
     private BacktrackingHistoryManager backtrackingHistoryManager;
 
@@ -118,19 +107,6 @@ public class EternitySolver {
     private static AtomicReference<Map<Integer, Piece>> globalBestPieces = ParallelSearchManager.getGlobalBestPieces();
     private static final Object lockObject = ParallelSearchManager.getLockObject();
     int threadId = -1; // ID du thread pour ce solveur (package-private for ParallelSolverOrchestrator)
-
-    // Work-stealing parallelism - MIGRATED to ParallelSearchManager (Sprint 4)
-    private static ForkJoinPool workStealingPool = ParallelSearchManager.getWorkStealingPool();
-    private static final int WORK_STEALING_DEPTH_THRESHOLD = ParallelSearchManager.WORK_STEALING_DEPTH_THRESHOLD;
-
-    /**
-     * Enable work-stealing parallelism for a single puzzle
-     */
-    public void enableWorkStealing(int numThreads) {
-        if (workStealingPool == null || workStealingPool.isShutdown()) {
-            workStealingPool = new ForkJoinPool(numThreads);
-        }
-    }
 
     /**
      * Réinitialise toutes les variables statiques du solveur

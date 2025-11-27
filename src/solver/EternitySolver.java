@@ -385,21 +385,6 @@ public class EternitySolver {
     }
 
     /**
-     * Compte le nombre de placements valides (pièce, rotation) pour une case donnée.
-     *
-     * @param board grille actuelle
-     * @param r ligne
-     * @param c colonne
-     * @param piecesById map des pièces par ID
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @return nombre de combinaisons (pièce, rotation) valides
-     */
-    private int countValidPlacements(Board board, int r, int c, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
-        return getValidPlacements(board, r, c, piecesById, pieceUsed, totalPieces).size();
-    }
-
-    /**
      * Compte le nombre de pièces uniques qui peuvent être placées (sans considérer les rotations multiples).
      *
      * @param board grille actuelle
@@ -411,20 +396,8 @@ public class EternitySolver {
      * @return nombre de pièces distinctes pouvant être placées
      */
     public int countUniquePieces(Board board, int r, int c, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
-        List<Integer> validPieceIds = new ArrayList<>();
-        // Iterate pieces in order specified by sortOrder (using PieceIterator to eliminate duplication)
-        for (int pid : PieceIterator.create(sortOrder, totalPieces, pieceUsed)) {
-            Piece piece = piecesById.get(pid);
-            boolean foundValidRotation = false;
-            for (int rot = 0; rot < 4 && !foundValidRotation; rot++) {
-                int[] candidate = piece.edgesRotated(rot);
-                if (fits(board, r, c, candidate)) {
-                    validPieceIds.add(pid);
-                    foundValidRotation = true;
-                }
-            }
-        }
-        return validPieceIds.size();
+        // Delegate to PieceOrderingOptimizer (Refactoring #12 - eliminate duplication)
+        return pieceOrderingOptimizer.countUniquePieces(board, r, c, piecesById, pieceUsed, totalPieces);
     }
 
     /**
@@ -443,150 +416,6 @@ public class EternitySolver {
             return null;
         }
         return new int[]{pos.row, pos.col};
-    }
-
-    /**
-     * Ordonne les pièces selon l'heuristique "Least Constraining Value".
-     * Les pièces qui laissent le plus d'options aux voisins sont essayées en premier.
-     *
-     * @param board grille actuelle
-     * @param r ligne de la case à remplir
-     * @param c colonne de la case à remplir
-     * @param pieceIds liste des IDs de pièces à ordonner
-     * @param piecesById toutes les pièces
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @return liste ordonnée des IDs de pièces
-     */
-    private List<Integer> orderPiecesByLeastConstraining(Board board, int r, int c,
-                                                          List<Integer> pieceIds,
-                                                          Map<Integer, Piece> piecesById,
-                                                          BitSet pieceUsed, int totalPieces) {
-        // Pour chaque pièce, calculer un score de "contrainte"
-        // Plus le score est bas, moins la pièce contraint les voisins
-        List<PieceOrderingOptimizer.PieceScore> scores = new ArrayList<>();
-
-        for (int pid : pieceIds) {
-            Piece piece = piecesById.get(pid);
-            int minConstraint = Integer.MAX_VALUE;
-
-            // Trouver la meilleure rotation pour cette pièce
-            for (int rot = 0; rot < 4; rot++) {
-                int[] candidate = piece.edgesRotated(rot);
-
-                if (fits(board, r, c, candidate)) {
-                    // Calculer combien cette pièce/rotation contraint les voisins
-                    int constraint = calculateConstraintScore(board, r, c, candidate, piecesById, pieceUsed, totalPieces, pid);
-                    minConstraint = Math.min(minConstraint, constraint);
-                }
-            }
-
-            scores.add(new PieceOrderingOptimizer.PieceScore(pid, minConstraint));
-        }
-
-        // Trier par score croissant (moins contraignant d'abord)
-        scores.sort((a, b) -> Integer.compare(a.score, b.score));
-
-        // Retourner la liste ordonnée des IDs
-        List<Integer> ordered = new ArrayList<>();
-        for (PieceOrderingOptimizer.PieceScore ps : scores) {
-            ordered.add(ps.pieceId);
-        }
-
-        return ordered;
-    }
-
-    /**
-     * Calcule un score de contrainte pour un placement donné.
-     * Plus le score est élevé, plus le placement contraint les voisins.
-     *
-     * @param board grille actuelle
-     * @param r ligne
-     * @param c colonne
-     * @param candidateEdges edges de la pièce candidate
-     * @param piecesById toutes les pièces
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param excludePieceId pièce à exclure
-     * @return score de contrainte (plus bas = mieux)
-     */
-    private int calculateConstraintScore(Board board, int r, int c, int[] candidateEdges,
-                                          Map<Integer, Piece> piecesById,
-                                          BitSet pieceUsed, int totalPieces, int excludePieceId) {
-        int rows = board.getRows();
-        int cols = board.getCols();
-        int totalRemovedOptions = 0;
-
-        // Pour chaque voisin vide, compter combien d'options il perdrait
-        // Voisin du haut
-        if (r > 0 && board.isEmpty(r - 1, c)) {
-            int optionsBefore = countValidPieces(board, r - 1, c, -1, -1, piecesById, pieceUsed, totalPieces, -1);
-            int optionsAfter = countValidPieces(board, r - 1, c, candidateEdges[0], 2, piecesById, pieceUsed, totalPieces, excludePieceId);
-            totalRemovedOptions += (optionsBefore - optionsAfter);
-        }
-
-        // Voisin du bas
-        if (r < rows - 1 && board.isEmpty(r + 1, c)) {
-            int optionsBefore = countValidPieces(board, r + 1, c, -1, -1, piecesById, pieceUsed, totalPieces, -1);
-            int optionsAfter = countValidPieces(board, r + 1, c, candidateEdges[2], 0, piecesById, pieceUsed, totalPieces, excludePieceId);
-            totalRemovedOptions += (optionsBefore - optionsAfter);
-        }
-
-        // Voisin de gauche
-        if (c > 0 && board.isEmpty(r, c - 1)) {
-            int optionsBefore = countValidPieces(board, r, c - 1, -1, -1, piecesById, pieceUsed, totalPieces, -1);
-            int optionsAfter = countValidPieces(board, r, c - 1, candidateEdges[3], 1, piecesById, pieceUsed, totalPieces, excludePieceId);
-            totalRemovedOptions += (optionsBefore - optionsAfter);
-        }
-
-        // Voisin de droite
-        if (c < cols - 1 && board.isEmpty(r, c + 1)) {
-            int optionsBefore = countValidPieces(board, r, c + 1, -1, -1, piecesById, pieceUsed, totalPieces, -1);
-            int optionsAfter = countValidPieces(board, r, c + 1, candidateEdges[1], 3, piecesById, pieceUsed, totalPieces, excludePieceId);
-            totalRemovedOptions += (optionsBefore - optionsAfter);
-        }
-
-        return totalRemovedOptions;
-    }
-
-    /**
-     * Compte le nombre de pièces valides pour une position donnée.
-     *
-     * @param board grille
-     * @param r ligne
-     * @param c colonne
-     * @param requiredEdge arête requise (-1 si aucune contrainte spécifique)
-     * @param edgeIndex index de l'arête (-1 si aucune contrainte)
-     * @param piecesById toutes les pièces
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param excludePieceId pièce à exclure
-     * @return nombre de pièces valides
-     */
-    private int countValidPieces(Board board, int r, int c, int requiredEdge, int edgeIndex,
-                                  Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces, int excludePieceId) {
-        int count = 0;
-
-        // Iterate pieces in order specified by sortOrder (using PieceIterator to eliminate duplication)
-        for (int pid : PieceIterator.create(sortOrder, totalPieces, pieceUsed)) {
-            if (pid == excludePieceId) continue;
-
-            Piece piece = piecesById.get(pid);
-            for (int rot = 0; rot < 4; rot++) {
-                int[] edges = piece.edgesRotated(rot);
-
-                // Vérifier la contrainte d'arête si spécifiée
-                if (requiredEdge != -1 && edgeIndex != -1) {
-                    if (edges[edgeIndex] != requiredEdge) continue;
-                }
-
-                if (fits(board, r, c, edges)) {
-                    count++;
-                }
-            }
-        }
-
-        return count;
     }
 
 

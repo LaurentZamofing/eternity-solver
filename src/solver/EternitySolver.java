@@ -270,6 +270,40 @@ public class EternitySolver {
     // ==================== End Step Count and Last Placed Accessors ====================
 
     /**
+     * Assigns solver components from SolverInitializer to instance fields.
+     * Extracted to eliminate duplication between solve() and solveWithHistory().
+     *
+     * @param components Initialized components from SolverInitializer
+     */
+    private void assignSolverComponents(SolverInitializer.InitializedComponents components) {
+        this.cellConstraints = components.cellConstraints;
+        this.validator = components.validator;
+        this.displayManager = components.displayManager;
+        this.domainManager = components.domainManager;
+        this.constraintPropagator = components.constraintPropagator;
+        this.singletonDetector = components.singletonDetector;
+        this.cellSelector = components.cellSelector;
+        this.valueOrderer = components.valueOrderer;
+        this.neighborAnalyzer = components.neighborAnalyzer;
+        this.pieceOrderingOptimizer = components.pieceOrderingOptimizer;
+    }
+
+    /**
+     * Initializes placement strategies (singleton and MRV).
+     * Extracted to eliminate duplication between solve() and solveWithHistory().
+     */
+    private void initializePlacementStrategies() {
+        this.singletonStrategy = new SingletonPlacementStrategy(
+            singletonDetector, useSingletons, verbose,
+            symmetryBreakingManager, constraintPropagator, domainManager
+        );
+        this.mrvStrategy = new MRVPlacementStrategy(
+            verbose, valueOrderer, symmetryBreakingManager,
+            constraintPropagator, domainManager
+        );
+    }
+
+    /**
      * Vérifie si une pièce candidate peut être placée en (r,c).
      * Convention : bord extérieur doit être 0 (modifiable selon besoin).
      *
@@ -619,16 +653,7 @@ public class EternitySolver {
             board, allPieces, pieceUsed, totalPieces);
 
         // Assign initialized components (CRITICAL: must be done before AC-3 initialization)
-        this.cellConstraints = components.cellConstraints;
-        this.validator = components.validator;
-        this.displayManager = components.displayManager;
-        this.domainManager = components.domainManager;
-        this.constraintPropagator = components.constraintPropagator;
-        this.singletonDetector = components.singletonDetector;
-        this.cellSelector = components.cellSelector;
-        this.valueOrderer = components.valueOrderer;
-        this.neighborAnalyzer = components.neighborAnalyzer;
-        this.pieceOrderingOptimizer = components.pieceOrderingOptimizer;
+        assignSolverComponents(components);
 
         // Update BacktrackingHistoryManager with initialized validator
         if (this.backtrackingHistoryManager != null) {
@@ -727,16 +752,7 @@ public class EternitySolver {
             board, pieces, pieceUsed, totalPieces);
 
         // Assign initialized components (CRITICAL: must be done before AC-3 initialization)
-        this.cellConstraints = components.cellConstraints;
-        this.validator = components.validator;
-        this.displayManager = components.displayManager;
-        this.domainManager = components.domainManager;
-        this.constraintPropagator = components.constraintPropagator;
-        this.singletonDetector = components.singletonDetector;
-        this.cellSelector = components.cellSelector;
-        this.valueOrderer = components.valueOrderer;
-        this.neighborAnalyzer = components.neighborAnalyzer;
-        this.pieceOrderingOptimizer = components.pieceOrderingOptimizer;
+        assignSolverComponents(components);
 
         // Initialize domain cache if enabled (must be after component initialization)
         if (useDomainCache) {
@@ -752,14 +768,7 @@ public class EternitySolver {
         initializeSymmetryBreaking(board);
 
         // Initialize placement strategies (Sprint 6 - Strategy Pattern)
-        this.singletonStrategy = new SingletonPlacementStrategy(
-            singletonDetector, useSingletons, verbose,
-            symmetryBreakingManager, constraintPropagator, domainManager
-        );
-        this.mrvStrategy = new MRVPlacementStrategy(
-            verbose, valueOrderer, symmetryBreakingManager,
-            constraintPropagator, domainManager
-        );
+        initializePlacementStrategies();
 
         // Use work-stealing if enabled
         // Note: Work-stealing currently uses sequential backtracking

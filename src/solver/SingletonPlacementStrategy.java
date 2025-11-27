@@ -1,0 +1,146 @@
+package solver;
+
+import model.Board;
+import model.Piece;
+
+/**
+ * Placement strategy that detects and places singleton pieces.
+ *
+ * A singleton is a piece that can only fit in one specific location on the board.
+ * Placing singletons first is a powerful pruning technique that dramatically
+ * reduces the search space.
+ *
+ * @author Eternity Solver Team
+ * @version 1.0.0
+ */
+public class SingletonPlacementStrategy implements PlacementStrategy {
+
+    private final SingletonDetector singletonDetector;
+    private final boolean useSingletons;
+    private final boolean verbose;
+    private final SymmetryBreakingManager symmetryBreakingManager;
+    private final ConstraintPropagator constraintPropagator;
+    private final DomainManager domainManager;
+
+    /**
+     * Creates a singleton placement strategy.
+     *
+     * @param singletonDetector Detector for finding singleton pieces
+     * @param useSingletons Whether singleton optimization is enabled
+     * @param verbose Whether to output verbose logging
+     * @param symmetryBreakingManager Manager for symmetry breaking constraints (can be null)
+     * @param constraintPropagator AC-3 constraint propagator
+     * @param domainManager Domain manager for AC-3
+     */
+    public SingletonPlacementStrategy(SingletonDetector singletonDetector, boolean useSingletons,
+                                     boolean verbose, SymmetryBreakingManager symmetryBreakingManager,
+                                     ConstraintPropagator constraintPropagator, DomainManager domainManager) {
+        this.singletonDetector = singletonDetector;
+        this.useSingletons = useSingletons;
+        this.verbose = verbose;
+        this.symmetryBreakingManager = symmetryBreakingManager;
+        this.constraintPropagator = constraintPropagator;
+        this.domainManager = domainManager;
+    }
+
+    @Override
+    public boolean tryPlacement(BacktrackingContext context, EternitySolver solver) {
+        // Check if singleton optimization is disabled
+        if (!useSingletons) {
+            return false; // Indicate this strategy doesn't apply
+        }
+
+        // Find a singleton piece
+        SingletonDetector.SingletonInfo singleton = singletonDetector.findSingletonPiece(
+            context.board, context.piecesById, context.pieceUsed, context.totalPieces);
+
+        if (singleton == null) {
+            return false; // No singleton found, this strategy doesn't apply
+        }
+
+        // Extract singleton info
+        int r = singleton.row;
+        int c = singleton.col;
+        int pid = singleton.pieceId;
+        int rot = singleton.rotation;
+        Piece piece = context.piecesById.get(pid);
+        int[] candidate = piece.edgesRotated(rot);
+
+        // Verbose output
+        if (verbose) {
+            int availableCount = context.countAvailablePieces();
+            System.out.println("\n╔════════════════════════════════════════╗");
+            System.out.println("║  Étape " + (solver.getStepCount() + 1) + " - SINGLETON FORCÉ");
+            System.out.println("║  Pièce " + pid + " → Case (" + r + ", " + c + ")");
+            System.out.println("║  Pièces disponibles : " + availableCount);
+            System.out.println("╚════════════════════════════════════════╝");
+            context.stats.printCompact();
+        }
+
+        // Symmetry breaking check
+        if (symmetryBreakingManager != null &&
+            !symmetryBreakingManager.isPlacementAllowed(context.board, r, c, pid, rot, context.piecesById)) {
+            // Singleton violates symmetry constraints - no solution possible
+            return false;
+        }
+
+        // Place the singleton
+        context.board.place(r, c, piece, rot);
+        context.pieceUsed.set(pid);
+        solver.setLastPlaced(r, c);
+        solver.incrementStepCount();
+        context.stats.placements++;
+        context.stats.singletonsPlaced++;
+
+        // Track placement order
+        solver.recordPlacement(r, c, pid, rot);
+
+        // AC-3 constraint propagation
+        if (!constraintPropagator.propagateAC3(context.board, r, c, pid, rot,
+                                               context.piecesById, context.pieceUsed, context.totalPieces)) {
+            // Dead end detected by AC-3 for singleton
+            if (verbose) {
+                System.out.println("✗ AC-3 dead-end détecté pour singleton : ID=" + pid + " à (" + r + ", " + c + ")");
+            }
+            // Backtrack immediately
+            context.pieceUsed.clear(pid);
+            context.board.remove(r, c);
+            solver.removeLastPlacement();
+            domainManager.restoreAC3Domains(context.board, r, c, context.piecesById,
+                                           context.pieceUsed, context.totalPieces);
+            return false;
+        }
+
+        // Verbose board display
+        if (verbose) {
+            solver.printBoardWithCounts(context.board, context.piecesById, context.pieceUsed,
+                                       context.totalPieces, r, c);
+            System.out.println("✓ Singleton posé : ID=" + pid + ", Rotation=" + (rot * 90) +
+                             "°, Arêtes=" + java.util.Arrays.toString(candidate));
+        }
+
+        // Recursive call
+        boolean solved = solver.solveBacktracking(context.board, context.piecesById,
+                                                  context.pieceUsed, context.totalPieces);
+        if (solved) {
+            return true;
+        }
+
+        // Backtrack singleton
+        context.stats.backtracks++;
+        if (verbose) {
+            System.out.println("✗ BACKTRACK du singleton : Retrait de la pièce ID=" + pid + " à (" + r + ", " + c + ")");
+        }
+
+        context.pieceUsed.clear(pid);
+        context.board.remove(r, c);
+        solver.removeLastPlacement();
+        domainManager.restoreAC3Domains(context.board, r, c, context.piecesById,
+                                       context.pieceUsed, context.totalPieces);
+
+        // Update lastPlaced tracking
+        solver.findAndSetLastPlaced(context.board);
+
+        return false; // Singleton didn't lead to solution
+    }
+}

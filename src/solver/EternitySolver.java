@@ -304,6 +304,18 @@ public class EternitySolver {
     }
 
     /**
+     * Creates a BitSet for tracking piece usage, sized according to the maximum piece ID.
+     * Extracted to eliminate duplication between solve() and solveWithHistory() (Refactoring #14).
+     *
+     * @param pieces map of all pieces
+     * @return empty BitSet sized for all pieces (index 0 unused, 1-based)
+     */
+    private BitSet createPieceUsedBitSet(Map<Integer, Piece> pieces) {
+        int maxPieceId = pieces.keySet().stream().max(Integer::compareTo).orElse(pieces.size());
+        return new BitSet(maxPieceId + 1); // index 0 unused, 1-based
+    }
+
+    /**
      * Vérifie si une pièce candidate peut être placée en (r,c).
      * Convention : bord extérieur doit être 0 (modifiable selon besoin).
      *
@@ -636,10 +648,9 @@ public class EternitySolver {
             threadLabel,
             stats);
 
-        // Créer le tableau pieceUsed depuis unusedIds - dimensionner selon MAX piece ID
+        // Créer le tableau pieceUsed depuis unusedIds (Refactoring #14 - extracted to helper)
         int totalPieces = allPieces.size();
-        int maxPieceId = allPieces.keySet().stream().max(Integer::compareTo).orElse(totalPieces);
-        BitSet pieceUsed = new BitSet(maxPieceId + 1); // index 0 inutilisé, 1-based
+        BitSet pieceUsed = createPieceUsedBitSet(allPieces);
         for (int pid : allPieces.keySet()) {
             if (!unusedIds.contains(pid)) {
                 pieceUsed.set(pid);
@@ -721,10 +732,9 @@ public class EternitySolver {
         this.placementOrderTracker = new PlacementOrderTracker();
         this.placementOrderTracker.initialize();
 
-        // Créer le tableau pieceUsed - doit être dimensionné selon MAX piece ID, pas le count
+        // Créer le tableau pieceUsed (Refactoring #14 - extracted to helper)
         int totalPieces = pieces.size();
-        int maxPieceId = pieces.keySet().stream().max(Integer::compareTo).orElse(totalPieces);
-        BitSet pieceUsed = new BitSet(maxPieceId + 1); // index 0 inutilisé, 1-based
+        BitSet pieceUsed = createPieceUsedBitSet(pieces);
 
         // Détecter et mémoriser les positions des pièces fixes (déjà placées au début)
         configManager.detectFixedPiecesFromBoard(board, pieceUsed,

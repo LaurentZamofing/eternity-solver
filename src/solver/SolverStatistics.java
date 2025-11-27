@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -118,21 +120,22 @@ public class SolverStatistics {
     }
 
     public void print() {
-        System.out.println("\n╔════════════════ STATISTIQUES ═══════════════════╗");
-        System.out.println("║ Temps écoulé       : " + String.format("%.2f", getElapsedTimeSec()) + " secondes");
-        System.out.println("║ Appels récursifs   : " + recursiveCalls);
-        System.out.println("║ Placements testés  : " + placements);
-        System.out.println("║ Backtracks         : " + backtracks);
-        System.out.println("║ Vérifications fit  : " + fitChecks);
-        System.out.println("║ Forward check rejets : " + forwardCheckRejects);
-        System.out.println("║ Singletons trouvés : " + singletonsFound);
-        System.out.println("║ Singletons posés   : " + singletonsPlaced);
-        System.out.println("║ Dead-ends détectés : " + deadEndsDetected);
-        System.out.println("╚══════════════════════════════════════════════════╝");
+        SolverLogger.stats("\n╔════════════════ STATISTIQUES ═══════════════════╗");
+        SolverLogger.stats("║ Temps écoulé       : " + String.format("%.2f", getElapsedTimeSec()) + " secondes");
+        SolverLogger.stats("║ Appels récursifs   : " + recursiveCalls);
+        SolverLogger.stats("║ Placements testés  : " + placements);
+        SolverLogger.stats("║ Backtracks         : " + backtracks);
+        SolverLogger.stats("║ Vérifications fit  : " + fitChecks);
+        SolverLogger.stats("║ Forward check rejets : " + forwardCheckRejects);
+        SolverLogger.stats("║ Singletons trouvés : " + singletonsFound);
+        SolverLogger.stats("║ Singletons posés   : " + singletonsPlaced);
+        SolverLogger.stats("║ Dead-ends détectés : " + deadEndsDetected);
+        SolverLogger.stats("╚══════════════════════════════════════════════════╝");
     }
 
     public void printCompact() {
-        System.out.printf("Stats: Récursif=%d | Placements=%d | Backtracks=%d | Singletons=%d/%d | Dead-ends=%d | Temps=%.1fs\n",
-                recursiveCalls, placements, backtracks, singletonsPlaced, singletonsFound, deadEndsDetected, getElapsedTimeSec());
+        SolverLogger.stats("Stats: Récursif={} | Placements={} | Backtracks={} | Singletons={}/{} | Dead-ends={} | Temps={}s",
+                recursiveCalls, placements, backtracks, singletonsPlaced, singletonsFound, deadEndsDetected,
+                String.format("%.1f", getElapsedTimeSec()));
     }
 }

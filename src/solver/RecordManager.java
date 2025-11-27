@@ -1,5 +1,6 @@
 package solver;
 
+import util.SolverLogger;
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -217,35 +218,36 @@ public class RecordManager {
      * @param stats gestionnaire de statistiques pour le progrès
      */
     public void displayRecord(RecordCheckResult result, int usedCount, StatisticsManager stats) {
-        synchronized (System.out) {
-            System.out.println("\n" + "=".repeat(80));
+        // Note: Using synchronized block to ensure atomic multi-line output
+        synchronized (SolverLogger.getLogger()) {
+            SolverLogger.info("\n" + "=".repeat(80));
 
             if (result.isNewDepthRecord) {
-                System.out.println("🔥 RECORD EXCEPTIONNEL ! " + usedCount + " pièces placées (Thread " + threadId + ") 🔥");
-                System.out.println("📋 Puzzle: " + puzzleName);
+                SolverLogger.info("RECORD EXCEPTIONNEL ! {} pièces placées (Thread {})", usedCount, threadId);
+                SolverLogger.info("Puzzle: {}", puzzleName);
             }
 
             if (result.isNewScoreRecord) {
                 double percentage = result.maxScore > 0 ? (result.currentScore * 100.0 / result.maxScore) : 0.0;
-                System.out.println("⭐ MEILLEUR SCORE ! " + result.currentScore + "/" + result.maxScore +
-                                  " arêtes internes (" + String.format("%.1f%%", percentage) + ")");
+                SolverLogger.info("MEILLEUR SCORE ! {}/{} arêtes internes ({}%)",
+                                 result.currentScore, result.maxScore, String.format("%.1f", percentage));
                 if (!result.isNewDepthRecord) {
-                    System.out.println("📋 Puzzle: " + puzzleName);
+                    SolverLogger.info("Puzzle: {}", puzzleName);
                 }
             }
 
             // Affiche le pourcentage de progression
             double progress = stats.getProgressPercentage();
             if (progress > 0.0 && progress < 99.9) {
-                System.out.println("📊 Avancement estimé : " + String.format("%.8f%%", progress) +
-                                  " (basé sur les 5 premières profondeurs)");
+                SolverLogger.info("Avancement estimé : {}% (basé sur les 5 premières profondeurs)",
+                                 String.format("%.8f", progress));
             } else if (progress >= 99.9) {
-                System.out.println("📊 Avancement : exploration au-delà des profondeurs suivies (>5)");
+                SolverLogger.info("Avancement : exploration au-delà des profondeurs suivies (>5)");
             } else {
-                System.out.println("📊 Avancement : calcul en cours... (en attente de données des premières profondeurs)");
+                SolverLogger.info("Avancement : calcul en cours... (en attente de données des premières profondeurs)");
             }
 
-            System.out.println("=".repeat(80) + "\n");
+            SolverLogger.info("=".repeat(80) + "\n");
         }
     }
 }

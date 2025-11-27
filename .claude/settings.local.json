@@ -30,7 +30,13 @@
       "Bash(test:*)",
       "Bash(git init:*)",
       "Bash(git branch:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(gh --version:*)",
+      "Bash(gh release create:*)",
+      "Bash(eternity-solver-1.0.0.jar)",
+      "Bash(git commit:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

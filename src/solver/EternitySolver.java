@@ -2,7 +2,6 @@ package solver;
 
 import model.Board;
 import model.Piece;
-import model.Placement;
 import solver.BoardVisualizer;
 import solver.heuristics.*;
 import util.SaveManager;
@@ -12,22 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Future;
-import java.util.concurrent.RecursiveTask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -524,9 +511,6 @@ public class EternitySolver {
         initializeSymmetryBreaking(board);
         initializePlacementStrategies();
 
-        // Use work-stealing if enabled
-        // Note: Work-stealing currently uses sequential backtracking
-        // Full work-stealing parallelism is in ParallelSearchManager
         boolean solved = solveBacktracking(board, pieces, pieceUsed, totalPieces);
 
         if (!solved) {

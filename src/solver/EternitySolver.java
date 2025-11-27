@@ -300,6 +300,46 @@ public class EternitySolver {
     }
 
     /**
+     * Initializes managers (AutoSaveManager and RecordManager).
+     * Extracted to eliminate duplication between solve() and solveWithHistory().
+     */
+    private void initializeManagers(Map<Integer, Piece> pieces) {
+        this.autoSaveManager = configManager.createAutoSaveManager(
+            placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>(),
+            pieces);
+
+        configManager.setThreadId(threadId);
+        this.recordManager = configManager.createRecordManager(lockObject, globalMaxDepth,
+            globalBestScore, globalBestThreadId, globalBestBoard, globalBestPieces);
+    }
+
+    /**
+     * Initializes helper components and assigns them to the solver.
+     * Extracted to eliminate duplication between solve() and solveWithHistory().
+     */
+    private void initializeComponents(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
+        SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), configManager.isVerbose(),
+            configManager.isPrioritizeBorders(), configManager.getFixedPositions());
+        SolverInitializer.InitializedComponents components = initializer.initializeComponents(
+            board, pieces, pieceUsed, totalPieces);
+        assignSolverComponents(components);
+    }
+
+    /**
+     * Initializes domains (cache and AC-3).
+     * Extracted to eliminate duplication between solve() and solveWithHistory().
+     */
+    private void initializeDomains(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
+        if (useDomainCache) {
+            initializeDomainCache(board, pieces, pieceUsed, totalPieces);
+        }
+
+        if (useAC3) {
+            this.domainManager.initializeAC3Domains(board, pieces, pieceUsed, totalPieces);
+        }
+    }
+
+    /**
      * Creates a BitSet for tracking piece usage, sized according to the maximum piece ID.
      * Extracted to eliminate duplication between solve() and solveWithHistory() (Refactoring #14).
      *
@@ -534,21 +574,9 @@ public class EternitySolver {
         int numFixed = configManager.calculateNumFixedPieces(configManager.getPuzzleName());
         configManager.buildInitialFixedPieces(preloadedOrder, numFixed);
 
-        // fixedPositions and initialFixedPieces removed - use configManager directly (Refactoring #15)
-
-        // Initialize AutoSaveManager (AFTER fixed pieces calculation)
-        this.autoSaveManager = configManager.createAutoSaveManager(
-            placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>(),
-            allPieces);
-
-        // Initialize RecordManager (AFTER fixed pieces calculation)
-        configManager.setThreadId(threadId);
-        this.recordManager = configManager.createRecordManager(lockObject, globalMaxDepth,
-            globalBestScore, globalBestThreadId, globalBestBoard, globalBestPieces);
-
-        // Initialize BacktrackingHistoryManager
+        // Initialize BacktrackingHistoryManager (before other initialization)
         this.backtrackingHistoryManager = new BacktrackingHistoryManager(
-            null, // validator will be set after SolverInitializer
+            null, // validator will be set after component initialization
             configManager.getThreadLabel(),
             stats);
 
@@ -561,14 +589,9 @@ public class EternitySolver {
             }
         }
 
-        // Initialize all helper components using SolverInitializer
-        SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), configManager.isVerbose(),
-            configManager.isPrioritizeBorders(), configManager.getFixedPositions());
-        SolverInitializer.InitializedComponents components = initializer.initializeComponents(
-            board, allPieces, pieceUsed, totalPieces);
-
-        // Assign initialized components (CRITICAL: must be done before AC-3 initialization)
-        assignSolverComponents(components);
+        // Initialize managers, components, and strategies (Refactoring #17 - consolidated initialization)
+        initializeManagers(allPieces);
+        initializeComponents(board, allPieces, pieceUsed, totalPieces);
 
         // Update BacktrackingHistoryManager with initialized validator
         if (this.backtrackingHistoryManager != null) {
@@ -578,26 +601,8 @@ public class EternitySolver {
                 stats);
         }
 
-        // Initialize domain cache if enabled (must be after component initialization)
-        if (useDomainCache) {
-            initializeDomainCache(board, allPieces, pieceUsed, totalPieces);
-        }
-
-        // Initialize AC-3 domains if enabled (must be after validator assignment)
-        if (useAC3) {
-            this.domainManager.initializeAC3Domains(board, allPieces, pieceUsed, totalPieces);
-        }
-
-        // Initialize placement strategies (Sprint 6 - Strategy Pattern)
-        // CRITICAL: Must be initialized before solveBacktracking() is called
-        this.singletonStrategy = new SingletonPlacementStrategy(
-            singletonDetector, configManager.isUseSingletons(), configManager.isVerbose(),
-            symmetryBreakingManager, constraintPropagator, domainManager
-        );
-        this.mrvStrategy = new MRVPlacementStrategy(
-            configManager.isVerbose(), valueOrderer, symmetryBreakingManager,
-            constraintPropagator, domainManager
-        );
+        initializeDomains(board, allPieces, pieceUsed, totalPieces);
+        initializePlacementStrategies();
 
         System.out.println("  → Reprise avec " + preloadedOrder.size() + " pièces pré-chargées");
         System.out.println("  → Le backtracking pourra remonter à travers TOUTES les pièces");
@@ -644,41 +649,11 @@ public class EternitySolver {
         configManager.detectFixedPiecesFromBoard(board, pieceUsed,
             placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>());
 
-        // fixedPositions, numFixedPieces, initialFixedPieces removed - use configManager directly (Refactoring #15)
-
-        // Initialize AutoSaveManager (AFTER fixed pieces detection)
-        this.autoSaveManager = configManager.createAutoSaveManager(
-            placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>(),
-            pieces);
-
-        // Initialize RecordManager (AFTER fixed pieces detection)
-        configManager.setThreadId(threadId);
-        this.recordManager = configManager.createRecordManager(lockObject, globalMaxDepth,
-            globalBestScore, globalBestThreadId, globalBestBoard, globalBestPieces);
-
-        // Initialize all helper components using SolverInitializer
-        SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), configManager.isVerbose(),
-            configManager.isPrioritizeBorders(), configManager.getFixedPositions());
-        SolverInitializer.InitializedComponents components = initializer.initializeComponents(
-            board, pieces, pieceUsed, totalPieces);
-
-        // Assign initialized components (CRITICAL: must be done before AC-3 initialization)
-        assignSolverComponents(components);
-
-        // Initialize domain cache if enabled (must be after component initialization)
-        if (useDomainCache) {
-            initializeDomainCache(board, pieces, pieceUsed, totalPieces);
-        }
-
-        // Initialize AC-3 domains if enabled (must be after validator assignment)
-        if (useAC3) {
-            this.domainManager.initializeAC3Domains(board, pieces, pieceUsed, totalPieces);
-        }
-
-        // Apply symmetry breaking constraints
+        // Initialize managers, components, and strategies (Refactoring #17 - consolidated initialization)
+        initializeManagers(pieces);
+        initializeComponents(board, pieces, pieceUsed, totalPieces);
+        initializeDomains(board, pieces, pieceUsed, totalPieces);
         initializeSymmetryBreaking(board);
-
-        // Initialize placement strategies (Sprint 6 - Strategy Pattern)
         initializePlacementStrategies();
 
         // Use work-stealing if enabled

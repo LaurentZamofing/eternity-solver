@@ -1,6 +1,8 @@
-# Puzzle 3x3 Example
+# Puzzle: example_3x3
 # Format: id north east south west
 # Convention: bord extérieur = 0
+# Simple 3x3 example puzzle
+
 1 0 1 1 0
 2 1 2 3 0
 3 3 1 0 0

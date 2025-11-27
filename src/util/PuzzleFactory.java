@@ -281,18 +281,28 @@ public class PuzzleFactory {
     }
 
     /**
-     * Retourne les pièces de l'exemple 3x3.
-     * Peut charger depuis un fichier si disponible, sinon utilise les données hardcodées.
-     * @return map des pièces du puzzle 3x3
+     * Helper method: Load puzzle from file if available, otherwise use hardcoded fallback.
+     * @param fileName Name of puzzle file (without path, e.g., "example_3x3.txt")
+     * @param fallbackData Hardcoded puzzle array to use if file doesn't exist
+     * @return map of pieces
      */
-    public static Map<Integer, Piece> createExample3x3() {
-        String dataFile = "data/puzzles/example_3x3.txt";
+    private static Map<Integer, Piece> loadOrFallback(String fileName, int[][] fallbackData) {
+        String dataFile = "data/puzzles/" + fileName;
         java.io.File file = new java.io.File(dataFile);
         if (file.exists()) {
             return loadFromFile(dataFile);
         }
         // Fallback to hardcoded data
-        return buildPiecesFromDefs(EXAMPLE_3x3);
+        return buildPiecesFromDefs(fallbackData);
+    }
+
+    /**
+     * Retourne les pièces de l'exemple 3x3.
+     * Peut charger depuis un fichier si disponible, sinon utilise les données hardcodées.
+     * @return map des pièces du puzzle 3x3
+     */
+    public static Map<Integer, Piece> createExample3x3() {
+        return loadOrFallback("example_3x3.txt", EXAMPLE_3x3);
     }
 
     /**
@@ -301,7 +311,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 4x4
      */
     public static Map<Integer, Piece> createExample4x4() {
-        return buildPiecesFromDefs(EXAMPLE_4x4);
+        return loadOrFallback("example_4x4_hard_v3.txt", EXAMPLE_4x4);
     }
 
     /**
@@ -309,7 +319,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 4x4
      */
     public static Map<Integer, Piece> createExample4x4HardV1() {
-        return buildPiecesFromDefs(EXAMPLE_4x4_HARD_V1);
+        return loadOrFallback("example_4x4_hard_v1.txt", EXAMPLE_4x4_HARD_V1);
     }
 
     /**
@@ -317,7 +327,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 4x4
      */
     public static Map<Integer, Piece> createExample4x4HardV2() {
-        return buildPiecesFromDefs(EXAMPLE_4x4_HARD_V2);
+        return loadOrFallback("example_4x4_hard_v2.txt", EXAMPLE_4x4_HARD_V2);
     }
 
     /**
@@ -325,7 +335,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 4x4
      */
     public static Map<Integer, Piece> createExample4x4HardV3() {
-        return buildPiecesFromDefs(EXAMPLE_4x4_HARD_V3);
+        return loadOrFallback("example_4x4_hard_v3.txt", EXAMPLE_4x4_HARD_V3);
     }
 
     /**
@@ -333,7 +343,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 4x4 en ordre facile
      */
     public static Map<Integer, Piece> createExample4x4Easy() {
-        return buildPiecesFromDefs(EXAMPLE_4x4_EASY);
+        return loadOrFallback("example_4x4_easy.txt", EXAMPLE_4x4_EASY);
     }
 
     /**
@@ -342,7 +352,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 4x4 ordonnées
      */
     public static Map<Integer, Piece> createExample4x4Ordered() {
-        return buildPiecesFromDefs(EXAMPLE_4x4_ORDERED);
+        return loadOrFallback("example_4x4_ordered.txt", EXAMPLE_4x4_ORDERED);
     }
 
     /**
@@ -388,7 +398,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 5x5 ordonnées
      */
     public static Map<Integer, Piece> createExample5x5Ordered() {
-        return buildPiecesFromDefs(EXAMPLE_5x5_ORDERED);
+        return loadOrFallback("example_5x5_ordered.txt", EXAMPLE_5x5_ORDERED);
     }
 
     /**
@@ -396,7 +406,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 5x5 avec confusion maximale
      */
     public static Map<Integer, Piece> createExample5x5HardV1() {
-        return buildPiecesFromDefs(EXAMPLE_5x5_HARD_V1);
+        return loadOrFallback("example_5x5_hard_v1.txt", EXAMPLE_5x5_HARD_V1);
     }
 
     /**
@@ -404,7 +414,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 5x5
      */
     public static Map<Integer, Piece> createExample5x5() {
-        return buildPiecesFromDefs(EXAMPLE_5x5_HARD_V1);
+        return loadOrFallback("example_5x5_hard_v1.txt", EXAMPLE_5x5_HARD_V1);
     }
 
     /**
@@ -504,7 +514,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 6x6
      */
     public static Map<Integer, Piece> createValidation6x6() {
-        return buildPiecesFromDefs(VALIDATION_6x6);
+        return loadOrFallback("validation_6x6.txt", VALIDATION_6x6);
     }
 
     /**
@@ -601,7 +611,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 6x12
      */
     public static Map<Integer, Piece> createPuzzle6x12() {
-        return buildPiecesFromDefs(PUZZLE_6x12);
+        return loadOrFallback("puzzle_6x12.txt", PUZZLE_6x12);
     }
 
     /**
@@ -877,7 +887,7 @@ public class PuzzleFactory {
      * @return map des pièces du puzzle 16x16
      */
     public static Map<Integer, Piece> createPuzzle16x16() {
-        return buildPiecesFromDefs(PUZZLE_16x16);
+        return loadOrFallback("puzzle_16x16.txt", PUZZLE_16x16);
     }
 
     /**

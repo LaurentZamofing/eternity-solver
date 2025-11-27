@@ -1,0 +1,21 @@
+# Puzzle: example_4x4_hard_v1
+# Format: id north east south west
+# Convention: bord extérieur = 0
+# 4x4 puzzle - hard variant 1 (centers first)
+
+1 3 2 2 1
+2 2 1 1 2
+3 1 3 3 2
+4 3 2 2 1
+5 0 3 1 2
+6 1 2 3 0
+7 2 3 0 2
+8 2 0 1 3
+9 0 2 3 1
+10 2 1 1 0
+11 1 0 3 2
+12 1 2 0 1
+13 0 1 2 0
+14 0 0 2 3
+15 3 1 0 0
+16 3 0 0 3

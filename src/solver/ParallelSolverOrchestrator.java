@@ -140,11 +140,7 @@ public class ParallelSolverOrchestrator {
             // Print thread start message
             printThreadStart(threadId, state);
 
-            // Initialize domain cache if needed
-            if (useDomainCache) {
-                localSolver.initializeDomainCache(state.localBoard, state.localPieces,
-                                                 state.pieceUsed, state.totalPieces);
-            }
+            // Domain cache removed (was unused/empty implementation)
 
             // Run solver
             localSolver.stats.start();

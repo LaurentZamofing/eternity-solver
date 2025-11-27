@@ -1,0 +1,115 @@
+package solver;
+
+import model.Board;
+import model.Piece;
+import util.SaveStateManager;
+
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Handles solving puzzles from saved states with full backtracking history.
+ *
+ * Extracted from EternitySolver (Refactoring #25) to:
+ * - Separate historical solving logic from standard solving
+ * - Reduce EternitySolver complexity (~70 lines reduction)
+ * - Improve testability of save/resume functionality
+ * - Single responsibility: puzzle solving from saved states
+ *
+ * Responsibilities:
+ * - Loading and initializing from saved state
+ * - Managing placement history
+ * - Coordinating backtracking through history
+ * - Integrating with BacktrackingHistoryManager
+ */
+public class HistoricalSolver {
+
+    private final EternitySolver solver;
+
+    public HistoricalSolver(EternitySolver solver) {
+        this.solver = solver;
+    }
+
+    /**
+     * Résout le puzzle en reprenant depuis un état pré-chargé avec historique de placement.
+     * Permet de backtracker à travers toutes les pièces pré-chargées, pas seulement celles
+     * placées durant cette exécution.
+     *
+     * @param board grille avec pièces déjà placées
+     * @param allPieces map de TOUTES les pièces (utilisées et non utilisées)
+     * @param unusedIds liste des IDs de pièces non encore utilisées
+     * @param preloadedOrder historique complet de l'ordre de placement (pour permettre le backtracking)
+     * @return true si le puzzle a été résolu
+     */
+    public boolean solveWithHistory(Board board, Map<Integer, Piece> allPieces,
+                                     List<Integer> unusedIds,
+                                     List<SaveStateManager.PlacementInfo> preloadedOrder) {
+        // Récupérer le temps déjà cumulé depuis les sauvegardes précédentes
+        long previousComputeTime = SaveStateManager.readTotalComputeTime(solver.configManager.getPuzzleName());
+        solver.stats.start(previousComputeTime);
+
+        // Initialiser PlacementOrderTracker avec l'historique fourni
+        solver.placementOrderTracker = new PlacementOrderTracker();
+        solver.placementOrderTracker.initializeWithHistory(preloadedOrder);
+
+        // Détecter les positions fixes (celles qu'on ne doit JAMAIS backtracker)
+        // Pour l'instant, aucune position n'est vraiment "fixe" - on peut tout backtracker
+
+        // Initialiser numFixedPieces et initialFixedPieces depuis le fichier de configuration
+        int numFixed = solver.configManager.calculateNumFixedPieces(solver.configManager.getPuzzleName());
+        solver.configManager.buildInitialFixedPieces(preloadedOrder, numFixed);
+
+        // Initialize BacktrackingHistoryManager (before other initialization)
+        BacktrackingHistoryManager backtrackingHistoryManager = new BacktrackingHistoryManager(
+            null, // validator will be set after component initialization
+            solver.configManager.getThreadLabel(),
+            solver.stats);
+
+        // Créer le tableau pieceUsed depuis unusedIds
+        int totalPieces = allPieces.size();
+        BitSet pieceUsed = solver.createPieceUsedBitSet(allPieces);
+        for (int pid : allPieces.keySet()) {
+            if (!unusedIds.contains(pid)) {
+                pieceUsed.set(pid);
+            }
+        }
+
+        // Initialize managers, components, and strategies
+        solver.initializeManagers(allPieces);
+        solver.initializeComponents(board, allPieces, pieceUsed, totalPieces);
+
+        // Update BacktrackingHistoryManager with initialized validator
+        if (backtrackingHistoryManager != null) {
+            backtrackingHistoryManager = new BacktrackingHistoryManager(
+                solver.validator,
+                solver.configManager.getThreadLabel(),
+                solver.stats);
+        }
+
+        solver.initializeDomains(board, allPieces, pieceUsed, totalPieces);
+        solver.initializePlacementStrategies();
+
+        System.out.println("  → Reprise avec " + preloadedOrder.size() + " pièces pré-chargées");
+        System.out.println("  → Le backtracking pourra remonter à travers TOUTES les pièces");
+
+        // Essayer de résoudre avec l'état actuel
+        boolean result = solver.solveBacktracking(board, allPieces, pieceUsed, totalPieces);
+
+        // Si échec, utiliser BacktrackingHistoryManager pour backtracker à travers l'historique
+        if (!result && backtrackingHistoryManager != null) {
+            // Create a SequentialSolver callback that wraps solveBacktracking
+            BacktrackingHistoryManager.SequentialSolver sequentialSolver =
+                (b, pieces, used, total) -> solver.solveBacktracking(b, pieces, used, total);
+
+            result = backtrackingHistoryManager.backtrackThroughHistory(
+                board, allPieces, pieceUsed,
+                solver.placementOrderTracker != null ? solver.placementOrderTracker.getPlacementHistory() : new ArrayList<>(),
+                sequentialSolver);
+        }
+
+        solver.stats.end();
+        return result;
+    }
+}

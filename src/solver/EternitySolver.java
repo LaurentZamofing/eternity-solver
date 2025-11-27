@@ -57,7 +57,7 @@ public class EternitySolver {
     private SingletonDetector singletonDetector;
     private MRVCellSelector cellSelector;
     private LeastConstrainingValueOrderer valueOrderer;
-    private PlacementValidator validator;
+    PlacementValidator validator; // Package-private for HistoricalSolver
     private BoardDisplayManager displayManager;
     private NeighborAnalyzer neighborAnalyzer;
     private PieceOrderingOptimizer pieceOrderingOptimizer;
@@ -65,14 +65,14 @@ public class EternitySolver {
     private RecordManager recordManager;
 
     // Sprint 3 extractions
-    private PlacementOrderTracker placementOrderTracker;
+    PlacementOrderTracker placementOrderTracker; // Package-private for HistoricalSolver
     private BacktrackingHistoryManager backtrackingHistoryManager;
 
     // Sprint 4 extractions
     private SymmetryBreakingManager symmetryBreakingManager;
 
     // Sprint 5 extractions
-    private ConfigurationManager configManager = new ConfigurationManager();
+    ConfigurationManager configManager = new ConfigurationManager(); // Package-private for HistoricalSolver
 
     // Sprint 6 extractions - Strategy Pattern for placement
     private SingletonPlacementStrategy singletonStrategy;
@@ -235,7 +235,7 @@ public class EternitySolver {
      * Initializes placement strategies (singleton and MRV).
      * Extracted to eliminate duplication between solve() and solveWithHistory().
      */
-    private void initializePlacementStrategies() {
+    void initializePlacementStrategies() { // Package-private for HistoricalSolver
         this.singletonStrategy = new SingletonPlacementStrategy(
             singletonDetector, configManager.isUseSingletons(), configManager.isVerbose(),
             symmetryBreakingManager, constraintPropagator, domainManager
@@ -250,7 +250,7 @@ public class EternitySolver {
      * Initializes managers (AutoSaveManager and RecordManager).
      * Extracted to eliminate duplication between solve() and solveWithHistory().
      */
-    private void initializeManagers(Map<Integer, Piece> pieces) {
+    void initializeManagers(Map<Integer, Piece> pieces) { // Package-private for HistoricalSolver
         this.autoSaveManager = configManager.createAutoSaveManager(
             placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>(),
             pieces);
@@ -264,7 +264,7 @@ public class EternitySolver {
      * Initializes helper components and assigns them to the solver.
      * Extracted to eliminate duplication between solve() and solveWithHistory().
      */
-    private void initializeComponents(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
+    void initializeComponents(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) { // Package-private for HistoricalSolver
         SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), configManager.isVerbose(),
             configManager.isPrioritizeBorders(), configManager.getFixedPositions());
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
@@ -276,7 +276,7 @@ public class EternitySolver {
      * Initializes domains (AC-3 only - domain cache removed as unused).
      * Extracted to eliminate duplication between solve() and solveWithHistory().
      */
-    private void initializeDomains(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
+    void initializeDomains(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) { // Package-private for HistoricalSolver
         if (useAC3) {
             this.domainManager.initializeAC3Domains(board, pieces, pieceUsed, totalPieces);
         }
@@ -289,7 +289,7 @@ public class EternitySolver {
      * @param pieces map of all pieces
      * @return empty BitSet sized for all pieces (index 0 unused, 1-based)
      */
-    private BitSet createPieceUsedBitSet(Map<Integer, Piece> pieces) {
+    BitSet createPieceUsedBitSet(Map<Integer, Piece> pieces) { // Package-private for HistoricalSolver
         int maxPieceId = pieces.keySet().stream().max(Integer::compareTo).orElse(pieces.size());
         return new BitSet(maxPieceId + 1); // index 0 unused, 1-based
     }
@@ -391,83 +391,19 @@ public class EternitySolver {
 
     /**
      * Résout le puzzle en reprenant depuis un état pré-chargé avec historique de placement.
-     * Permet de backtracker à travers toutes les pièces pré-chargées, pas seulement celles
-     * placées durant cette exécution.
+     * Délègue à HistoricalSolver (Refactoring #25 - extracted historical solving logic).
      *
      * @param board grille avec pièces déjà placées
      * @param allPieces map de TOUTES les pièces (utilisées et non utilisées)
      * @param unusedIds liste des IDs de pièces non encore utilisées
-     * @param preloadedOrder historique complet de l'ordre de placement (pour permettre le backtracking)
+     * @param preloadedOrder historique complet de l'ordre de placement
      * @return true si le puzzle a été résolu
      */
     public boolean solveWithHistory(Board board, Map<Integer, Piece> allPieces,
                                      List<Integer> unusedIds,
                                      List<SaveStateManager.PlacementInfo> preloadedOrder) {
-        // Récupérer le temps déjà cumulé depuis les sauvegardes précédentes
-        long previousComputeTime = SaveStateManager.readTotalComputeTime(configManager.getPuzzleName());
-        stats.start(previousComputeTime);
-
-        // Initialiser PlacementOrderTracker avec l'historique fourni
-        this.placementOrderTracker = new PlacementOrderTracker();
-        this.placementOrderTracker.initializeWithHistory(preloadedOrder);
-
-        // Détecter les positions fixes (celles qu'on ne doit JAMAIS backtracker)
-        // Pour l'instant, aucune position n'est vraiment "fixe" - on peut tout backtracker
-
-        // Initialiser numFixedPieces et initialFixedPieces depuis le fichier de configuration
-        int numFixed = configManager.calculateNumFixedPieces(configManager.getPuzzleName());
-        configManager.buildInitialFixedPieces(preloadedOrder, numFixed);
-
-        // Initialize BacktrackingHistoryManager (before other initialization)
-        this.backtrackingHistoryManager = new BacktrackingHistoryManager(
-            null, // validator will be set after component initialization
-            configManager.getThreadLabel(),
-            stats);
-
-        // Créer le tableau pieceUsed depuis unusedIds (Refactoring #14 - extracted to helper)
-        int totalPieces = allPieces.size();
-        BitSet pieceUsed = createPieceUsedBitSet(allPieces);
-        for (int pid : allPieces.keySet()) {
-            if (!unusedIds.contains(pid)) {
-                pieceUsed.set(pid);
-            }
-        }
-
-        // Initialize managers, components, and strategies (Refactoring #17 - consolidated initialization)
-        initializeManagers(allPieces);
-        initializeComponents(board, allPieces, pieceUsed, totalPieces);
-
-        // Update BacktrackingHistoryManager with initialized validator
-        if (this.backtrackingHistoryManager != null) {
-            this.backtrackingHistoryManager = new BacktrackingHistoryManager(
-                this.validator,
-                configManager.getThreadLabel(),
-                stats);
-        }
-
-        initializeDomains(board, allPieces, pieceUsed, totalPieces);
-        initializePlacementStrategies();
-
-        System.out.println("  → Reprise avec " + preloadedOrder.size() + " pièces pré-chargées");
-        System.out.println("  → Le backtracking pourra remonter à travers TOUTES les pièces");
-
-        // Essayer de résoudre avec l'état actuel
-        boolean result = solveBacktracking(board, allPieces, pieceUsed, totalPieces);
-
-        // Si échec, utiliser BacktrackingHistoryManager pour backtracker à travers l'historique
-        if (!result && this.backtrackingHistoryManager != null) {
-            // Create a SequentialSolver callback that wraps solveBacktracking
-            BacktrackingHistoryManager.SequentialSolver sequentialSolver =
-                (b, pieces, used, total) -> solveBacktracking(b, pieces, used, total);
-
-            result = this.backtrackingHistoryManager.backtrackThroughHistory(
-                board, allPieces, pieceUsed,
-                placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>(),
-                sequentialSolver);
-        }
-
-        stats.end();
-        return result;
+        HistoricalSolver historicalSolver = new HistoricalSolver(this);
+        return historicalSolver.solveWithHistory(board, allPieces, unusedIds, preloadedOrder);
     }
 
     /**

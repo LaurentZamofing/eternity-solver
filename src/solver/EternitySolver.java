@@ -99,6 +99,10 @@ public class EternitySolver {
     // Sprint 5 extractions
     private ConfigurationManager configManager = new ConfigurationManager();
 
+    // Sprint 6 extractions - Strategy Pattern for placement
+    private SingletonPlacementStrategy singletonStrategy;
+    private MRVPlacementStrategy mrvStrategy;
+
     // Pre-computed constraints for each cell (optimization)
     private CellConstraints[][] cellConstraints;
 
@@ -225,7 +229,7 @@ public class EternitySolver {
      * @param lastPlacedRow ligne de la dernière pièce posée (-1 si aucune)
      * @param lastPlacedCol colonne de la dernière pièce posée (-1 si aucune)
      */
-    private void printBoardWithCounts(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces,
+    public void printBoardWithCounts(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces,
                                       int lastPlacedRow, int lastPlacedCol) {
         BoardVisualizer.printBoardWithCounts(board, piecesById, pieceUsed, totalPieces,
                                             lastPlacedRow, lastPlacedCol, this::fits);
@@ -236,7 +240,7 @@ public class EternitySolver {
     /**
      * Record a placement using PlacementOrderTracker
      */
-    private void recordPlacement(int row, int col, int pieceId, int rotation) {
+    void recordPlacement(int row, int col, int pieceId, int rotation) {
         if (placementOrderTracker != null) {
             placementOrderTracker.recordPlacement(row, col, pieceId, rotation);
         }
@@ -245,7 +249,7 @@ public class EternitySolver {
     /**
      * Remove last placement using PlacementOrderTracker
      */
-    private SaveStateManager.PlacementInfo removeLastPlacement() {
+    SaveStateManager.PlacementInfo removeLastPlacement() {
         if (placementOrderTracker != null) {
             return placementOrderTracker.removeLastPlacement();
         }
@@ -253,6 +257,63 @@ public class EternitySolver {
     }
 
     // ==================== End PlacementOrder Helpers ====================
+
+    // ==================== Step Count and Last Placed Accessors ====================
+
+    /**
+     * Get the current step count.
+     */
+    public int getStepCount() {
+        return stepCount;
+    }
+
+    /**
+     * Increment the step count.
+     */
+    public void incrementStepCount() {
+        stepCount++;
+    }
+
+    /**
+     * Set the last placed position.
+     */
+    public void setLastPlaced(int row, int col) {
+        this.lastPlacedRow = row;
+        this.lastPlacedCol = col;
+    }
+
+    /**
+     * Get the last placed row.
+     */
+    public int getLastPlacedRow() {
+        return lastPlacedRow;
+    }
+
+    /**
+     * Get the last placed column.
+     */
+    public int getLastPlacedCol() {
+        return lastPlacedCol;
+    }
+
+    /**
+     * Find and set the last placed position by scanning the board.
+     */
+    public void findAndSetLastPlaced(Board board) {
+        lastPlacedRow = -1;
+        lastPlacedCol = -1;
+        outer: for (int rr = board.getRows() - 1; rr >= 0; rr--) {
+            for (int cc = board.getCols() - 1; cc >= 0; cc--) {
+                if (!board.isEmpty(rr, cc)) {
+                    lastPlacedRow = rr;
+                    lastPlacedCol = cc;
+                    break outer;
+                }
+            }
+        }
+    }
+
+    // ==================== End Step Count and Last Placed Accessors ====================
 
     /**
      * Vérifie si une pièce candidate peut être placée en (r,c).
@@ -395,7 +456,7 @@ public class EternitySolver {
      * @param totalPieces nombre total de pièces
      * @return nombre de pièces distinctes pouvant être placées
      */
-    private int countUniquePieces(Board board, int r, int c, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
+    public int countUniquePieces(Board board, int r, int c, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         List<Integer> validPieceIds = new ArrayList<>();
         // Iterate pieces in order specified by sortOrder (using PieceIterator to eliminate duplication)
         for (int pid : PieceIterator.create(sortOrder, totalPieces, pieceUsed)) {
@@ -695,7 +756,22 @@ public class EternitySolver {
             return true;
         }
 
-        // ÉTAPE 1 : Vérifier s'il y a une pièce singleton (qui ne peut aller qu'à un seul endroit)
+        // Create backtracking context for strategies
+        BacktrackingContext context = new BacktrackingContext(
+            board, piecesById, pieceUsed, totalPieces, stats, numFixedPieces
+        );
+
+        // ÉTAPE 1 : Try singleton placement strategy first (most constrained)
+        if (singletonStrategy.tryPlacement(context, this)) {
+            return true;
+        }
+
+        // ÉTAPE 2 : Try MRV placement strategy
+        return mrvStrategy.tryPlacement(context, this);
+    }
+
+    /**
+     * Résout le puzzle en reprenant depuis un état pré-chargé avec historique de placement.
         // Seulement si l'optimisation singleton est activée
         SingletonDetector.SingletonInfo singleton = useSingletons ? singletonDetector.findSingletonPiece(board, piecesById, pieceUsed, totalPieces) : null;
         if (singleton != null) {
@@ -1139,6 +1215,16 @@ public class EternitySolver {
 
         // Apply symmetry breaking constraints
         initializeSymmetryBreaking(board);
+
+        // Initialize placement strategies (Sprint 6 - Strategy Pattern)
+        this.singletonStrategy = new SingletonPlacementStrategy(
+            singletonDetector, useSingletons, verbose,
+            symmetryBreakingManager, constraintPropagator, domainManager
+        );
+        this.mrvStrategy = new MRVPlacementStrategy(
+            verbose, valueOrderer, symmetryBreakingManager,
+            constraintPropagator, domainManager
+        );
 
         // Use work-stealing if enabled
         // Note: Work-stealing currently uses sequential backtracking

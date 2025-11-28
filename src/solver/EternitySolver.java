@@ -4,7 +4,6 @@ import model.Board;
 import model.Piece;
 import solver.BoardVisualizer;
 import solver.heuristics.*;
-import util.SaveManager;
 import util.SaveStateManager;
 
 import java.util.ArrayList;
@@ -12,9 +11,6 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Solveur de puzzle d'edge-matching (type "Eternity") utilisant le backtracking.
@@ -44,11 +40,7 @@ public class EternitySolver {
     private SingletonDetector singletonDetector;
     private MRVCellSelector cellSelector;
     private LeastConstrainingValueOrderer valueOrderer;
-    /**
-     * Package-private fields for HistoricalSolver access.
-     * These allow HistoricalSolver to initialize and coordinate solver components
-     * when resuming from saved state without breaking encapsulation.
-     */
+    /** Package-private for {@link HistoricalSolver} component coordination. */
     PlacementValidator validator;
     private BoardDisplayManager displayManager;
     private NeighborAnalyzer neighborAnalyzer;
@@ -57,7 +49,6 @@ public class EternitySolver {
     private RecordManager recordManager;
 
     PlacementOrderTracker placementOrderTracker;
-    private BacktrackingHistoryManager backtrackingHistoryManager;
     private SymmetryBreakingManager symmetryBreakingManager;
     ConfigurationManager configManager = new ConfigurationManager();
     private SingletonPlacementStrategy singletonStrategy;
@@ -267,13 +258,12 @@ public class EternitySolver {
         this.startTimeMs = System.currentTimeMillis();
 
         this.placementOrderTracker = new PlacementOrderTracker();
-        this.placementOrderTracker.initialize();
+        placementOrderTracker.initialize();
 
         int totalPieces = pieces.size();
         BitSet pieceUsed = createPieceUsedBitSet(pieces);
 
-        configManager.detectFixedPiecesFromBoard(board, pieceUsed,
-            placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>());
+        configManager.detectFixedPiecesFromBoard(board, pieceUsed, placementOrderTracker.getPlacementHistory());
 
         initializeManagers(pieces);
         initializeComponents(board, pieces, pieceUsed, totalPieces);

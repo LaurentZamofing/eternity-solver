@@ -6,25 +6,7 @@ import model.Placement;
 
 import java.util.Map;
 
-/**
- * Gère les contraintes de brisure de symétrie pour éliminer les branches de recherche redondantes.
- *
- * Les puzzles d'assemblage de bords ont des symétries inhérentes :
- * - Symétrie rotationnelle (4 orientations)
- * - Symétrie de réflexion (miroirs horizontal/vertical)
- *
- * Sans brisure de symétrie, le solveur explore des solutions équivalentes qui diffèrent
- * seulement par rotation ou réflexion, gaspillant du temps de calcul.
- *
- * Ce gestionnaire applique des contraintes pour élaguer les branches symétriques tôt dans la recherche.
- *
- * Stratégies clés :
- * 1. Ordre lexicographique : Force les pièces de coin à suivre un ordre spécifique
- * 2. Rotation fixe : Fixe la rotation de la première pièce placée
- * 3. Contraintes de coin : Assure que le coin supérieur gauche a le plus petit ID de pièce
- *
- * Extrait de EternitySolver pour améliorer la modularité et la testabilité.
- */
+/** Manages symmetry-breaking constraints to prune redundant search branches using lexicographic ordering (corner pieces), rotation fixing (top-left at 0°), and reflection pruning (4x reduction). */
 public class SymmetryBreakingManager {
 
     private final boolean verbose;
@@ -36,46 +18,24 @@ public class SymmetryBreakingManager {
     private boolean enableRotationalFixing = true;
     private boolean enableReflectionPruning = false; // Future : symétrie horizontale/verticale
 
-    /**
-     * Constructeur
-     * @param rows nombre de lignes dans le puzzle
-     * @param cols nombre de colonnes dans le puzzle
-     * @param verbose activer la journalisation détaillée
-     */
+    /** Creates symmetry-breaking manager with board dimensions and verbose flag for detailed logging. */
     public SymmetryBreakingManager(int rows, int cols, boolean verbose) {
         this.rows = rows;
         this.cols = cols;
         this.verbose = verbose;
     }
 
-    /**
-     * Active ou désactive la contrainte d'ordre lexicographique
-     * @param enabled true pour activer
-     */
+    /** Enables or disables lexicographic ordering constraint for corner pieces. */
     public void setLexicographicOrdering(boolean enabled) {
         this.enableLexicographicOrdering = enabled;
     }
 
-    /**
-     * Active ou désactive la contrainte de fixation rotationnelle
-     * @param enabled true pour activer
-     */
+    /** Enables or disables rotation fixing constraint (top-left corner at 0°). */
     public void setRotationalFixing(boolean enabled) {
         this.enableRotationalFixing = enabled;
     }
 
-    /**
-     * Vérifie si un placement violerait les contraintes de brisure de symétrie.
-     * Ceci est appelé AVANT de placer une pièce pour élaguer les branches invalides.
-     *
-     * @param board état actuel du plateau
-     * @param row ligne où placer la pièce
-     * @param col colonne où placer la pièce
-     * @param pieceId ID de la pièce à placer
-     * @param rotation rotation de la pièce (0-3)
-     * @param allPieces carte de toutes les pièces
-     * @return true si le placement est autorisé, false s'il viole les contraintes de symétrie
-     */
+    /** Returns true if placement is allowed; called before placing piece to prune branches violating symmetry constraints (lexicographic ordering or rotation fixing). */
     public boolean isPlacementAllowed(Board board, int row, int col, int pieceId,
                                      int rotation, Map<Integer, Piece> allPieces) {
         // Vérifie l'ordre lexicographique sur les coins
@@ -101,22 +61,7 @@ public class SymmetryBreakingManager {
         return true;
     }
 
-    /**
-     * Applique l'ordre lexicographique sur les pièces de coin.
-     *
-     * Stratégie : Le coin supérieur gauche doit avoir un ID de pièce plus petit que :
-     * - Le coin supérieur droit (élimine la réflexion horizontale)
-     * - Le coin inférieur gauche (élimine la réflexion verticale)
-     * - Le coin inférieur droit (élimine la rotation de 180°)
-     *
-     * Cela réduit l'espace de recherche d'un facteur allant jusqu'à 4.
-     *
-     * @param board état actuel du plateau
-     * @param row ligne où la pièce est placée
-     * @param col colonne où la pièce est placée
-     * @param pieceId ID de la pièce à placer
-     * @return true si le placement respecte l'ordre, false sinon
-     */
+    /** Enforces lexicographic ordering on corner pieces; top-left must have smallest ID (eliminates horizontal/vertical reflection and 180° rotation, 4x reduction). */
     private boolean checkLexicographicOrdering(Board board, int row, int col, int pieceId) {
         // Applique l'ordre uniquement sur les positions de coin
         boolean isTopLeft = (row == 0 && col == 0);
@@ -153,20 +98,7 @@ public class SymmetryBreakingManager {
         return true;
     }
 
-    /**
-     * Applique la fixation de rotation pour des cellules spécifiques afin d'éliminer la symétrie rotationnelle.
-     *
-     * Stratégie : Fixe la rotation de la pièce du coin supérieur gauche à 0°.
-     * Cela élimine 3/4 des solutions rotationnellement équivalentes.
-     *
-     * Note : S'applique uniquement si la pièce a plusieurs rotations uniques.
-     *
-     * @param board état actuel du plateau
-     * @param row ligne où la pièce est placée
-     * @param col colonne où la pièce est placée
-     * @param rotation rotation appliquée (0-3)
-     * @return true si la rotation est autorisée, false sinon
-     */
+    /** Fixes rotation of top-left corner piece to 0° to eliminate rotational symmetry (eliminates 3/4 of rotationally equivalent solutions). */
     private boolean checkRotationFixing(Board board, int row, int col, int rotation) {
         // Fixe la rotation uniquement pour le coin supérieur gauche
         if (row != 0 || col != 0) {
@@ -178,13 +110,7 @@ public class SymmetryBreakingManager {
         return rotation == 0;
     }
 
-    /**
-     * Applique la validation post-placement pour les contraintes de symétrie.
-     * Appelé APRÈS qu'une pièce est placée pour vérifier l'état du plateau.
-     *
-     * @param board état actuel du plateau
-     * @return true si l'état du plateau est valide sous les contraintes de symétrie
-     */
+    /** Validates board state after placement; returns true if all corner pieces satisfy lexicographic ordering constraint. */
     public boolean validateBoardState(Board board) {
         if (!enableLexicographicOrdering) {
             return true;
@@ -216,9 +142,7 @@ public class SymmetryBreakingManager {
         return true;
     }
 
-    /**
-     * Affiche les informations de brisure de symétrie au début de la résolution
-     */
+    /** Logs symmetry-breaking configuration at solver start. */
     public void logConfiguration() {
         if (verbose) {
             System.out.println("  🔄 Brisure de symétrie :");
@@ -228,10 +152,7 @@ public class SymmetryBreakingManager {
         }
     }
 
-    /**
-     * Obtient la réduction attendue de l'espace de recherche grâce à la brisure de symétrie
-     * @return facteur de réduction de l'espace de recherche (ex: 4.0 signifie 1/4 de l'espace original)
-     */
+    /** Returns expected search space reduction factor from symmetry breaking (e.g., 4.0 means 1/4 of original space). */
     public double getExpectedReductionFactor() {
         double factor = 1.0;
 
@@ -250,10 +171,7 @@ public class SymmetryBreakingManager {
         return factor;
     }
 
-    /**
-     * Vérifie si la brisure de symétrie est activée
-     * @return true si une stratégie de brisure de symétrie est active
-     */
+    /** Returns true if any symmetry-breaking strategy is enabled. */
     public boolean isEnabled() {
         return enableLexicographicOrdering || enableRotationalFixing || enableReflectionPruning;
     }

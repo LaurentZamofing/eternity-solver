@@ -304,7 +304,7 @@ class PlacementValidatorTest {
     }
 
     @Test
-    @DisplayName("Should throw NPE with null pieces in map")
+    @DisplayName("Should handle null pieces in map gracefully")
     void testNullPiecesHandling() {
         Map<Integer, Piece> piecesWithNull = new HashMap<>(testPieces);
         piecesWithNull.put(10, null);
@@ -312,12 +312,11 @@ class PlacementValidatorTest {
         int[] candidateEdges = new int[]{0, 5, 6, 0};
         BitSet pieceUsed = new BitSet(11);
 
-        // Current implementation doesn't handle null pieces - throws NPE
-        // This test documents current behavior
-        assertThrows(NullPointerException.class, () ->
+        // After fix: should handle null pieces gracefully by skipping them
+        assertDoesNotThrow(() ->
             validator.forwardCheck(board, 0, 0, candidateEdges,
                                  piecesWithNull, pieceUsed, 10, 1),
-            "Current implementation throws NPE with null pieces"
+            "Should handle null pieces gracefully after fix"
         );
     }
 

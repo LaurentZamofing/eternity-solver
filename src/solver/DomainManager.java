@@ -10,25 +10,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * DomainManager handles AC-3 domain initialization and management for the Eternity solver.
- *
- * This class maintains the domains (valid placements) for each empty cell on the board.
- * Domains are represented as a 2D array of Maps, where each map contains valid placements
- * grouped by piece ID.
- *
- * Responsibilities:
- * - Initialize AC-3 domains for all empty cells
- * - Restore domains after backtracking
- * - Compute domains for individual cells
- * - Provide domain caching functionality
- *
- * @author Eternity Solver Team
+ * Manages AC-3 domains (valid placements) for puzzle cells with caching and backtracking support.
  */
 public class DomainManager {
 
-    /**
-     * Classe interne pour stocker les détails d'un placement valide.
-     */
+    /** Stores valid placement details (piece ID and rotation). */
     public static class ValidPlacement {
         public final int pieceId;
         public final int rotation;
@@ -53,41 +39,23 @@ public class DomainManager {
     // Sort order for piece iteration: "ascending" or "descending"
     private String sortOrder = "ascending";
 
-    /**
-     * Interface for checking if a piece fits at a position.
-     */
+    /** Interface for checking if a piece fits at a position. */
     public interface FitChecker {
         boolean fits(Board board, int r, int c, int[] candidateEdges);
     }
 
-    /**
-     * Constructor for DomainManager.
-     *
-     * @param fitChecker the fit checker to use for validating placements
-     */
+    /** Creates DomainManager with the specified fit checker. */
     public DomainManager(FitChecker fitChecker) {
         this.fitChecker = fitChecker;
         this.domainCache = new HashMap<>();
     }
 
-    /**
-     * Set the sort order for piece iteration.
-     *
-     * @param sortOrder "ascending" or "descending"
-     */
+    /** Sets piece iteration sort order ("ascending" or "descending"). */
     public void setSortOrder(String sortOrder) {
         this.sortOrder = sortOrder != null ? sortOrder : "ascending";
     }
 
-    /**
-     * Initialize AC-3 domains for all empty cells on the board.
-     * Computes the initial valid placements for each empty cell and groups them by piece ID.
-     *
-     * @param board the current board state
-     * @param piecesById map of all pieces by ID
-     * @param pieceUsed bitset tracking which pieces are already placed
-     * @param totalPieces total number of pieces
-     */
+    /** Initializes AC-3 domains for all empty cells, computing valid placements grouped by piece ID. */
     @SuppressWarnings("unchecked")
     public void initializeAC3Domains(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         int rows = board.getRows();
@@ -111,17 +79,7 @@ public class DomainManager {
         ac3Initialized = true;
     }
 
-    /**
-     * Restore AC-3 domains after backtracking from (r,c).
-     * Recomputes domains for the removed cell and all its neighbors.
-     *
-     * @param board current board state (after removal)
-     * @param r row of removed piece
-     * @param c column of removed piece
-     * @param piecesById map of all pieces
-     * @param pieceUsed array tracking used pieces
-     * @param totalPieces total number of pieces
-     */
+    /** Restores AC-3 domains after backtracking by recomputing domains for (r,c) and neighbors. */
     public void restoreAC3Domains(Board board, int r, int c, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (!ac3Initialized) return;
 
@@ -147,18 +105,7 @@ public class DomainManager {
         }
     }
 
-    /**
-     * Compute the domain (valid placements) for a specific cell.
-     * Tests all available pieces in all rotations to find valid placements.
-     *
-     * @param board the current board state
-     * @param r row of the cell
-     * @param c column of the cell
-     * @param piecesById map of all pieces
-     * @param pieceUsed bitset tracking used pieces
-     * @param totalPieces total number of pieces
-     * @return list of valid placements for this cell
-     */
+    /** Computes valid placements for cell (r,c) by testing all available pieces in all rotations. */
     public List<ValidPlacement> computeDomain(Board board, int r, int c,
                                               Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         List<ValidPlacement> domain = new ArrayList<>();
@@ -196,53 +143,31 @@ public class DomainManager {
         return domain;
     }
 
-    /**
-     * Get the domain for a specific cell from the AC-3 domains.
-     *
-     * @param r row of the cell
-     * @param c column of the cell
-     * @return map of valid placements grouped by piece ID, or null if not initialized
-     */
+    /** Returns AC-3 domain for cell (r,c), or null if not initialized. */
     public Map<Integer, List<ValidPlacement>> getDomain(int r, int c) {
         if (!ac3Initialized || domains == null) return null;
         return domains[r][c];
     }
 
-    /**
-     * Set the domain for a specific cell (used during propagation).
-     *
-     * @param r row of the cell
-     * @param c column of the cell
-     * @param domain the new domain for this cell
-     */
+    /** Sets domain for cell (r,c), used during constraint propagation. */
     public void setDomain(int r, int c, Map<Integer, List<ValidPlacement>> domain) {
         if (domains != null && r >= 0 && r < domains.length && c >= 0 && c < domains[0].length) {
             domains[r][c] = domain;
         }
     }
 
-    /**
-     * Check if AC-3 domains are initialized.
-     *
-     * @return true if AC-3 domains are initialized
-     */
+    /** Returns true if AC-3 domains are initialized. */
     public boolean isAC3Initialized() {
         return ac3Initialized;
     }
 
-    /**
-     * Reset the AC-3 initialization state.
-     */
+    /** Resets AC-3 initialization state and clears domains. */
     public void resetAC3() {
         ac3Initialized = false;
         domains = null;
     }
 
-    /**
-     * Enable or disable domain caching.
-     *
-     * @param enabled true to enable caching, false to disable
-     */
+    /** Enables or disables domain caching. */
     public void setUseDomainCache(boolean enabled) {
         this.useDomainCache = enabled;
         if (!enabled) {
@@ -252,17 +177,7 @@ public class DomainManager {
         }
     }
 
-    /**
-     * Get domain from cache or compute if necessary.
-     *
-     * @param board the current board
-     * @param r row of the cell
-     * @param c column of the cell
-     * @param piecesById map of all pieces
-     * @param pieceUsed bitset tracking used pieces
-     * @param totalPieces total number of pieces
-     * @return list of valid placements for this cell
-     */
+    /** Returns cached domain for cell (r,c), or computes if cache disabled. */
     public List<ValidPlacement> getCachedDomain(Board board, int r, int c,
                                                  Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (!useDomainCache) {
@@ -273,17 +188,7 @@ public class DomainManager {
         return domainCache.getOrDefault(key, new ArrayList<>());
     }
 
-    /**
-     * Update cache after a piece placement.
-     * Invalidates and recomputes domains for neighbors.
-     *
-     * @param board the current board
-     * @param r row of placed piece
-     * @param c column of placed piece
-     * @param piecesById map of all pieces
-     * @param pieceUsed bitset tracking used pieces
-     * @param totalPieces total number of pieces
-     */
+    /** Updates cache after placement at (r,c) by invalidating and recomputing neighbor domains. */
     public void updateCacheAfterPlacement(Board board, int r, int c,
                                           Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (!useDomainCache || domainCache == null) return;
@@ -309,17 +214,7 @@ public class DomainManager {
         }
     }
 
-    /**
-     * Restore cache after backtracking.
-     * Recomputes domain for the removed cell and its neighbors.
-     *
-     * @param board the current board
-     * @param r row of removed piece
-     * @param c column of removed piece
-     * @param piecesById map of all pieces
-     * @param pieceUsed bitset tracking used pieces
-     * @param totalPieces total number of pieces
-     */
+    /** Restores cache after backtracking by recomputing domains for (r,c) and neighbors. */
     public void restoreCacheAfterBacktrack(Board board, int r, int c,
                                            Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (!useDomainCache) return;
@@ -345,14 +240,7 @@ public class DomainManager {
         }
     }
 
-    /**
-     * Initialize domain cache for all empty cells.
-     *
-     * @param board the current board
-     * @param piecesById map of all pieces
-     * @param pieceUsed bitset tracking used pieces
-     * @param totalPieces total number of pieces
-     */
+    /** Initializes domain cache by computing domains for all empty cells. */
     public void initializeDomainCache(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (!useDomainCache) return;
         if (domainCache == null) {
@@ -372,9 +260,7 @@ public class DomainManager {
         }
     }
 
-    /**
-     * Clear the domain cache.
-     */
+    /** Clears the domain cache. */
     public void clearCache() {
         if (domainCache != null) {
             domainCache.clear();

@@ -51,7 +51,7 @@ public class BinarySaveManager {
                 }
             }
 
-            // Piece usage bitmap - écrire la taille du tableau (maxPieceId)
+            // Piece usage bitmap - write the array size (maxPieceId)
             int maxPieceId = pieceUsed.length - 1;
             out.writeInt(maxPieceId);
             for (int i = 1; i <= maxPieceId; i++) {
@@ -94,7 +94,7 @@ public class BinarySaveManager {
                 placements.add(new PlacementData(r, c, pieceId, rotation));
             }
 
-            // Read piece usage - le fichier contient le MAX piece ID, pas le count
+            // Read piece usage - the file contains the MAX piece ID, not the count
             int maxPieceId = in.readInt();
             boolean[] pieceUsed = new boolean[maxPieceId + 1];
             for (int i = 1; i <= maxPieceId; i++) {

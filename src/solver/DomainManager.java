@@ -114,7 +114,7 @@ public class DomainManager {
         if ("descending".equals(sortOrder)) {
             // Descending: from totalPieces down to 1
             for (int pid = totalPieces; pid >= 1; pid--) {
-                if (pieceUsed.get(pid)) continue; // Pièce déjà utilisée
+                if (pieceUsed.get(pid)) continue; // Piece already used
                 Piece piece = piecesById.get(pid);
                 int maxRotations = piece.getUniqueRotationCount();
                 for (int rot = 0; rot < maxRotations; rot++) {
@@ -127,7 +127,7 @@ public class DomainManager {
         } else {
             // Ascending (default): from 1 to totalPieces
             for (int pid = 1; pid <= totalPieces; pid++) {
-                if (pieceUsed.get(pid)) continue; // Pièce déjà utilisée
+                if (pieceUsed.get(pid)) continue; // Piece already used
                 Piece piece = piecesById.get(pid);
                 if (piece == null) continue; // Skip if piece doesn't exist (sparse IDs)
                 int maxRotations = piece.getUniqueRotationCount();

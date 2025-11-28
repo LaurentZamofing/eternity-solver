@@ -11,7 +11,7 @@ public class StatisticsManager {
 
     public long startTime;
     public long endTime;
-    public long previousTimeOffset = 0; // Temps déjà cumulé dans les runs précédents
+    public long previousTimeOffset = 0; // Time already accumulated in previous runs
     public long recursiveCalls = 0;
     public long placements = 0;
     public long backtracks = 0;
@@ -21,14 +21,14 @@ public class StatisticsManager {
     public long fitChecks = 0;
     public long forwardCheckRejects = 0;
 
-    // Suivi de progression (pour estimation du %)
+    // Progress tracking (for % estimation)
     private Map<Integer, ProgressTracker> depthTrackers = new HashMap<>();
 
     /**
-     * Classe interne pour suivre la progression à une profondeur donnée
+     * Inner class to track progress at a given depth
      */
     private static class ProgressTracker {
-        int totalOptions;      // Nombre total d'options à cette profondeur
+        int totalOptions;      // Total number of options at this depth
         int currentOption;     // Option actuellement explorée (0-indexed)
 
         ProgressTracker(int totalOptions) {
@@ -60,7 +60,7 @@ public class StatisticsManager {
     }
 
     /**
-     * Enregistre le nombre d'options à une profondeur donnée
+     * Registers the number of options at a given depth
      */
     public void registerDepthOptions(int depth, int numOptions) {
         if (!depthTrackers.containsKey(depth)) {
@@ -69,7 +69,7 @@ public class StatisticsManager {
     }
 
     /**
-     * Incrémente l'option actuelle à une profondeur donnée
+     * Increments the current option at a given depth
      */
     public void incrementDepthProgress(int depth) {
         ProgressTracker tracker = depthTrackers.get(depth);
@@ -79,11 +79,11 @@ public class StatisticsManager {
     }
 
     /**
-     * Calcule un pourcentage d'avancement estimé basé sur les premières profondeurs
-     * Utilise les 5 premières profondeurs pour l'estimation
+     * Calculates an estimated progress percentage based on the first depths
+     * Uses the first 5 depths for estimation
      */
     public double getProgressPercentage() {
-        // Limiter le suivi aux 5 premières profondeurs pour la performance
+        // Limit tracking to first 5 depths for performance
         final int MAX_DEPTH_TRACKED = 5;
 
         double progress = 0.0;
@@ -92,34 +92,34 @@ public class StatisticsManager {
         for (int d = 0; d < MAX_DEPTH_TRACKED; d++) {
             ProgressTracker tracker = depthTrackers.get(d);
             if (tracker == null || tracker.totalOptions == 0) {
-                break; // Plus de profondeur explorée
+                break; // No more depth explored
             }
 
-            // Pourcentage à cette profondeur
+            // Percentage at this depth
             double depthProgress = (double) tracker.currentOption / tracker.totalOptions;
             progress += depthProgress * weight;
-            weight /= tracker.totalOptions; // Pondération décroissante
+            weight /= tracker.totalOptions; // Decreasing weight
         }
 
         return Math.min(100.0, progress * 100.0);
     }
 
     public void print() {
-        System.out.println("\n╔════════════════ STATISTIQUES ═══════════════════╗");
-        System.out.println("║ Temps écoulé       : " + String.format("%.2f", getElapsedTimeSec()) + " secondes");
-        System.out.println("║ Appels récursifs   : " + recursiveCalls);
-        System.out.println("║ Placements testés  : " + placements);
+        System.out.println("\n╔════════════════ STATISTICS ═════════════════════╗");
+        System.out.println("║ Elapsed time       : " + String.format("%.2f", getElapsedTimeSec()) + " seconds");
+        System.out.println("║ Recursive calls    : " + recursiveCalls);
+        System.out.println("║ Placements tested  : " + placements);
         System.out.println("║ Backtracks         : " + backtracks);
-        System.out.println("║ Vérifications fit  : " + fitChecks);
-        System.out.println("║ Forward check rejets : " + forwardCheckRejects);
-        System.out.println("║ Singletons trouvés : " + singletonsFound);
-        System.out.println("║ Singletons posés   : " + singletonsPlaced);
-        System.out.println("║ Dead-ends détectés : " + deadEndsDetected);
+        System.out.println("║ Fit checks         : " + fitChecks);
+        System.out.println("║ Forward check rejects : " + forwardCheckRejects);
+        System.out.println("║ Singletons found   : " + singletonsFound);
+        System.out.println("║ Singletons placed  : " + singletonsPlaced);
+        System.out.println("║ Dead-ends detected : " + deadEndsDetected);
         System.out.println("╚══════════════════════════════════════════════════╝");
     }
 
     public void printCompact() {
-        System.out.printf("Stats: Récursif=%d | Placements=%d | Backtracks=%d | Singletons=%d/%d | Dead-ends=%d | Temps=%.1fs\n",
+        System.out.printf("Stats: Recursive=%d | Placements=%d | Backtracks=%d | Singletons=%d/%d | Dead-ends=%d | Time=%.1fs\n",
                 recursiveCalls, placements, backtracks, singletonsPlaced, singletonsFound, deadEndsDetected, getElapsedTimeSec());
     }
 }

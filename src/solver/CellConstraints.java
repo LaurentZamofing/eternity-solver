@@ -1,25 +1,25 @@
 package solver;
 
 /**
- * Contraintes pré-calculées pour une position de cellule dans le plateau de puzzle.
- * Stocke les informations de bord et les valeurs de bords requises pour éviter les calculs répétés.
+ * Pre-calculated constraints for a cell position in the puzzle board.
+ * Stores border information and required border values to avoid repeated calculations.
  */
 public class CellConstraints {
-    // Drapeaux de bord (empaquetés dans un seul byte pour l'efficacité du cache)
+    // Border flags (packed in a single byte for cache efficiency)
     public final byte borderMask;  // bits: 0=nord, 1=est, 2=sud, 3=ouest
 
-    // Positions des voisins (ligne, colonne) - pré-calculées pour éviter les recherches dans les tableaux
+    // Neighbor positions (row, column) - pre-calculated to avoid array lookups
     public final int northRow, northCol;
     public final int eastRow, eastCol;
     public final int southRow, southCol;
     public final int westRow, westCol;
 
-    // Masque des exigences de bords : si le bit est activé, ce bord DOIT être 0
+    // Border requirements mask: if bit is set, this edge MUST be 0
     // bits: 0=nord, 1=est, 2=sud, 3=ouest
     public final byte requiredZeroMask;
 
     private CellConstraints(int row, int col, int rows, int cols) {
-        // Calculer les drapeaux de bord
+        // Calculate border flags
         boolean isNorthBorder = (row == 0);
         boolean isEastBorder = (col == cols - 1);
         boolean isSouthBorder = (row == rows - 1);
@@ -34,7 +34,7 @@ public class CellConstraints {
 
         this.requiredZeroMask = borderMask;
 
-        // Pré-calculer les positions des voisins
+        // Pre-calculate neighbor positions
         this.northRow = row - 1;
         this.northCol = col;
         this.eastRow = row;
@@ -46,35 +46,35 @@ public class CellConstraints {
     }
 
     /**
-     * Vérifier si cette cellule est sur le bord nord
+     * Check if this cell is on the north border
      */
     public boolean isNorthBorder() {
         return (borderMask & 1) != 0;
     }
 
     /**
-     * Vérifier si cette cellule est sur le bord est
+     * Check if this cell is on the east border
      */
     public boolean isEastBorder() {
         return (borderMask & 2) != 0;
     }
 
     /**
-     * Vérifier si cette cellule est sur le bord sud
+     * Check if this cell is on the south border
      */
     public boolean isSouthBorder() {
         return (borderMask & 4) != 0;
     }
 
     /**
-     * Vérifier si cette cellule est sur le bord ouest
+     * Check if this cell is on the west border
      */
     public boolean isWestBorder() {
         return (borderMask & 8) != 0;
     }
 
     /**
-     * Méthode fabrique pour créer une matrice de contraintes pour un plateau
+     * Factory method to create a constraints matrix for a board
      */
     public static CellConstraints[][] createConstraintsMatrix(int rows, int cols) {
         CellConstraints[][] constraints = new CellConstraints[rows][cols];

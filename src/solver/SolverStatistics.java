@@ -6,14 +6,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Classe pour stocker les statistiques de résolution du puzzle.
- * Suit les métriques de performance comme les appels récursifs, les placements, les retours arrière,
- * et fournit une estimation de progression basée sur la profondeur de l'arbre de recherche.
+ * Class to store puzzle solving statistics.
+ * Tracks performance metrics like recursive calls, placements, backtracks,
+ * and provides a progress estimate based on search tree depth.
  */
 public class SolverStatistics {
     public long startTime;
     public long endTime;
-    public long previousTimeOffset = 0; // Temps déjà cumulé dans les runs précédents
+    public long previousTimeOffset = 0; // Time already accumulated in previous runs
     public long recursiveCalls = 0;
     public long placements = 0;
     public long backtracks = 0;
@@ -23,15 +23,15 @@ public class SolverStatistics {
     public long fitChecks = 0;
     public long forwardCheckRejects = 0;
 
-    // Suivi de progression (pour estimation du %)
+    // Progress tracking (for % estimation)
     private Map<Integer, ProgressTracker> depthTrackers = new HashMap<>();
 
     /**
-     * Classe interne pour suivre la progression à une profondeur donnée
+     * Inner class to track progress at a given depth
      */
     private static class ProgressTracker {
-        int totalOptions;      // Nombre total d'options à cette profondeur
-        int currentOption;     // Option actuellement explorée (indexé à partir de 0)
+        int totalOptions;      // Total number of options at this depth
+        int currentOption;     // Currently explored option (0-indexed)
 
         ProgressTracker(int totalOptions) {
             this.totalOptions = totalOptions;
@@ -62,7 +62,7 @@ public class SolverStatistics {
     }
 
     /**
-     * Enregistre le nombre d'options à une profondeur donnée
+     * Registers the number of options at a given depth
      */
     public void registerDepthOptions(int depth, int numOptions) {
         if (!depthTrackers.containsKey(depth)) {
@@ -71,7 +71,7 @@ public class SolverStatistics {
     }
 
     /**
-     * Incrémente l'option actuelle à une profondeur donnée
+     * Increments the current option at a given depth
      */
     public void incrementDepthProgress(int depth) {
         ProgressTracker tracker = depthTrackers.get(depth);
@@ -81,60 +81,60 @@ public class SolverStatistics {
     }
 
     /**
-     * Calcule un pourcentage d'avancement estimé basé sur les premières profondeurs.
-     * Utilise les 5 premières profondeurs pour l'estimation.
+     * Calculates an estimated progress percentage based on the first depths.
+     * Uses the first 5 depths for estimation.
      *
-     * IMPORTANT : Ce pourcentage représente uniquement la progression dans l'arbre de recherche
-     * des 5 premières profondeurs. Il n'indique PAS que 100% de la recherche totale est terminée,
-     * car l'exploration continue au-delà de ces profondeurs.
+     * IMPORTANT: This percentage represents only the progress in the search tree
+     * of the first 5 depths. It does NOT indicate that 100% of the total search is complete,
+     * as exploration continues beyond these depths.
      */
     public double getProgressPercentage() {
-        // Limiter le suivi aux 5 premières profondeurs pour la performance
+        // Limit tracking to first 5 depths for performance
         final int MAX_DEPTH_TRACKED = 5;
 
-        // Compter combien de profondeurs ont été complètement explorées
+        // Count how many depths have been completely explored
         int completedDepths = 0;
 
         for (int d = 0; d < MAX_DEPTH_TRACKED; d++) {
             ProgressTracker tracker = depthTrackers.get(d);
             if (tracker == null || tracker.totalOptions == 0) {
-                // Cette profondeur n'a pas encore été explorée
+                // This depth has not been explored yet
                 break;
             }
 
-            // Vérifier si cette profondeur est complète
+            // Check if this depth is complete
             if (tracker.currentOption >= tracker.totalOptions - 1) {
                 completedDepths++;
             } else {
-                // On a trouvé la première profondeur non complète
-                // Le pourcentage représente la progression dans CETTE profondeur uniquement
+                // Found the first incomplete depth
+                // The percentage represents progress in THIS depth only
                 double depthProgress = (double) tracker.currentOption / tracker.totalOptions;
                 return depthProgress * 100.0;
             }
         }
 
-        // Si on arrive ici, les 5 premières profondeurs sont complètes
-        // Mais cela ne veut PAS dire que la recherche est à 100% !
-        // On retourne un indicateur que cette phase est complète (mais il y a plus de travail)
+        // If we get here, the first 5 depths are complete
+        // But this does NOT mean the search is at 100%!
+        // Return an indicator that this phase is complete (but there is more work)
         return (completedDepths >= MAX_DEPTH_TRACKED) ? 100.0 : 0.0;
     }
 
     public void print() {
-        SolverLogger.stats("\n╔════════════════ STATISTIQUES ═══════════════════╗");
-        SolverLogger.stats("║ Temps écoulé       : " + String.format("%.2f", getElapsedTimeSec()) + " secondes");
-        SolverLogger.stats("║ Appels récursifs   : " + recursiveCalls);
-        SolverLogger.stats("║ Placements testés  : " + placements);
+        SolverLogger.stats("\n╔════════════════ STATISTICS ═════════════════════╗");
+        SolverLogger.stats("║ Elapsed time       : " + String.format("%.2f", getElapsedTimeSec()) + " seconds");
+        SolverLogger.stats("║ Recursive calls    : " + recursiveCalls);
+        SolverLogger.stats("║ Placements tested  : " + placements);
         SolverLogger.stats("║ Backtracks         : " + backtracks);
-        SolverLogger.stats("║ Vérifications fit  : " + fitChecks);
-        SolverLogger.stats("║ Forward check rejets : " + forwardCheckRejects);
-        SolverLogger.stats("║ Singletons trouvés : " + singletonsFound);
-        SolverLogger.stats("║ Singletons posés   : " + singletonsPlaced);
-        SolverLogger.stats("║ Dead-ends détectés : " + deadEndsDetected);
+        SolverLogger.stats("║ Fit checks         : " + fitChecks);
+        SolverLogger.stats("║ Forward check rejects : " + forwardCheckRejects);
+        SolverLogger.stats("║ Singletons found   : " + singletonsFound);
+        SolverLogger.stats("║ Singletons placed  : " + singletonsPlaced);
+        SolverLogger.stats("║ Dead-ends detected : " + deadEndsDetected);
         SolverLogger.stats("╚══════════════════════════════════════════════════╝");
     }
 
     public void printCompact() {
-        SolverLogger.stats("Stats: Récursif={} | Placements={} | Backtracks={} | Singletons={}/{} | Dead-ends={} | Temps={}s",
+        SolverLogger.stats("Stats: Recursive={} | Placements={} | Backtracks={} | Singletons={}/{} | Dead-ends={} | Time={}s",
                 recursiveCalls, placements, backtracks, singletonsPlaced, singletonsFound, deadEndsDetected,
                 String.format("%.1f", getElapsedTimeSec()));
     }

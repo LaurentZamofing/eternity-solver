@@ -5,17 +5,17 @@ import model.Piece;
 import java.util.Map;
 
 /**
- * Wrapper pour ajouter un timeout au solveur
+ * Wrapper to add timeout to the solver
  */
 public class SolverWithTimeout extends EternitySolver {
 
     /**
-     * Résout le puzzle avec un timeout
+     * Solves the puzzle with a timeout
      *
-     * @param board grille vide à remplir
-     * @param pieces map des pièces par ID
-     * @param timeoutMs timeout en millisecondes
-     * @return true si le puzzle a été résolu
+     * @param board empty grid to fill
+     * @param pieces map of pieces by ID
+     * @param timeoutMs timeout in milliseconds
+     * @return true if the puzzle was solved
      */
     public boolean solveWithTimeout(Board board, Map<Integer, Piece> pieces, long timeoutMs) {
         final boolean[] solved = {false};
@@ -25,7 +25,7 @@ public class SolverWithTimeout extends EternitySolver {
             try {
                 solved[0] = solve(board, pieces);
             } catch (Exception e) {
-                // Ignorer les exceptions pendant le timeout
+                // Ignore exceptions during timeout
             }
         });
 
@@ -36,7 +36,7 @@ public class SolverWithTimeout extends EternitySolver {
             if (solverThread.isAlive()) {
                 timedOut[0] = true;
                 solverThread.interrupt();
-                solverThread.join(1000); // Attendre 1 sec pour l'interruption
+                solverThread.join(1000); // Wait 1 sec for interruption
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

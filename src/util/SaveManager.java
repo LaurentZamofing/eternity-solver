@@ -8,7 +8,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Gestionnaire de sauvegarde et chargement de l'état du puzzle.
+ * Manager for saving and loading puzzle state.
  */
 public class SaveManager {
 
@@ -16,7 +16,7 @@ public class SaveManager {
     private static final String SAVE_FILE = "best_state.txt";
 
     /**
-     * Sauvegarde l'état actuel du board.
+     * Saves the current board state.
      */
     public static void saveBestState(Board board, Map<Integer, Piece> allPieces, int depth, int threadId) {
         try {
@@ -27,7 +27,7 @@ public class SaveManager {
 
             File file = new File(SAVE_DIR + File.separator + SAVE_FILE);
             try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
-                // Header avec metadata
+                // Header with metadata
                 writer.println("# Eternity II Best State");
                 writer.println("# Depth: " + depth);
                 writer.println("# Thread: " + threadId);
@@ -35,7 +35,7 @@ public class SaveManager {
                 writer.println("# Date: " + new Date());
                 writer.println();
 
-                // Sauvegarder le board
+                // Save the board
                 writer.println("BOARD_SIZE");
                 writer.println(board.getRows() + " " + board.getCols());
                 writer.println();
@@ -53,16 +53,16 @@ public class SaveManager {
                 writer.println("END_PLACEMENTS");
             }
 
-            SolverLogger.save("Sauvegarde effectuée: {} pièces (Thread {})", depth, threadId);
+            SolverLogger.save("Save completed: {} pieces (Thread {})", depth, threadId);
 
         } catch (IOException e) {
-            SolverLogger.error("Erreur lors de la sauvegarde: {}", e.getMessage());
+            SolverLogger.error("Error during save: {}", e.getMessage());
         }
     }
 
     /**
-     * Charge l'état sauvegardé.
-     * @return [Board, Set<Integer> pièces utilisées, profondeur] ou null si pas de sauvegarde
+     * Loads the saved state.
+     * @return [Board, Set<Integer> used pieces, depth] or null if no save
      */
     public static Object[] loadBestState(Map<Integer, Piece> allPieces) {
         File file = new File(SAVE_DIR + File.separator + SAVE_FILE);
@@ -78,7 +78,7 @@ public class SaveManager {
             Board board = null;
             Set<Integer> usedPieceIds = new HashSet<>();
 
-            // Lire les métadonnées
+            // Read metadata
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("# Depth:")) {
                     depth = Integer.parseInt(line.substring(8).trim());
@@ -96,11 +96,11 @@ public class SaveManager {
             }
 
             if (board == null) {
-                SolverLogger.error("Erreur: taille du board non trouvée dans la sauvegarde");
+                SolverLogger.error("Error: board size not found in save");
                 return null;
             }
 
-            // Lire les placements
+            // Read placements
             while ((line = reader.readLine()) != null) {
                 if (line.equals("END_PLACEMENTS")) {
                     break;
@@ -121,17 +121,17 @@ public class SaveManager {
                 }
             }
 
-            SolverLogger.save("Sauvegarde chargée: {} pièces (Thread {})", depth, threadId);
+            SolverLogger.save("Save loaded: {} pieces (Thread {})", depth, threadId);
             return new Object[]{board, usedPieceIds, depth, threadId};
 
         } catch (IOException | NumberFormatException e) {
-            SolverLogger.error("Erreur lors du chargement: {}", e.getMessage());
+            SolverLogger.error("Error during load: {}", e.getMessage());
             return null;
         }
     }
 
     /**
-     * Vérifie si une sauvegarde existe.
+     * Checks if a save exists.
      */
     public static boolean hasSavedState() {
         File file = new File(SAVE_DIR + File.separator + SAVE_FILE);
@@ -139,7 +139,7 @@ public class SaveManager {
     }
 
     /**
-     * Sauvegarde l'état d'un thread spécifique.
+     * Saves the state of a specific thread.
      */
     public static void saveThreadState(Board board, Map<Integer, Piece> allPieces, int depth, int threadId, long randomSeed) {
         try {
@@ -150,7 +150,7 @@ public class SaveManager {
 
             File file = new File(SAVE_DIR + File.separator + "thread_" + threadId + ".txt");
             try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
-                // Header avec metadata
+                // Header with metadata
                 writer.println("# Eternity II Thread State");
                 writer.println("# Thread: " + threadId);
                 writer.println("# Depth: " + depth);
@@ -159,7 +159,7 @@ public class SaveManager {
                 writer.println("# Date: " + new Date());
                 writer.println();
 
-                // Sauvegarder le board
+                // Save the board
                 writer.println("BOARD_SIZE");
                 writer.println(board.getRows() + " " + board.getCols());
                 writer.println();
@@ -177,13 +177,13 @@ public class SaveManager {
             }
 
         } catch (IOException e) {
-            SolverLogger.error("Erreur sauvegarde thread {}: {}", threadId, e.getMessage());
+            SolverLogger.error("Error saving thread {}: {}", threadId, e.getMessage());
         }
     }
 
     /**
-     * Charge l'état d'un thread spécifique.
-     * @return [Board, Set<Integer> pièces utilisées, profondeur, randomSeed] ou null
+     * Loads the state of a specific thread.
+     * @return [Board, Set<Integer> used pieces, depth, randomSeed] or null
      */
     public static Object[] loadThreadState(int threadId, Map<Integer, Piece> allPieces) {
         File file = new File(SAVE_DIR + File.separator + "thread_" + threadId + ".txt");
@@ -199,7 +199,7 @@ public class SaveManager {
             Board board = null;
             Set<Integer> usedPieceIds = new HashSet<>();
 
-            // Lire les métadonnées
+            // Read metadata
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("# Depth:")) {
                     depth = Integer.parseInt(line.substring(8).trim());
@@ -217,11 +217,11 @@ public class SaveManager {
             }
 
             if (board == null) {
-                SolverLogger.error("Erreur: taille du board non trouvée pour thread {}", threadId);
+                SolverLogger.error("Error: board size not found for thread {}", threadId);
                 return null;
             }
 
-            // Lire les placements
+            // Read placements
             while ((line = reader.readLine()) != null) {
                 if (line.equals("END_PLACEMENTS")) {
                     break;
@@ -245,13 +245,13 @@ public class SaveManager {
             return new Object[]{board, usedPieceIds, depth, randomSeed};
 
         } catch (IOException | NumberFormatException e) {
-            SolverLogger.error("Erreur chargement thread {}: {}", threadId, e.getMessage());
+            SolverLogger.error("Error loading thread {}: {}", threadId, e.getMessage());
             return null;
         }
     }
 
     /**
-     * Vérifie si une sauvegarde existe pour un thread spécifique.
+     * Checks if a save exists for a specific thread.
      */
     public static boolean hasThreadState(int threadId) {
         File file = new File(SAVE_DIR + File.separator + "thread_" + threadId + ".txt");
@@ -259,7 +259,7 @@ public class SaveManager {
     }
 
     /**
-     * Compte le nombre de sauvegardes de threads disponibles.
+     * Counts the number of available thread saves.
      */
     public static int countThreadStates() {
         File dir = new File(SAVE_DIR);

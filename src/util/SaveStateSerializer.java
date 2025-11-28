@@ -74,7 +74,7 @@ public class SaveStateSerializer {
                                              Map<Integer, Piece> allPieces) {
         // Verify dimensions
         if (board.getRows() != state.rows || board.getCols() != state.cols) {
-            System.err.println("  ⚠️  Dimensions incompatibles!");
+            System.err.println("  ⚠️  Incompatible dimensions!");
             return false;
         }
 
@@ -87,7 +87,7 @@ public class SaveStateSerializer {
 
             Piece piece = allPieces.get(info.pieceId);
             if (piece == null) {
-                System.err.println("  ⚠️  Pièce " + info.pieceId + " introuvable!");
+                System.err.println("  ⚠️  Piece " + info.pieceId + " not found!");
                 return false;
             }
 

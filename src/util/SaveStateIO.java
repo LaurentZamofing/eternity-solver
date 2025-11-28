@@ -171,9 +171,9 @@ public class SaveStateIO {
             // chronological order (we use row,col sorting), but it's better than an incomplete
             // order that prevents backtracking.
             if (placements.size() > fullOrder.size()) {
-                System.out.println("  ⚠️  PlacementOrder incomplet: " + fullOrder.size() +
-                                 " entrées vs " + placements.size() + " pièces sur plateau");
-                System.out.println("  ✓  Reconstruction ordre complet (approximatif row,col)...");
+                System.out.println("  ⚠️  Incomplete PlacementOrder: " + fullOrder.size() +
+                                 " entries vs " + placements.size() + " pieces on board");
+                System.out.println("  ✓  Reconstructing complete order (approximate row,col)...");
 
                 // Create a Set of pieces already in fullOrder
                 Set<String> existingKeys = new HashSet<>();
@@ -198,18 +198,18 @@ public class SaveStateIO {
                 }
 
                 fullOrder = reconstructed;
-                System.out.println("  ✓  Ordre reconstruit: " + fullOrder.size() + " pièces");
+                System.out.println("  ✓  Reconstructed order: " + fullOrder.size() + " pieces");
             }
 
-            System.out.println("  📂 Sauvegarde chargée: " + file.getName() + " (" + depth + " pièces)");
+            System.out.println("  📂 Save loaded: " + file.getName() + " (" + depth + " pieces)");
             System.out.println("  📅 Date: " + DATE_FORMAT.format(new Date(timestamp)));
-            System.out.println("  📋 Ordre de pose: " + fullOrder.size() + " placements trackés");
+            System.out.println("  📋 Placement order: " + fullOrder.size() + " placements tracked");
 
             return new SaveState(puzzleName, rows, cols, placements, fullOrder,
                                unusedPieceIds, timestamp, depth, totalComputeTimeMs);
 
         } catch (IOException | NumberFormatException e) {
-            System.err.println("  ⚠️  Erreur lors du chargement: " + e.getMessage());
+            System.err.println("  ⚠️  Error during load: " + e.getMessage());
             return null;
         }
     }
@@ -218,16 +218,16 @@ public class SaveStateIO {
 
     private static void writeHeader(PrintWriter writer, String puzzleName, Board board,
                                    int depth, double progressPercentage, long totalComputeTimeMs) {
-        writer.println("# Sauvegarde Eternity II");
+        writer.println("# Eternity II Save");
         writer.println("# Timestamp: " + System.currentTimeMillis());
         writer.println("# Date: " + DATE_FORMAT.format(new Date()));
         writer.println("# Puzzle: " + puzzleName);
         writer.println("# Dimensions: " + board.getRows() + "x" + board.getCols());
-        writer.println("# Depth: " + depth + " (pièces placées par backtracking, hors fixes)");
+        writer.println("# Depth: " + depth + " (pieces placed by backtracking, excluding fixed)");
 
         if (progressPercentage >= 0.0) {
             writer.println("# Progress: " + String.format("%.8f%%", progressPercentage) +
-                         " (estimation basée sur les 5 premières profondeurs)");
+                         " (estimate based on first 5 depths)");
         }
 
         // Write total compute time
@@ -244,8 +244,8 @@ public class SaveStateIO {
                                         int numFixedPieces, List<PlacementInfo> initialFixedPieces) {
         int fixedCount = (initialFixedPieces != null) ? initialFixedPieces.size() : 0;
         writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println("# AFFICHAGE VISUEL DU PLATEAU (" + (depth + fixedCount) +
-                      " pièces: " + fixedCount + " fixes + " + depth + " backtracking)");
+        writer.println("# VISUAL BOARD DISPLAY (" + (depth + fixedCount) +
+                      " pieces: " + fixedCount + " fixed + " + depth + " backtracking)");
         writer.println("# ═══════════════════════════════════════════════════════════");
         writer.println("#");
         SaveBoardRenderer.generateBoardVisual(writer, board);
@@ -257,14 +257,14 @@ public class SaveStateIO {
     private static void writeFixedPiecesSection(PrintWriter writer, int numFixedPieces,
                                                List<PlacementInfo> initialFixedPieces) {
         writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println("# PIÈCES FIXES (pré-placées au démarrage)");
+        writer.println("# FIXED PIECES (pre-placed at startup)");
         writer.println("# ═══════════════════════════════════════════════════════════");
         writer.println("#");
 
         if (numFixedPieces > 0) {
-            writer.println("# " + numFixedPieces + " pièces fixes (coins + hints - voir fichier de configuration)");
+            writer.println("# " + numFixedPieces + " fixed pieces (corners + hints - see configuration file)");
         } else {
-            writer.println("# (aucune pièce fixe)");
+            writer.println("# (no fixed pieces)");
         }
 
         writer.println("#");
@@ -280,12 +280,12 @@ public class SaveStateIO {
                                Math.max(0, placementOrder.size() - fixedCount) : 0;
 
         writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println("# ORDRE DE POSE (backtracking) - " + backtrackingCount + " pièces");
+        writer.println("# PLACEMENT ORDER (backtracking) - " + backtrackingCount + " pieces");
         writer.println("# ═══════════════════════════════════════════════════════════");
         writer.println("#");
 
         if (placementOrder != null && placementOrder.size() > fixedCount) {
-            writer.println("# Étape  Position    Pièce  Rotation");
+            writer.println("# Step   Position    Piece  Rotation");
             writer.println("# ────── ─────────── ────── ────────");
             for (int i = fixedCount; i < placementOrder.size(); i++) {
                 PlacementInfo info = placementOrder.get(i);
@@ -293,7 +293,7 @@ public class SaveStateIO {
                     (i - fixedCount + 1), info.row, info.col, info.pieceId, info.rotation));
             }
         } else {
-            writer.println("# (aucune pièce placée par backtracking)");
+            writer.println("# (no pieces placed by backtracking)");
         }
 
         writer.println("#");
@@ -306,7 +306,7 @@ public class SaveStateIO {
                                          List<Integer> unusedIds,
                                          List<PlacementInfo> initialFixedPieces) throws IOException {
         // Fixed pieces data
-        writer.println("# Fixed Pieces (row,col pieceId rotation) - pré-placées");
+        writer.println("# Fixed Pieces (row,col pieceId rotation) - pre-placed");
         if (initialFixedPieces != null && !initialFixedPieces.isEmpty()) {
             for (PlacementInfo info : initialFixedPieces) {
                 writer.println(info.row + "," + info.col + " " + info.pieceId + " " + info.rotation);
@@ -315,7 +315,7 @@ public class SaveStateIO {
         writer.println();
 
         // Placement order data (backtracking only)
-        writer.println("# Placement Order (row,col pieceId rotation) - ordre chronologique du backtracking");
+        writer.println("# Placement Order (row,col pieceId rotation) - chronological backtracking order");
         int fixedCount = (initialFixedPieces != null) ? initialFixedPieces.size() : 0;
         if (placementOrder != null && placementOrder.size() > fixedCount) {
             for (int i = fixedCount; i < placementOrder.size(); i++) {

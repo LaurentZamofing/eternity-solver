@@ -9,28 +9,28 @@ import java.io.File;
 public class SaveFileManager {
 
     public static final String SAVE_DIR = "saves/";
-    private static final int MAX_BACKUP_SAVES = 50; // Nombre max de sauvegardes à conserver
+    private static final int MAX_BACKUP_SAVES = 50; // Maximum number of saves to keep
 
     /**
-     * Détermine le sous-répertoire de sauvegarde pour un puzzle donné.
+     * Determines the save subdirectory for a given puzzle.
      *
-     * @param puzzleName nom du puzzle
-     * @return chemin du sous-répertoire (ex: "saves/eternity2/eternity2_p01_ascending/")
+     * @param puzzleName puzzle name
+     * @return subdirectory path (ex: "saves/eternity2/eternity2_p01_ascending/")
      */
     public static String getPuzzleSubDir(String puzzleName) {
-        // Extraire le type de base pour le dossier racine
-        String baseType = puzzleName.split("_")[0]; // eternity2 ou indice1
+        // Extract the base type for the root folder
+        String baseType = puzzleName.split("_")[0]; // eternity2 or indice1
 
-        // Retourner le chemin avec le nom complet du puzzle
+        // Return the path with the full puzzle name
         // Ex: "eternity2_p01_1_2_3_4_ascending_border" -> "saves/eternity2/eternity2_p01_1_2_3_4_ascending_border/"
         return SAVE_DIR + baseType + "/" + puzzleName + "/";
     }
 
     /**
-     * Nettoie les anciennes sauvegardes en ne gardant que les MAX_BACKUP_SAVES plus récentes.
+     * Cleans up old saves by keeping only the MAX_BACKUP_SAVES most recent ones.
      *
-     * @param baseName nom de base du puzzle
-     * @param currentDepth profondeur actuelle
+     * @param baseName puzzle base name
+     * @param currentDepth current depth
      */
     public static void cleanupOldSaves(String baseName, int currentDepth) {
         try {
@@ -39,36 +39,36 @@ public class SaveFileManager {
                 return;
             }
 
-            // Trouver tous les fichiers de sauvegarde pour ce puzzle
+            // Find all save files for this puzzle
             File[] saveFiles = saveDir.listFiles((dir, name) ->
                 name.startsWith(baseName + "_save_") && name.endsWith(".txt")
             );
 
             if (saveFiles == null || saveFiles.length <= MAX_BACKUP_SAVES) {
-                return; // Pas besoin de nettoyer
+                return; // No need to clean up
             }
 
-            // Trier par niveau (extraire le nombre du nom de fichier)
+            // Sort by level (extract the number from filename)
             java.util.Arrays.sort(saveFiles, (f1, f2) -> {
                 int depth1 = extractDepthFromFilename(f1.getName(), baseName);
                 int depth2 = extractDepthFromFilename(f2.getName(), baseName);
-                return Integer.compare(depth2, depth1); // Ordre décroissant (plus récent en premier)
+                return Integer.compare(depth2, depth1); // Descending order (most recent first)
             });
 
-            // Supprimer les anciennes sauvegardes au-delà de MAX_BACKUP_SAVES
+            // Delete old saves beyond MAX_BACKUP_SAVES
             for (int i = MAX_BACKUP_SAVES; i < saveFiles.length; i++) {
                 saveFiles[i].delete();
             }
         } catch (Exception e) {
-            SolverLogger.warn("Erreur lors du nettoyage des sauvegardes: {}", e.getMessage());
+            SolverLogger.warn("Error cleaning up saves: {}", e.getMessage());
         }
     }
 
     /**
-     * Nettoie les anciennes sauvegardes best en ne gardant que les MAX_BACKUP_SAVES meilleures.
+     * Cleans up old best saves by keeping only the MAX_BACKUP_SAVES best ones.
      *
-     * @param puzzleDir répertoire du puzzle
-     * @param currentDepth profondeur actuelle
+     * @param puzzleDir puzzle directory
+     * @param currentDepth current depth
      */
     public static void cleanupOldBestSaves(String puzzleDir, int currentDepth) {
         try {
@@ -77,37 +77,37 @@ public class SaveFileManager {
                 return;
             }
 
-            // Trouver tous les fichiers "best" pour ce puzzle
+            // Find all "best" files for this puzzle
             File[] bestFiles = saveDir.listFiles((dir, name) ->
                 name.startsWith("best_") && name.endsWith(".txt")
             );
 
             if (bestFiles == null || bestFiles.length <= MAX_BACKUP_SAVES) {
-                return; // Pas besoin de nettoyer
+                return; // No need to clean up
             }
 
-            // Trier par depth - du plus bas au plus élevé
+            // Sort by depth - from lowest to highest
             java.util.Arrays.sort(bestFiles, (f1, f2) -> {
                 int depth1 = extractDepthFromBestFilename(f1.getName());
                 int depth2 = extractDepthFromBestFilename(f2.getName());
                 return Integer.compare(depth1, depth2);
             });
 
-            // Supprimer les plus anciennes pour ne garder que MAX_BACKUP_SAVES
+            // Delete the oldest to keep only MAX_BACKUP_SAVES
             int toDelete = bestFiles.length - MAX_BACKUP_SAVES;
             for (int i = 0; i < toDelete; i++) {
                 bestFiles[i].delete();
             }
         } catch (Exception e) {
-            SolverLogger.warn("Erreur lors du nettoyage des best saves: {}", e.getMessage());
+            SolverLogger.warn("Error cleaning up best saves: {}", e.getMessage());
         }
     }
 
     /**
-     * Nettoie les anciens fichiers "current" en ne gardant que le plus récent.
+     * Cleans up old "current" files by keeping only the most recent one.
      *
-     * @param puzzleDir répertoire du puzzle
-     * @param currentFileToKeep fichier actuel à conserver
+     * @param puzzleDir puzzle directory
+     * @param currentFileToKeep current file to keep
      */
     public static void cleanupOldCurrentSaves(String puzzleDir, String currentFileToKeep) {
         try {
@@ -116,31 +116,31 @@ public class SaveFileManager {
                 return;
             }
 
-            // Trouver tous les fichiers "current" pour ce puzzle
+            // Find all "current" files for this puzzle
             File[] currentFiles = saveDir.listFiles((dir, name) ->
                 name.startsWith("current_") && name.endsWith(".txt")
             );
 
             if (currentFiles == null || currentFiles.length <= 1) {
-                return; // Rien à nettoyer
+                return; // Nothing to clean up
             }
 
-            // Supprimer tous les fichiers current sauf le plus récent (currentFileToKeep)
+            // Delete all current files except the most recent (currentFileToKeep)
             for (File f : currentFiles) {
                 if (!f.getAbsolutePath().equals(new File(currentFileToKeep).getAbsolutePath())) {
                     f.delete();
                 }
             }
         } catch (Exception e) {
-            SolverLogger.warn("Erreur lors du nettoyage des current saves: {}", e.getMessage());
+            SolverLogger.warn("Error cleaning up current saves: {}", e.getMessage());
         }
     }
 
     /**
-     * Extrait le niveau (depth) d'un nom de fichier "best_X.txt".
+     * Extracts the level (depth) from a filename "best_X.txt".
      *
-     * @param filename nom du fichier
-     * @return depth extrait, ou 0 en cas d'erreur
+     * @param filename filename
+     * @return extracted depth, or 0 on error
      */
     public static int extractDepthFromBestFilename(String filename) {
         try {
@@ -155,11 +155,11 @@ public class SaveFileManager {
     }
 
     /**
-     * Extrait le niveau (depth) du nom de fichier de sauvegarde.
+     * Extracts the level (depth) from save filename.
      *
-     * @param filename nom du fichier
-     * @param baseName nom de base du puzzle
-     * @return depth extrait, ou 0 en cas d'erreur
+     * @param filename filename
+     * @param baseName puzzle base name
+     * @return extracted depth, or 0 on error
      */
     public static int extractDepthFromFilename(String filename, String baseName) {
         try {
@@ -174,11 +174,11 @@ public class SaveFileManager {
     }
 
     /**
-     * Vérifie si un depth donné représente un nouveau record.
+     * Checks if a given depth represents a new record.
      *
-     * @param puzzleDir répertoire du puzzle
-     * @param depth profondeur à vérifier
-     * @return true si c'est un nouveau record
+     * @param puzzleDir puzzle directory
+     * @param depth depth to check
+     * @return true if it's a new record
      */
     public static boolean isNewRecord(String puzzleDir, int depth) {
         File saveDir = new File(puzzleDir);
@@ -187,10 +187,10 @@ public class SaveFileManager {
         );
 
         if (bestFiles == null || bestFiles.length == 0) {
-            return true; // Premier record
+            return true; // First record
         }
 
-        // Trouver le meilleur depth existant
+        // Find the best existing depth
         int maxDepth = 0;
         for (File f : bestFiles) {
             try {
@@ -201,7 +201,7 @@ public class SaveFileManager {
                     maxDepth = d;
                 }
             } catch (Exception e) {
-                // Ignorer
+                // Ignore
             }
         }
 

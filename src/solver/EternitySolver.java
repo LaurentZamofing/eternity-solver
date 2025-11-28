@@ -64,15 +64,6 @@ public class EternitySolver {
     private MRVPlacementStrategy mrvStrategy;
     private CellConstraints[][] cellConstraints;
     Random random = new Random();
-
-    // Parallel search delegates
-    private static AtomicBoolean solutionFound = ParallelSearchManager.getSolutionFound();
-    private static AtomicInteger globalMaxDepth = ParallelSearchManager.getGlobalMaxDepth();
-    private static AtomicInteger globalBestScore = ParallelSearchManager.getGlobalBestScore();
-    private static AtomicInteger globalBestThreadId = ParallelSearchManager.getGlobalBestThreadId();
-    private static AtomicReference<Board> globalBestBoard = ParallelSearchManager.getGlobalBestBoard();
-    private static AtomicReference<Map<Integer, Piece>> globalBestPieces = ParallelSearchManager.getGlobalBestPieces();
-    private static final Object lockObject = ParallelSearchManager.getLockObject();
     int threadId = -1;
 
     /** Delegates to {@link ParallelSearchManager#resetGlobalState} */
@@ -111,11 +102,6 @@ public class EternitySolver {
     }
 
     long randomSeed = 0;
-
-    /** Delegates to {@link BoardVisualizer#printBoardCompact} */
-    private void printBoardCompact(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
-        BoardVisualizer.printBoardCompact(board, piecesById, pieceUsed, totalPieces, this::fits);
-    }
 
     /** Delegates to {@link BoardVisualizer#printBoardWithCounts} */
     public void printBoardWithCounts(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces,
@@ -161,14 +147,7 @@ public class EternitySolver {
         this.pieceOrderingOptimizer = components.pieceOrderingOptimizer;
     }
 
-    /**
-     * Initializes placement strategies (singleton and MRV).
-     *
-     * <p>Package-private for HistoricalSolver access when resuming from saved state.
-     * Extracted to eliminate duplication between solve() and solveWithHistory().</p>
-     *
-     * @see HistoricalSolver#solveWithHistory
-     */
+    /** Initializes placement strategies. Package-private for {@link HistoricalSolver}. */
     void initializePlacementStrategies() {
         this.singletonStrategy = new SingletonPlacementStrategy(
             singletonDetector, configManager.isUseSingletons(), configManager.isVerbose(),
@@ -180,37 +159,23 @@ public class EternitySolver {
         );
     }
 
-    /**
-     * Initializes managers (AutoSaveManager and RecordManager).
-     *
-     * <p>Package-private for HistoricalSolver access when resuming from saved state.
-     * Extracted to eliminate duplication between solve() and solveWithHistory().</p>
-     *
-     * @param pieces map of all puzzle pieces
-     * @see HistoricalSolver#solveWithHistory
-     */
+    /** Initializes managers. Package-private for {@link HistoricalSolver}. */
     void initializeManagers(Map<Integer, Piece> pieces) {
         this.autoSaveManager = configManager.createAutoSaveManager(
             placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>(),
             pieces);
 
         configManager.setThreadId(threadId);
-        this.recordManager = configManager.createRecordManager(lockObject, globalMaxDepth,
-            globalBestScore, globalBestThreadId, globalBestBoard, globalBestPieces);
+        this.recordManager = configManager.createRecordManager(
+            ParallelSearchManager.getLockObject(),
+            ParallelSearchManager.getGlobalMaxDepth(),
+            ParallelSearchManager.getGlobalBestScore(),
+            ParallelSearchManager.getGlobalBestThreadId(),
+            ParallelSearchManager.getGlobalBestBoard(),
+            ParallelSearchManager.getGlobalBestPieces());
     }
 
-    /**
-     * Initializes helper components and assigns them to the solver.
-     *
-     * <p>Package-private for HistoricalSolver access when resuming from saved state.
-     * Extracted to eliminate duplication between solve() and solveWithHistory().</p>
-     *
-     * @param board the puzzle board
-     * @param pieces map of all puzzle pieces
-     * @param pieceUsed bitset tracking used pieces
-     * @param totalPieces total number of pieces
-     * @see HistoricalSolver#solveWithHistory
-     */
+    /** Initializes solver components. Package-private for {@link HistoricalSolver}. */
     void initializeComponents(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
         SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), configManager.isVerbose(),
             configManager.isPrioritizeBorders(), configManager.getFixedPositions());
@@ -219,34 +184,14 @@ public class EternitySolver {
         assignSolverComponents(components);
     }
 
-    /**
-     * Initializes domains (AC-3 only - domain cache removed as unused).
-     *
-     * <p>Package-private for HistoricalSolver access when resuming from saved state.
-     * Extracted to eliminate duplication between solve() and solveWithHistory().</p>
-     *
-     * @param board the puzzle board
-     * @param pieces map of all puzzle pieces
-     * @param pieceUsed bitset tracking used pieces
-     * @param totalPieces total number of pieces
-     * @see HistoricalSolver#solveWithHistory
-     */
+    /** Initializes AC-3 domains. Package-private for {@link HistoricalSolver}. */
     void initializeDomains(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
         if (useAC3) {
             this.domainManager.initializeAC3Domains(board, pieces, pieceUsed, totalPieces);
         }
     }
 
-    /**
-     * Creates a BitSet for tracking piece usage, sized according to the maximum piece ID.
-     *
-     * <p>Package-private for HistoricalSolver access when resuming from saved state.
-     * Extracted to eliminate duplication between solve() and solveWithHistory() (Refactoring #14).</p>
-     *
-     * @param pieces map of all pieces
-     * @return empty BitSet sized for all pieces (index 0 unused, 1-based)
-     * @see HistoricalSolver#solveWithHistory
-     */
+    /** Creates BitSet for tracking piece usage (1-based, index 0 unused). Package-private for {@link HistoricalSolver}. */
     BitSet createPieceUsedBitSet(Map<Integer, Piece> pieces) {
         int maxPieceId = pieces.keySet().stream().max(Integer::compareTo).orElse(pieces.size());
         return new BitSet(maxPieceId + 1); // index 0 unused, 1-based
@@ -289,7 +234,7 @@ public class EternitySolver {
         BacktrackingSolver backtrackingSolver = new BacktrackingSolver(
             this,
             stats,
-            solutionFound,
+            ParallelSearchManager.getSolutionFound(),
             configManager,
             recordManager,
             autoSaveManager,
@@ -397,13 +342,13 @@ public class EternitySolver {
             allPieces,
             configManager.getPuzzleName(),
             useDomainCache,
-            solutionFound,
-            globalMaxDepth,
-            globalBestScore,
-            globalBestThreadId,
-            globalBestBoard,
-            globalBestPieces,
-            lockObject
+            ParallelSearchManager.getSolutionFound(),
+            ParallelSearchManager.getGlobalMaxDepth(),
+            ParallelSearchManager.getGlobalBestScore(),
+            ParallelSearchManager.getGlobalBestThreadId(),
+            ParallelSearchManager.getGlobalBestBoard(),
+            ParallelSearchManager.getGlobalBestPieces(),
+            ParallelSearchManager.getLockObject()
         );
         return orchestrator.solve(board, availablePieces, numThreads);
     }

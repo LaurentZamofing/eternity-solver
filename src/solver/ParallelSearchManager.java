@@ -147,7 +147,7 @@ public class ParallelSearchManager {
                                          BitSet pieceUsed, int totalPieces,
                                          SequentialSolver sequentialSolver) {
         if (workStealingPool == null) {
-            throw new IllegalStateException("Pool de vol de travail non activé. Appelez enableWorkStealing() d'abord.");
+            throw new IllegalStateException("Work-stealing pool not enabled. Call enableWorkStealing() first.");
         }
 
         ParallelSearchTask task = new ParallelSearchTask(

@@ -29,7 +29,7 @@ public class StatisticsManager {
      */
     private static class ProgressTracker {
         int totalOptions;      // Total number of options at this depth
-        int currentOption;     // Option actuellement explorée (0-indexed)
+        int currentOption;     // Currently explored option (0-indexed)
 
         ProgressTracker(int totalOptions) {
             this.totalOptions = totalOptions;

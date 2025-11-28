@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Gère la sauvegarde automatique périodique de l'état du solveur.
- * Extrait de EternitySolver pour une meilleure organisation du code.
+ * Manages periodic automatic saving of solver state.
+ * Extracted from EternitySolver for better code organization.
  */
 public class AutoSaveManager {
 
-    private static final long AUTO_SAVE_INTERVAL = 60000; // 1 minute en millisecondes
+    private static final long AUTO_SAVE_INTERVAL = 60000; // 1 minute in milliseconds
 
     private final String puzzleName;
     private final int numFixedPieces;
@@ -26,12 +26,12 @@ public class AutoSaveManager {
     private long lastAutoSaveTime = 0;
 
     /**
-     * Constructeur de AutoSaveManager.
+     * Constructor for AutoSaveManager.
      *
-     * @param puzzleName nom du puzzle en cours de résolution
-     * @param numFixedPieces nombre de pièces fixes au départ
-     * @param initialFixedPieces liste des pièces fixes initiales
-     * @param placementOrder liste suivant l'ordre de placement
+     * @param puzzleName name of puzzle being solved
+     * @param numFixedPieces number of fixed pieces at start
+     * @param initialFixedPieces list of initial fixed pieces
+     * @param placementOrder list following placement order
      */
     public AutoSaveManager(String puzzleName, int numFixedPieces,
                           List<SaveStateManager.PlacementInfo> initialFixedPieces,
@@ -44,30 +44,30 @@ public class AutoSaveManager {
     }
 
     /**
-     * Initialise la carte des pièces pour la fonctionnalité de sauvegarde automatique.
+     * Initializes the pieces map for automatic save functionality.
      *
-     * @param allPieces carte de toutes les pièces
+     * @param allPieces map of all pieces
      */
     public void initializePiecesMap(Map<Integer, Piece> allPieces) {
         this.allPiecesMap = allPieces;
     }
 
     /**
-     * Récupère la carte des pièces (nécessaire pour les opérations externes).
+     * Retrieves the pieces map (required for external operations).
      *
-     * @return carte de toutes les pièces
+     * @return map of all pieces
      */
     public Map<Integer, Piece> getAllPiecesMap() {
         return allPiecesMap;
     }
 
     /**
-     * Vérifie si la sauvegarde automatique doit être effectuée et l'exécute si nécessaire.
+     * Checks if automatic save should be performed and executes it if necessary.
      *
-     * @param board état actuel du plateau
-     * @param pieceUsed bitset des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param stats gestionnaire de statistiques pour le suivi de la progression
+     * @param board current board state
+     * @param pieceUsed bitset of used pieces
+     * @param totalPieces total number of pieces
+     * @param stats statistics manager for progress tracking
      */
     public void checkAndSave(Board board, BitSet pieceUsed, int totalPieces, StatisticsManager stats) {
         long currentTime = System.currentTimeMillis();
@@ -79,35 +79,35 @@ public class AutoSaveManager {
     }
 
     /**
-     * Effectue une sauvegarde immédiate (utilisée pour les records).
+     * Performs an immediate save (used for records).
      *
-     * @param board état actuel du plateau
-     * @param pieceUsed bitset des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param stats gestionnaire de statistiques pour le suivi de la progression
-     * @param currentDepth profondeur actuelle pour la vérification du seuil
+     * @param board current board state
+     * @param pieceUsed bitset of used pieces
+     * @param totalPieces total number of pieces
+     * @param stats statistics manager for progress tracking
+     * @param currentDepth current depth for threshold verification
      */
     public void saveRecord(Board board, BitSet pieceUsed, int totalPieces,
                           StatisticsManager stats, int currentDepth) {
-        // Sauvegarde dès 10 pièces ET à chaque nouveau record de profondeur
+        // Save from 10 pieces AND at each new depth record
         if (currentDepth >= 10 && allPiecesMap != null) {
             performSave(board, pieceUsed, totalPieces, stats);
         }
     }
 
     /**
-     * Effectue l'opération de sauvegarde réelle.
+     * Performs the actual save operation.
      *
-     * @param board état actuel du plateau
-     * @param pieceUsed bitset des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param stats gestionnaire de statistiques pour le suivi de la progression
+     * @param board current board state
+     * @param pieceUsed bitset of used pieces
+     * @param totalPieces total number of pieces
+     * @param stats statistics manager for progress tracking
      */
     private void performSave(Board board, BitSet pieceUsed, int totalPieces, StatisticsManager stats) {
         double progress = stats.getProgressPercentage();
         long elapsedTime = stats.getElapsedTimeMs();
 
-        // Construire la liste des pièces non utilisées pour la sauvegarde
+        // Build list of unused pieces for save
         List<Integer> unusedIds = new ArrayList<>();
         for (int i = 1; i <= totalPieces; i++) {
             if (!pieceUsed.get(i)) {

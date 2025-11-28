@@ -9,15 +9,15 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * Gestionnaire de sauvegarde et chargement de l'état du puzzle
- * Sauvegarde l'état actuel du board et permet de le restaurer
+ * Manager for saving and loading puzzle state
+ * Saves the current board state and allows restoring it
  */
 public class SaveStateManager {
 
     private static final String SAVE_DIR = "saves/";
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-    private static final int MAX_BACKUP_SAVES = 10; // Garder les 10 dernières sauvegardes
-    private static final int SAVE_LEVEL_INTERVAL = 1; // Sauvegarder chaque niveau (chaque nouvelle pièce placée)
+    private static final int MAX_BACKUP_SAVES = 10; // Keep the last 10 saves
+    private static final int SAVE_LEVEL_INTERVAL = 1; // Save each level (each new piece placed)
     private static boolean useBinaryFormat = false; // Enable/disable binary save format
 
     /**
@@ -42,7 +42,7 @@ public class SaveStateManager {
     }
 
     /**
-     * Obtient le sous-répertoire pour une configuration de puzzle
+     * Gets the subdirectory for a puzzle configuration
      * Ex: "eternity2_p01_ascending" -> "saves/eternity2/p01_asc/"
      * Ex: "indice1" -> "saves/indice1/"
      */
@@ -52,18 +52,18 @@ public class SaveStateManager {
     }
 
     /**
-     * Classe pour stocker l'état complet du puzzle avec l'ordre de pose
+     * Class to store the complete puzzle state with placement order
      */
     public static class SaveState {
         public final String puzzleName;
         public final int rows;
         public final int cols;
         public final Map<String, PlacementInfo> placements; // "row,col" -> PlacementInfo
-        public final java.util.List<PlacementInfo> placementOrder; // Ordre de pose des pièces (pour backtracking)
+        public final java.util.List<PlacementInfo> placementOrder; // Piece placement order (for backtracking)
         public final Set<Integer> unusedPieceIds;
         public final long timestamp;
-        public final int depth; // Nombre de pièces placées
-        public final long totalComputeTimeMs; // Temps total de calcul cumulé en millisecondes
+        public final int depth; // Number of pieces placed
+        public final long totalComputeTimeMs; // Total compute time accumulated in milliseconds
 
         public SaveState(String puzzleName, int rows, int cols,
                         Map<String, PlacementInfo> placements,
@@ -81,7 +81,7 @@ public class SaveStateManager {
             this.totalComputeTimeMs = totalComputeTimeMs;
         }
 
-        // Constructeur de compatibilité (pour ancien format sans totalComputeTime)
+        // Compatibility constructor (for old format without totalComputeTime)
         public SaveState(String puzzleName, int rows, int cols,
                         Map<String, PlacementInfo> placements,
                         java.util.List<PlacementInfo> placementOrder,
@@ -92,7 +92,7 @@ public class SaveStateManager {
     }
 
     /**
-     * Information sur une pièce placée (avec position pour l'ordre de pose)
+     * Information about a placed piece (with position for placement order)
      */
     public static class PlacementInfo {
         public final int row;
@@ -107,17 +107,17 @@ public class SaveStateManager {
             this.rotation = rotation;
         }
 
-        // Constructeur pour compatibilité (sans position)
+        // Constructor for compatibility (without position)
         public PlacementInfo(int pieceId, int rotation) {
             this(-1, -1, pieceId, rotation);
         }
     }
 
     /**
-     * Sauvegarde l'état actuel du puzzle avec backtracking
-     * Deux types de sauvegardes:
-     * - current: sauvegarde en cours (écrasable)
-     * - best_XXX: meilleurs scores par paliers (jamais écrasés)
+     * Saves the current puzzle state with backtracking
+     * Two types of saves:
+     * - current: ongoing save (can be overwritten)
+     * - best_XXX: best scores by milestones (never overwritten)
      */
     public static void saveState(String puzzleName, Board board, Map<Integer, Piece> allPieces,
                                  List<Integer> unusedIds, List<PlacementInfo> placementOrder, double progressPercentage, long elapsedTimeMs,
@@ -175,18 +175,18 @@ public class SaveStateManager {
                                            elapsedTimeMs, numFixedPieces, initialFixedPieces);
 
                     if (isNewRecord(puzzleDir, state.depth)) {
-                        System.out.println("  🏆 Nouveau record: " + bestFile + " (" + state.depth + " pièces)");
+                        System.out.println("  🏆 New record: " + bestFile + " (" + state.depth + " pieces)");
                     }
                 }
             }
 
         } catch (IOException e) {
-            System.err.println("  ⚠️  Erreur lors de la sauvegarde: " + e.getMessage());
+            System.err.println("  ⚠️  Error during save: " + e.getMessage());
         }
     }
 
     /**
-     * Génère un affichage visuel ASCII du plateau AVEC les arêtes détaillées
+     * Generates a visual ASCII display of the board WITH detailed edges
      * @deprecated Use SaveBoardRenderer.generateBoardVisualDetailed() instead
      */
     @Deprecated
@@ -195,7 +195,7 @@ public class SaveStateManager {
     }
 
     /**
-     * Génère un affichage visuel ASCII du plateau (simple, sans arêtes)
+     * Generates a visual ASCII display of the board (simple, without edges)
      * @deprecated Use SaveBoardRenderer.generateBoardVisual() instead
      */
     @Deprecated
@@ -204,13 +204,13 @@ public class SaveStateManager {
     }
 
     /**
-     * Récupère le nombre de pièces fixes depuis le fichier de configuration
+     * Retrieves the number of fixed pieces from the configuration file
      */
     private static int getNumFixedPiecesFromConfig(String puzzleName) {
-        // Essayer d'abord avec le nom exact (nouveau format sans "puzzle_")
+        // Try first with exact name (new format without "puzzle_")
         File configFile = new File("data/" + puzzleName + ".txt");
 
-        // Si le fichier n'existe pas, chercher un fichier qui correspond au pattern
+        // If the file doesn't exist, search for a file matching the pattern
         if (!configFile.exists()) {
             File dataDir = new File("data");
             if (dataDir.exists() && dataDir.isDirectory()) {
@@ -234,7 +234,7 @@ public class SaveStateManager {
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
 
-                // Compter les lignes avec le format "# PieceFixePosition:"
+                // Count lines with format "# PieceFixePosition:"
                 if (line.startsWith("# PieceFixePosition:")) {
                     count++;
                 }
@@ -242,8 +242,8 @@ public class SaveStateManager {
 
             return count;
         } catch (Exception e) {
-            // Si on ne peut pas charger la config, on retourne 0
-            System.err.println("Attention: impossible de charger la config pour " + puzzleName + ", pièces fixes = 0");
+            // If we can't load the config, return 0
+            System.err.println("Warning: unable to load config for " + puzzleName + ", fixed pieces = 0");
             return 0;
         }
     }
@@ -262,7 +262,7 @@ public class SaveStateManager {
     }
 
     /**
-     * Vérifie si c'est un nouveau record
+     * Checks if this is a new record
      */
     private static boolean isNewRecord(String puzzleDir, int depth) {
         // Delegate to SaveFileManager (refactored for better code organization)
@@ -270,7 +270,7 @@ public class SaveStateManager {
     }
 
     /**
-     * Version simplifiée sans placement order (pour compatibilité)
+     * Simplified version without placement order (for compatibility)
      */
     public static void saveState(String puzzleName, Board board, Map<Integer, Piece> allPieces,
                                  List<Integer> unusedIds, List<PlacementInfo> placementOrder) {
@@ -290,7 +290,7 @@ public class SaveStateManager {
     }
 
     /**
-     * Nettoie les anciennes sauvegardes en ne gardant que les MAX_BACKUP_SAVES plus récentes
+     * Cleans up old saves by keeping only the MAX_BACKUP_SAVES most recent ones
      */
     private static void cleanupOldSaves(String baseName, int currentDepth) {
         // Delegate to SaveFileManager (refactored for better code organization)
@@ -298,7 +298,7 @@ public class SaveStateManager {
     }
 
     /**
-     * Nettoie les anciennes sauvegardes best en ne gardant que les MAX_BACKUP_SAVES meilleures
+     * Cleans up old best saves by keeping only the MAX_BACKUP_SAVES best ones
      */
     private static void cleanupOldBestSaves(String puzzleDir, int currentDepth) {
         // Delegate to SaveFileManager (refactored for better code organization)
@@ -306,8 +306,8 @@ public class SaveStateManager {
     }
 
     /**
-     * Nettoie les anciens fichiers "current" en ne gardant que le plus récent
-     * (sauf celui qui vient d'être créé)
+     * Cleans up old "current" files by keeping only the most recent one
+     * (except the one just created)
      */
     private static void cleanupOldCurrentSaves(String puzzleDir, String currentFileToKeep) {
         // Delegate to SaveFileManager (refactored for better code organization)
@@ -315,7 +315,7 @@ public class SaveStateManager {
     }
 
     /**
-     * Extrait le depth du nom de fichier best
+     * Extracts the depth from best filename
      */
     private static int extractDepthFromBestFilename(String filename) {
         // Delegate to SaveFileManager (refactored for better code organization)
@@ -323,7 +323,7 @@ public class SaveStateManager {
     }
 
     /**
-     * Extrait le niveau (depth) du nom de fichier
+     * Extracts the level (depth) from filename
      */
     private static int extractDepthFromFilename(String filename, String baseName) {
         // Delegate to SaveFileManager (refactored for better code organization)
@@ -331,12 +331,12 @@ public class SaveStateManager {
     }
 
     /**
-     * Charge l'état sauvegardé pour un puzzle donné
-     * Retourne null si aucune sauvegarde n'existe
-     * NOUVEAU: Charge aussi l'ordre de pose des pièces pour le backtracking
+     * Loads the saved state for a given puzzle
+     * Returns null if no save exists
+     * NEW: Also loads the piece placement order for backtracking
      */
     public static SaveState loadState(String puzzleName) {
-        // Chercher la sauvegarde la plus récente
+        // Find the most recent save
         String baseName = puzzleName.replaceAll("[^a-zA-Z0-9]", "_");
         File saveDir = new File(SAVE_DIR);
 
@@ -344,7 +344,7 @@ public class SaveStateManager {
             return null;
         }
 
-        // Trouver tous les fichiers de sauvegarde pour ce puzzle
+        // Find all save files for this puzzle
         File[] saveFiles = saveDir.listFiles((dir, name) ->
             name.startsWith(baseName + "_save_") && name.endsWith(".txt")
         );
@@ -353,14 +353,14 @@ public class SaveStateManager {
             return null;
         }
 
-        // Trier par niveau (plus récent en premier)
+        // Sort by level (most recent first)
         java.util.Arrays.sort(saveFiles, (f1, f2) -> {
             int depth1 = extractDepthFromFilename(f1.getName(), baseName);
             int depth2 = extractDepthFromFilename(f2.getName(), baseName);
             return Integer.compare(depth2, depth1);
         });
 
-        // Charger la sauvegarde la plus récente
+        // Load the most recent save
         File saveFile = saveFiles[0];
 
         // Delegate to SaveStateIO for actual file reading (refactored for better code organization)
@@ -368,7 +368,7 @@ public class SaveStateManager {
     }
 
     /**
-     * Restaure l'état sur un board à partir d'une sauvegarde
+     * Restores the state on a board from a save
      */
     public static boolean restoreState(SaveState state, Board board, Map<Integer, Piece> allPieces) {
         // Delegate to SaveStateSerializer (refactored for better code organization)
@@ -376,13 +376,13 @@ public class SaveStateManager {
     }
 
     /**
-     * Trouve toutes les sauvegardes disponibles pour un puzzle, triées par profondeur décroissante
-     * @param puzzleName nom du puzzle
-     * @return liste des fichiers de sauvegarde, du plus récent au plus ancien
+     * Finds all available saves for a puzzle, sorted by decreasing depth
+     * @param puzzleName puzzle name
+     * @return list of save files, from most recent to oldest
      */
     /**
-     * Trouve tous les fichiers "best" pour un puzzle donné
-     * Retourne les fichiers triés par profondeur décroissante (meilleur en premier)
+     * Finds all "best" files for a given puzzle
+     * Returns files sorted by decreasing depth (best first)
      */
     public static List<File> findAllSaves(String puzzleName) {
         String puzzleDir = getPuzzleSubDir(puzzleName);
@@ -392,7 +392,7 @@ public class SaveStateManager {
             return new ArrayList<>();
         }
 
-        // Trouver tous les fichiers "best" pour ce puzzle
+        // Find all "best" files for this puzzle
         File[] saveFiles = saveDir.listFiles((dir, name) ->
             name.startsWith("best_") && name.endsWith(".txt")
         );
@@ -401,25 +401,25 @@ public class SaveStateManager {
             return new ArrayList<>();
         }
 
-        // Trier par niveau (plus récent en premier)
+        // Sort by level (most recent first)
         java.util.Arrays.sort(saveFiles, (f1, f2) -> {
             int depth1 = extractDepthFromBestFilename(f1.getName());
             int depth2 = extractDepthFromBestFilename(f2.getName());
-            return Integer.compare(depth2, depth1); // Ordre décroissant
+            return Integer.compare(depth2, depth1); // Descending order
         });
 
         return java.util.Arrays.asList(saveFiles);
     }
 
     /**
-     * Trouve la sauvegarde "current" la plus ANCIENNE pour un puzzle donné
-     * Ceci permet la parallélisation: chaque thread reprend le travail le plus ancien
-     * @param puzzleName nom du puzzle
-     * @return le fichier current le plus ancien s'il existe, null sinon
+     * Finds the OLDEST "current" save for a given puzzle
+     * This enables parallelization: each thread resumes the oldest work
+     * @param puzzleName puzzle name
+     * @return the oldest current file if it exists, null otherwise
      */
     /**
-     * Lit le temps total de calcul depuis le fichier current existant
-     * Retourne 0 si pas de fichier ou pas de champ TotalComputeTime
+     * Reads the total compute time from the existing current file
+     * Returns 0 if no file or no TotalComputeTime field
      */
     public static long readTotalComputeTime(String puzzleName) {
         File currentSave = findCurrentSave(puzzleName);
@@ -433,12 +433,12 @@ public class SaveStateManager {
                 if (line.startsWith("# TotalComputeTime:")) {
                     String[] parts = line.split(":");
                     if (parts.length >= 2) {
-                        return Long.parseLong(parts[1].trim().split(" ")[0]); // Extraire juste le nombre
+                        return Long.parseLong(parts[1].trim().split(" ")[0]); // Extract just the number
                     }
                 }
             }
         } catch (Exception e) {
-            // Ancien format sans TotalComputeTime
+            // Old format without TotalComputeTime
             return 0L;
         }
         return 0L;
@@ -447,7 +447,7 @@ public class SaveStateManager {
     public static File findCurrentSave(String puzzleName) {
         String puzzleDir = getPuzzleSubDir(puzzleName);
 
-        // Chercher tous les fichiers current avec timestamp dans le sous-répertoire
+        // Search for all current files with timestamp in the subdirectory
         File saveDir = new File(puzzleDir);
         if (!saveDir.exists()) {
             return null;
@@ -457,19 +457,19 @@ public class SaveStateManager {
             name.startsWith("current_") && name.endsWith(".txt")
         );
 
-        // Si aucun fichier avec timestamp, chercher l'ancien format
+        // If no file with timestamp, search for the old format
         if (currentFiles == null || currentFiles.length == 0) {
             File legacyFile = new File(puzzleDir + "current.txt");
             return legacyFile.exists() ? legacyFile : null;
         }
 
-        // Trouver le fichier avec le plus petit timestamp (le plus ancien)
+        // Find the file with the smallest timestamp (the oldest)
         File oldest = null;
         long oldestTimestamp = Long.MAX_VALUE;
 
         for (File f : currentFiles) {
             try {
-                // Extraire le timestamp du nom de fichier
+                // Extract the timestamp from filename
                 String name = f.getName();
                 String prefix = "current_";
                 String suffix = ".txt";
@@ -482,7 +482,7 @@ public class SaveStateManager {
                     oldest = f;
                 }
             } catch (Exception e) {
-                // Ignorer les fichiers mal formatés
+                // Ignore malformed files
             }
         }
 
@@ -501,14 +501,14 @@ public class SaveStateManager {
     }
 
     /**
-     * Supprime la sauvegarde pour un puzzle donné
+     * Deletes the save for a given puzzle
      */
     public static void deleteSave(String puzzleName) {
         String filename = SAVE_DIR + puzzleName.replaceAll("[^a-zA-Z0-9]", "_") + "_save.txt";
         File saveFile = new File(filename);
         if (saveFile.exists()) {
             saveFile.delete();
-            System.out.println("  🗑️  Sauvegarde supprimée: " + filename);
+            System.out.println("  🗑️  Save deleted: " + filename);
         }
     }
 }

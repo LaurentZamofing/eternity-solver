@@ -6,18 +6,10 @@ import model.Placement;
 
 import java.util.*;
 
-/**
- * Classe utilitaire pour visualiser les grilles de puzzle dans différents formats.
- * Fournit des représentations en ASCII art pour le débogage et le suivi de progression.
- *
- * Toutes les méthodes sont statiques et nécessitent des paramètres explicites pour maintenir
- * l'indépendance vis-à-vis de l'état d'EternitySolver.
- */
+/** Utility class for visualizing puzzle boards in ASCII art formats; all methods static and solver-independent. */
 public class BoardVisualizer {
 
-    /**
-     * Classe auxiliaire pour stocker les informations de placement valide.
-     */
+    /** Helper class storing valid placement information (piece ID and rotation). */
     private static class ValidPlacement {
         int pieceId;
         int rotation;
@@ -28,16 +20,7 @@ public class BoardVisualizer {
         }
     }
 
-    /**
-     * Affiche une représentation compacte de la grille montrant les arêtes et le nombre de pièces.
-     * Les cases vides affichent le nombre de pièces possibles.
-     *
-     * @param board état actuel de la grille
-     * @param piecesById map de toutes les pièces par ID
-     * @param pieceUsed BitSet marquant les pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param fitsChecker interface fonctionnelle pour vérifier si une pièce correspond
-     */
+    /** Displays compact board representation showing edges and piece counts; empty cells show number of possible pieces. */
     public static void printBoardCompact(Board board, Map<Integer, Piece> piecesById,
                                         BitSet pieceUsed, int totalPieces,
                                         FitsChecker fitsChecker) {
@@ -111,17 +94,7 @@ public class BoardVisualizer {
         System.out.println();
     }
 
-    /**
-     * Affiche la grille avec les pièces posées et le nombre de pièces possibles sur les cases vides.
-     *
-     * @param board grille actuelle
-     * @param piecesById map des pièces par ID
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param lastPlacedRow ligne de la dernière pièce posée (-1 si aucune)
-     * @param lastPlacedCol colonne de la dernière pièce posée (-1 si aucune)
-     * @param fitsChecker interface fonctionnelle pour vérifier si une pièce correspond
-     */
+    /** Displays board with placed pieces and possible piece counts on empty cells; highlights last placed cell and minimum remaining values. */
     public static void printBoardWithCounts(Board board, Map<Integer, Piece> piecesById,
                                            BitSet pieceUsed, int totalPieces,
                                            int lastPlacedRow, int lastPlacedCol,
@@ -240,16 +213,7 @@ public class BoardVisualizer {
         System.out.println();
     }
 
-    /**
-     * Affiche la grille avec labels (coordonnées A-F pour les lignes, 1-N pour les colonnes).
-     * Format détaillé avec arêtes et numéros de pièces, avec validation des correspondances.
-     *
-     * @param board grille actuelle
-     * @param piecesById map des pièces par ID
-     * @param unusedIds liste des IDs de pièces non utilisées
-     * @param fixedPositions ensemble des positions fixes (format: "row,col")
-     * @param fitsChecker interface fonctionnelle pour vérifier si une pièce correspond
-     */
+    /** Displays labeled board with coordinates (A-F rows, 1-N columns) and edge matching validation; color-codes edge compatibility. */
     public static void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById,
                                            List<Integer> unusedIds, Set<String> fixedPositions,
                                            FitsChecker fitsChecker) {
@@ -403,20 +367,7 @@ public class BoardVisualizer {
         System.out.println();
     }
 
-    /**
-     * Affiche la grille en comparant avec une autre grille (pour voir les différences)
-     * Code couleur :
-     * - Magenta : Case occupée dans referenceBoard mais vide dans currentBoard (régression)
-     * - Orange : Case occupée dans les deux mais pièce différente (changement)
-     * - Jaune : Case vide dans referenceBoard mais occupée dans currentBoard (progression)
-     * - Cyan : Case identique dans les deux grilles (stabilité)
-     *
-     * @param currentBoard grille actuelle
-     * @param referenceBoard grille de référence
-     * @param piecesById map des pièces par ID
-     * @param unusedIds liste des IDs de pièces non utilisées
-     * @param fitsChecker interface fonctionnelle pour vérifier si une pièce correspond
-     */
+    /** Displays board comparison showing differences with color coding: magenta (regression), orange (change), yellow (progress), cyan (stable). */
     public static void printBoardWithComparison(Board currentBoard, Board referenceBoard,
                                                Map<Integer, Piece> piecesById, List<Integer> unusedIds,
                                                FitsChecker fitsChecker) {
@@ -536,13 +487,7 @@ public class BoardVisualizer {
         System.out.println();
     }
 
-    /**
-     * Détermine la couleur d'une case en fonction de la comparaison entre deux grilles
-     * - Magenta : occupée dans référence, vide dans current (régression)
-     * - Orange : occupée dans les deux mais pièce différente (changement)
-     * - Jaune : vide dans référence, occupée dans current (progression)
-     * - Cyan : identique (stabilité)
-     */
+    /** Returns cell comparison color: magenta (regression), orange (change), yellow (progress), cyan (stable). */
     public static String getCellComparisonColor(Board current, Board reference, int row, int col) {
         boolean currentEmpty = current.isEmpty(row, col);
         boolean refEmpty = reference.isEmpty(row, col);
@@ -575,9 +520,7 @@ public class BoardVisualizer {
 
     // ========== Méthodes auxiliaires ==========
 
-    /**
-     * Compte les pièces uniques qui peuvent être placées à une position (en ignorant les rotations).
-     */
+    /** Counts unique pieces that can be placed at position (ignoring rotations). */
     private static int countUniquePieces(Board board, int r, int c, Map<Integer, Piece> piecesById,
                                         BitSet pieceUsed, int totalPieces, FitsChecker fitsChecker) {
         Set<Integer> validPieceIds = new HashSet<>();
@@ -596,9 +539,7 @@ public class BoardVisualizer {
         return validPieceIds.size();
     }
 
-    /**
-     * Compte les pièces valides pour une position à partir d'une liste d'IDs non utilisés.
-     */
+    /** Counts valid pieces for position from list of unused IDs. */
     private static int countValidPiecesForPosition(Board board, int r, int c,
                                                    Map<Integer, Piece> piecesById,
                                                    List<Integer> unusedIds,
@@ -620,10 +561,7 @@ public class BoardVisualizer {
         return count;
     }
 
-    /**
-     * Interface fonctionnelle pour vérifier si une pièce correspond à une position.
-     * Ceci permet à BoardVisualizer de rester indépendant d'EternitySolver.
-     */
+    /** Functional interface for checking if piece fits at position; keeps BoardVisualizer independent from EternitySolver. */
     @FunctionalInterface
     public interface FitsChecker {
         boolean fits(Board board, int r, int c, int[] candidateEdges);

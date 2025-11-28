@@ -11,8 +11,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Gère les records de profondeur et le suivi des scores pendant la résolution.
- * Extrait de EternitySolver pour une meilleure organisation du code.
+ * Manages depth records and score tracking during solving.
+ * Extracted from EternitySolver for better code organization.
  */
 public class RecordManager {
 
@@ -21,7 +21,7 @@ public class RecordManager {
     private final int minDepthToShowRecords;
     private final Object lockObject;
 
-    // Références atomiques pour la résolution parallèle
+    // Atomic references for parallel solving
     private final AtomicInteger globalMaxDepth;
     private final AtomicInteger globalBestScore;
     private final AtomicInteger globalBestThreadId;
@@ -32,17 +32,17 @@ public class RecordManager {
     private long lastProgressBacktracks = 0;
 
     /**
-     * Constructeur pour RecordManager.
+     * Constructor for RecordManager.
      *
-     * @param puzzleName nom du puzzle
-     * @param threadId ID du thread (-1 pour non-parallèle)
-     * @param minDepthToShowRecords profondeur minimale pour afficher les records
-     * @param lockObject objet de verrouillage pour les opérations synchronisées
-     * @param globalMaxDepth référence atomique vers la profondeur maximale globale
-     * @param globalBestScore référence atomique vers le meilleur score global
-     * @param globalBestThreadId référence atomique vers l'ID du meilleur thread
-     * @param globalBestBoard référence atomique vers le meilleur plateau
-     * @param globalBestPieces référence atomique vers les meilleures pièces
+     * @param puzzleName puzzle name
+     * @param threadId thread ID (-1 for non-parallel)
+     * @param minDepthToShowRecords minimum depth to display records
+     * @param lockObject lock object for synchronized operations
+     * @param globalMaxDepth atomic reference to global maximum depth
+     * @param globalBestScore atomic reference to global best score
+     * @param globalBestThreadId atomic reference to best thread ID
+     * @param globalBestBoard atomic reference to best board
+     * @param globalBestPieces atomic reference to best pieces
      */
     public RecordManager(String puzzleName, int threadId, int minDepthToShowRecords,
                         Object lockObject, AtomicInteger globalMaxDepth,
@@ -61,7 +61,7 @@ public class RecordManager {
     }
 
     /**
-     * Résultat de la vérification d'un nouveau record.
+     * Result of checking for a new record.
      */
     public static class RecordCheckResult {
         public final boolean isNewDepthRecord;
@@ -79,53 +79,53 @@ public class RecordManager {
     }
 
     /**
-     * Obtient la profondeur maximale atteinte.
+     * Gets the maximum depth reached.
      *
-     * @return profondeur maximale atteinte
+     * @return maximum depth reached
      */
     public int getMaxDepthReached() {
         return maxDepthReached;
     }
 
     /**
-     * Obtient le nombre de retours en arrière lors du dernier progrès.
+     * Gets the number of backtracks at last progress.
      *
-     * @return derniers retours en arrière de progrès
+     * @return last progress backtracks
      */
     public long getLastProgressBacktracks() {
         return lastProgressBacktracks;
     }
 
     /**
-     * Vérifie si un nouveau record a été atteint et met à jour l'état.
+     * Checks if a new record has been reached and updates state.
      *
-     * @param board état actuel du plateau
-     * @param piecesById carte des pièces par ID
-     * @param currentDepth profondeur actuelle (hors pièces fixes)
-     * @param currentBacktracks nombre actuel de retours en arrière
-     * @return résultat indiquant si de nouveaux records ont été atteints
+     * @param board current board state
+     * @param piecesById map of pieces by ID
+     * @param currentDepth current depth (excluding fixed pieces)
+     * @param currentBacktracks current number of backtracks
+     * @return result indicating if new records were reached
      */
     public RecordCheckResult checkAndUpdateRecord(Board board, Map<Integer, Piece> piecesById,
                                                   int currentDepth, long currentBacktracks) {
-        // Vérifie si nous avons atteint une nouvelle profondeur locale
+        // Check if we've reached a new local depth
         if (currentDepth <= maxDepthReached) {
-            return null; // Pas de nouveau record
+            return null; // No new record
         }
 
-        // Met à jour la profondeur maximale locale
+        // Update local maximum depth
         maxDepthReached = currentDepth;
         lastProgressBacktracks = currentBacktracks;
 
-        // Calcule le score actuel
+        // Calculate current score
         int[] scoreData = board.calculateScore();
         int currentScore = scoreData[0];
         int maxScore = scoreData[1];
 
-        // Met à jour les records globaux en utilisant CAS (Compare-And-Swap) pour des mises à jour sans verrou
+        // Update global records using CAS (Compare-And-Swap) for lock-free updates
         boolean isNewGlobalDepthRecord = updateGlobalDepthRecord(currentDepth);
         boolean isNewGlobalScoreRecord = updateGlobalScoreRecord(currentScore);
 
-        // Si c'est un nouveau record global, sauvegarde le plateau
+        // If it's a new global record, save the board
         if (isNewGlobalDepthRecord || isNewGlobalScoreRecord) {
             saveGlobalBestBoard(board, piecesById);
         }
@@ -135,10 +135,10 @@ public class RecordManager {
     }
 
     /**
-     * Met à jour la profondeur maximale globale en utilisant CAS atomique.
+     * Updates global maximum depth using atomic CAS.
      *
-     * @param currentDepth profondeur actuelle
-     * @return true si c'est un nouveau record global
+     * @param currentDepth current depth
+     * @return true if it's a new global record
      */
     private boolean updateGlobalDepthRecord(int currentDepth) {
         int oldMaxDepth, newMaxDepth;
@@ -155,10 +155,10 @@ public class RecordManager {
     }
 
     /**
-     * Met à jour le meilleur score global en utilisant CAS atomique.
+     * Updates global best score using atomic CAS.
      *
-     * @param currentScore score actuel
-     * @return true si c'est un nouveau record de score global
+     * @param currentScore current score
+     * @return true if it's a new global score record
      */
     private boolean updateGlobalScoreRecord(int currentScore) {
         int oldMaxScore, newMaxScore;
@@ -171,14 +171,14 @@ public class RecordManager {
     }
 
     /**
-     * Sauvegarde le plateau actuel comme le meilleur global (synchronisé).
+     * Saves current board as global best (synchronized).
      *
-     * @param board plateau actuel
-     * @param piecesById carte des pièces par ID
+     * @param board current board
+     * @param piecesById map of pieces by ID
      */
     private void saveGlobalBestBoard(Board board, Map<Integer, Piece> piecesById) {
         synchronized (lockObject) {
-            // Crée une copie du plateau actuel
+            // Create a copy of current board
             Board newBestBoard = new Board(board.getRows(), board.getCols());
             for (int r = 0; r < board.getRows(); r++) {
                 for (int c = 0; c < board.getCols(); c++) {
@@ -197,11 +197,11 @@ public class RecordManager {
     }
 
     /**
-     * Détermine si un record doit être affiché.
+     * Determines if a record should be displayed.
      *
-     * @param result résultat de la vérification du record
-     * @param currentDepth profondeur actuelle
-     * @return true si le record doit être affiché
+     * @param result record check result
+     * @param currentDepth current depth
+     * @return true if record should be displayed
      */
     public boolean shouldShowRecord(RecordCheckResult result, int currentDepth) {
         if (result == null) return false;
@@ -211,11 +211,11 @@ public class RecordManager {
     }
 
     /**
-     * Affiche les informations du record.
+     * Displays record information.
      *
-     * @param result résultat de la vérification du record
-     * @param usedCount nombre total de pièces utilisées
-     * @param stats gestionnaire de statistiques pour le progrès
+     * @param result record check result
+     * @param usedCount total number of pieces used
+     * @param stats statistics manager for progress
      */
     public void displayRecord(RecordCheckResult result, int usedCount, StatisticsManager stats) {
         // Note: Using synchronized block to ensure atomic multi-line output
@@ -223,28 +223,28 @@ public class RecordManager {
             SolverLogger.info("\n" + "=".repeat(80));
 
             if (result.isNewDepthRecord) {
-                SolverLogger.info("RECORD EXCEPTIONNEL ! {} pièces placées (Thread {})", usedCount, threadId);
+                SolverLogger.info("EXCEPTIONAL RECORD! {} pieces placed (Thread {})", usedCount, threadId);
                 SolverLogger.info("Puzzle: {}", puzzleName);
             }
 
             if (result.isNewScoreRecord) {
                 double percentage = result.maxScore > 0 ? (result.currentScore * 100.0 / result.maxScore) : 0.0;
-                SolverLogger.info("MEILLEUR SCORE ! {}/{} arêtes internes ({}%)",
+                SolverLogger.info("BEST SCORE! {}/{} internal edges ({}%)",
                                  result.currentScore, result.maxScore, String.format("%.1f", percentage));
                 if (!result.isNewDepthRecord) {
                     SolverLogger.info("Puzzle: {}", puzzleName);
                 }
             }
 
-            // Affiche le pourcentage de progression
+            // Display progress percentage
             double progress = stats.getProgressPercentage();
             if (progress > 0.0 && progress < 99.9) {
-                SolverLogger.info("Avancement estimé : {}% (basé sur les 5 premières profondeurs)",
+                SolverLogger.info("Estimated progress: {}% (based on first 5 depths)",
                                  String.format("%.8f", progress));
             } else if (progress >= 99.9) {
-                SolverLogger.info("Avancement : exploration au-delà des profondeurs suivies (>5)");
+                SolverLogger.info("Progress: exploring beyond tracked depths (>5)");
             } else {
-                SolverLogger.info("Avancement : calcul en cours... (en attente de données des premières profondeurs)");
+                SolverLogger.info("Progress: calculating... (waiting for data from initial depths)");
             }
 
             SolverLogger.info("=".repeat(80) + "\n");

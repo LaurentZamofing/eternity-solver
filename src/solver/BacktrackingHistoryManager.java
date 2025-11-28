@@ -25,11 +25,11 @@ public class BacktrackingHistoryManager {
     /** Calculates number of fixed pieces (corners, hints) that should not be backtracked based on puzzle name. */
     public int calculateFixedPieces(String puzzleName) {
         if (puzzleName.startsWith("eternity2")) {
-            return 9; // 4 coins + 5 indices pour Eternity II
+            return 9; // 4 corners + 5 hints for Eternity II
         } else if (puzzleName.startsWith("indice")) {
-            return 0; // Pas de pièces fixes pour les puzzles d'indices
+            return 0; // No fixed pieces for hint puzzles
         } else {
-            return 0; // Par défaut : pas de pièces fixes
+            return 0; // Default: no fixed pieces
         }
     }
 
@@ -54,7 +54,7 @@ public class BacktrackingHistoryManager {
         boolean result = false;
 
         while (!result && !placementOrder.isEmpty()) {
-            // Retirer la dernière pièce de l'historique
+            // Remove last piece from history
             SaveStateManager.PlacementInfo lastPlacement =
                 placementOrder.remove(placementOrder.size() - 1);
 
@@ -63,22 +63,22 @@ public class BacktrackingHistoryManager {
             int pieceId = lastPlacement.pieceId;
             int oldRotation = lastPlacement.rotation;
 
-            // Retirer la pièce du plateau
+            // Remove piece from board
             board.remove(row, col);
 
-            // Remettre la pièce dans les pièces disponibles
+            // Return piece to available pieces
             pieceUsed.clear(pieceId);
 
             stats.backtracks++;
             backtrackCount++;
 
-            System.out.println(threadLabel + "  → Backtrack pré-chargé #" + backtrackCount +
-                             ": retrait pièce " + pieceId + " (rot=" + oldRotation + ") à [" +
+            System.out.println(threadLabel + "  → Pre-loaded backtrack #" + backtrackCount +
+                             ": removing piece " + pieceId + " (rot=" + oldRotation + ") at [" +
                              row + "," + col + "]");
-            System.out.println(threadLabel + "  → Profondeur réduite à: " +
-                             placementOrder.size() + " pièces");
+            System.out.println(threadLabel + "  → Depth reduced to: " +
+                             placementOrder.size() + " pieces");
 
-            // Essayer des rotations alternatives avant de reculer davantage
+            // Try alternative rotations before backtracking further
             result = tryAlternativeRotations(board, allPieces, pieceUsed, placementOrder,
                                            row, col, pieceId, oldRotation, sequentialSolver);
 
@@ -86,7 +86,7 @@ public class BacktrackingHistoryManager {
                 return true;
             }
 
-            // Aucune rotation alternative n'a fonctionné, essayer de résoudre avec moins de pièces
+            // No alternative rotation worked, try solving with fewer pieces
             int totalPieces = allPieces.size();
             result = sequentialSolver.solve(board, allPieces, pieceUsed, totalPieces);
         }
@@ -108,20 +108,20 @@ public class BacktrackingHistoryManager {
 
         int maxRotations = piece.getUniqueRotationCount();
 
-        // Essayer les rotations après celle qui a échoué
+        // Try rotations after the one that failed
         for (int rot = (oldRotation + 1) % 4; rot < maxRotations; rot++) {
             int[] candidate = piece.edgesRotated(rot);
 
             if (validator.fits(board, row, col, candidate)) {
-                System.out.println(threadLabel + "  → Tentative rotation alternative " + rot +
-                                 " pour pièce " + pieceId + " à [" + row + "," + col + "]");
+                System.out.println(threadLabel + "  → Trying alternative rotation " + rot +
+                                 " for piece " + pieceId + " at [" + row + "," + col + "]");
 
-                // Placer avec la nouvelle rotation
+                // Place with new rotation
                 board.place(row, col, piece, rot);
                 pieceUsed.set(pieceId);
                 placementOrder.add(new SaveStateManager.PlacementInfo(row, col, pieceId, rot));
 
-                // Essayer de résoudre avec cette rotation
+                // Try solving with this rotation
                 int totalPieces = allPieces.size();
                 boolean result = sequentialSolver.solve(board, allPieces, pieceUsed, totalPieces);
 
@@ -129,7 +129,7 @@ public class BacktrackingHistoryManager {
                     return true;
                 }
 
-                // Cette rotation n'a pas fonctionné, la retirer
+                // This rotation didn't work, remove it
                 board.remove(row, col);
                 pieceUsed.clear(pieceId);
                 placementOrder.remove(placementOrder.size() - 1);
@@ -156,7 +156,7 @@ public class BacktrackingHistoryManager {
             return null;
         }
 
-        // Retirer la dernière pièce de l'historique
+        // Remove last piece from history
         SaveStateManager.PlacementInfo lastPlacement =
             placementOrder.remove(placementOrder.size() - 1);
 
@@ -164,10 +164,10 @@ public class BacktrackingHistoryManager {
         int col = lastPlacement.col;
         int pieceId = lastPlacement.pieceId;
 
-        // Retirer la pièce du plateau
+        // Remove piece from board
         board.remove(row, col);
 
-        // Remettre la pièce dans les pièces disponibles
+        // Return piece to available pieces
         pieceUsed.clear(pieceId);
 
         stats.backtracks++;
@@ -177,7 +177,7 @@ public class BacktrackingHistoryManager {
 
     /** Returns fixed positions that should not be backtracked (currently empty set). */
     public Set<String> getFixedPositions() {
-        return new HashSet<>(); // Pas de positions fixes pour l'instant
+        return new HashSet<>(); // No fixed positions for now
     }
 
     /** Returns true if position is fixed and should not be backtracked. */
@@ -187,7 +187,7 @@ public class BacktrackingHistoryManager {
 
     /** Logs backtrack progress showing count and current depth. */
     public void logBacktrackProgress(int backtrackCount, int currentDepth) {
-        System.out.println(threadLabel + "  → Total backtracks dans historique: " + backtrackCount);
-        System.out.println(threadLabel + "  → Profondeur actuelle: " + currentDepth + " pièces");
+        System.out.println(threadLabel + "  → Total backtracks in history: " + backtrackCount);
+        System.out.println(threadLabel + "  → Current depth: " + currentDepth + " pieces");
     }
 }

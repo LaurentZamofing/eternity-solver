@@ -9,22 +9,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * SingletonDetector trouve les pièces qui ne peuvent être placées qu'à une seule position sur le plateau.
+ * SingletonDetector finds pieces that can only be placed in a single position on the board.
  *
- * Un singleton est une pièce qui n'a qu'une seule position valide sur le plateau (bien qu'elle puisse
- * avoir plusieurs rotations valides à cette position). Trouver et placer les singletons est
- * une optimisation puissante car si un singleton existe et n'est pas placé à sa position unique,
- * le puzzle devient insoluble.
+ * A singleton is a piece that has only one valid position on the board (although it may
+ * have multiple valid rotations at that position). Finding and placing singletons is
+ * a powerful optimization because if a singleton exists and is not placed at its unique position,
+ * the puzzle becomes unsolvable.
  *
- * Cette classe implémente la détection de singletons en testant toutes les pièces disponibles contre
- * toutes les positions et rotations vides pour identifier les pièces avec exactement une position valide.
+ * This class implements singleton detection by testing all available pieces against
+ * all empty positions and rotations to identify pieces with exactly one valid position.
  *
  * @author Eternity Solver Team
  */
 public class SingletonDetector {
 
     /**
-     * Classe pour stocker les informations d'une pièce singleton.
+     * Class to store information about a singleton piece.
      */
     public static class SingletonInfo {
         public final int pieceId;
@@ -41,7 +41,7 @@ public class SingletonDetector {
     }
 
     /**
-     * Suivi des statistiques pour la détection de singletons.
+     * Statistics tracking for singleton detection.
      */
     public static class Statistics {
         public long singletonsFound = 0;
@@ -66,18 +66,18 @@ public class SingletonDetector {
     private final boolean verbose;
 
     /**
-     * Interface pour vérifier si une pièce s'adapte à une position.
+     * Interface to check if a piece fits at a position.
      */
     public interface FitChecker {
         boolean fits(Board board, int r, int c, int[] candidateEdges);
     }
 
     /**
-     * Constructeur pour SingletonDetector.
+     * Constructor for SingletonDetector.
      *
-     * @param fitChecker le vérificateur d'ajustement à utiliser pour valider les placements
-     * @param stats le suivi des statistiques
-     * @param verbose indique s'il faut afficher une sortie détaillée
+     * @param fitChecker the fit checker to use for validating placements
+     * @param stats the statistics tracker
+     * @param verbose whether to display verbose output
      */
     public SingletonDetector(FitChecker fitChecker, Statistics stats, boolean verbose) {
         this.fitChecker = fitChecker;
@@ -86,24 +86,24 @@ public class SingletonDetector {
     }
 
     /**
-     * Cherche une pièce qui ne peut aller qu'à un seul endroit (singleton).
-     * C'est une optimisation puissante : si une pièce n'a qu'une position possible,
-     * il FAUT la poser là, sinon la branche est vouée à l'échec.
+     * Searches for a piece that can only go in one place (singleton).
+     * This is a powerful optimization: if a piece has only one possible position,
+     * it MUST be placed there, otherwise the branch is doomed to fail.
      *
-     * @param board grille actuelle
-     * @param piecesById map des pièces par ID
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @return info du singleton si trouvé, null sinon
+     * @param board current board
+     * @param piecesById map of pieces by ID
+     * @param pieceUsed bitset of used pieces
+     * @param totalPieces total number of pieces
+     * @return singleton info if found, null otherwise
      */
     public SingletonInfo findSingletonPiece(Board board, Map<Integer, Piece> piecesById,
                                            BitSet pieceUsed, int totalPieces) {
         for (int pid = 1; pid <= totalPieces; pid++) {
-            if (pieceUsed.get(pid)) continue; // Pièce déjà utilisée
+            if (pieceUsed.get(pid)) continue; // Piece already used
             Piece piece = piecesById.get(pid);
             List<int[]> possiblePositions = new ArrayList<>(); // [r, c, rotation]
 
-            // Tester toutes les positions et rotations possibles pour cette pièce
+            // Test all possible positions and rotations for this piece
             for (int r = 0; r < board.getRows(); r++) {
                 for (int c = 0; c < board.getCols(); c++) {
                     if (board.isEmpty(r, c)) {
@@ -117,9 +117,9 @@ public class SingletonDetector {
                 }
             }
 
-            // Vérifier si la pièce ne peut aller qu'à une seule POSITION (peu importe le nombre de rotations)
+            // Check if the piece can only go in one POSITION (regardless of number of rotations)
             if (possiblePositions.size() > 0) {
-                // Grouper par position (r,c) pour voir si toutes les possibilités sont à la même position
+                // Group by position (r,c) to see if all possibilities are at the same position
                 int firstRow = possiblePositions.get(0)[0];
                 int firstCol = possiblePositions.get(0)[1];
                 boolean samePosition = true;
@@ -131,43 +131,43 @@ public class SingletonDetector {
                     }
                 }
 
-                // Si toutes les possibilités sont à la même position → singleton !
+                // If all possibilities are at the same position → singleton!
                 if (samePosition) {
-                    // Choisir la première rotation possible (arbitraire, on testera les autres en backtracking si nécessaire)
+                    // Choose first possible rotation (arbitrary, we'll test others during backtracking if needed)
                     int[] pos = possiblePositions.get(0);
                     stats.incrementSingletonsFound();
                     if (verbose) {
                         String rotInfo = possiblePositions.size() == 1 ?
-                            " avec rotation " + (pos[2] * 90) + "°" :
-                            " avec " + possiblePositions.size() + " rotations possibles";
-                        System.out.println("🎯 SINGLETON trouvé ! Pièce " + pid + " ne peut aller qu'en (" + pos[0] + ", " + pos[1] + ")" + rotInfo);
+                            " with rotation " + (pos[2] * 90) + "°" :
+                            " with " + possiblePositions.size() + " possible rotations";
+                        System.out.println("🎯 SINGLETON found! Piece " + pid + " can only go at (" + pos[0] + ", " + pos[1] + ")" + rotInfo);
                     }
                     return new SingletonInfo(pid, pos[0], pos[1], pos[2]);
                 }
             }
 
-            // Dead-end : cette pièce ne peut aller nulle part !
+            // Dead-end: this piece cannot go anywhere!
             if (possiblePositions.size() == 0) {
                 stats.incrementDeadEnds();
                 if (verbose) {
-                    System.out.println("⚠ DEAD-END : Pièce " + pid + " ne peut aller nulle part !");
+                    System.out.println("⚠ DEAD-END: Piece " + pid + " cannot go anywhere!");
                 }
                 return null;
             }
         }
 
-        return null; // Pas de singleton trouvé
+        return null; // No singleton found
     }
 
     /**
-     * Vérifie s'il existe des pièces qui ne peuvent être placées nulle part (détection de dead-end).
-     * C'est une vérification plus simple que la détection complète de singletons.
+     * Checks if there are pieces that cannot be placed anywhere (dead-end detection).
+     * This is a simpler check than full singleton detection.
      *
-     * @param board état actuel du plateau
-     * @param piecesById carte de toutes les pièces
-     * @param pieceUsed bitset suivant les pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @return true si un dead-end est détecté (une pièce n'a aucun placement valide)
+     * @param board current board state
+     * @param piecesById map of all pieces
+     * @param pieceUsed bitset tracking used pieces
+     * @param totalPieces total number of pieces
+     * @return true if a dead-end is detected (a piece has no valid placement)
      */
     public boolean hasDeadEnd(Board board, Map<Integer, Piece> piecesById,
                              BitSet pieceUsed, int totalPieces) {
@@ -176,7 +176,7 @@ public class SingletonDetector {
             Piece piece = piecesById.get(pid);
             boolean hasValidPlacement = false;
 
-            // Vérifier si la pièce a au moins un placement valide
+            // Check if the piece has at least one valid placement
             outerLoop:
             for (int r = 0; r < board.getRows(); r++) {
                 for (int c = 0; c < board.getCols(); c++) {
@@ -195,7 +195,7 @@ public class SingletonDetector {
             if (!hasValidPlacement) {
                 stats.incrementDeadEnds();
                 if (verbose) {
-                    System.out.println("⚠ DEAD-END : Pièce " + pid + " ne peut aller nulle part !");
+                    System.out.println("⚠ DEAD-END: Piece " + pid + " cannot go anywhere!");
                 }
                 return true;
             }

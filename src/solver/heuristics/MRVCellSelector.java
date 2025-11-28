@@ -11,19 +11,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * MRVCellSelector implémente l'heuristique MRV (Minimum Remaining Values).
+ * MRVCellSelector implements MRV (Minimum Remaining Values) heuristic.
  *
- * L'heuristique MRV sélectionne la case vide avec le moins de placements valides possibles.
- * Aussi connue comme l'heuristique "variable la plus contrainte" ou "fail-first".
- * En choisissant d'abord la case la plus contrainte, on détecte les échecs plus tôt dans
- * l'arbre de recherche, ce qui permet un élagage plus efficace.
+ * MRV heuristic selects the empty cell with fewest valid placements possible.
+ * Also known as "most constrained variable" or "fail-first" heuristic.
+ * By choosing the most constrained cell first, we detect failures earlier in
+ * the search tree, enabling more efficient pruning.
  *
- * Fonctionnalités supplémentaires:
- * - Priorisation des bords: Remplit d'abord les cellules de bord avant l'intérieur
- * - Heuristique de degré pour départager: Choisit les cases avec plus de voisins remplis
- * - Détection de gaps: Évite de créer des gaps piégés sur les bords
+ * Additional features:
+ * - Border prioritization: Fills border cells before interior
+ * - Degree heuristic for tie-breaking: Chooses cells with more filled neighbors
+ * - Gap detection: Avoids creating trapped gaps on borders
  *
- * @author Équipe Eternity Solver
+ * @author Eternity Solver Team
  */
 public class MRVCellSelector implements HeuristicStrategy {
 
@@ -34,18 +34,18 @@ public class MRVCellSelector implements HeuristicStrategy {
     private boolean useAC3 = true;
 
     /**
-     * Interface pour vérifier si une pièce s'adapte à une position.
+     * Interface for checking if a piece fits at a position.
      */
     public interface FitChecker {
         boolean fits(Board board, int r, int c, int[] candidateEdges);
     }
 
     /**
-     * Constructeur pour MRVCellSelector.
+     * Constructor for MRVCellSelector.
      *
-     * @param domainManager le gestionnaire de domaines pour les domaines AC-3
-     * @param fitChecker le vérificateur pour valider les placements
-     * @param neighborAnalyzer l'analyseur de voisinage pour l'analyse spatiale
+     * @param domainManager domain manager for AC-3 domains
+     * @param fitChecker fit checker to validate placements
+     * @param neighborAnalyzer neighbor analyzer for spatial analysis
      */
     public MRVCellSelector(DomainManager domainManager, FitChecker fitChecker, solver.NeighborAnalyzer neighborAnalyzer) {
         this.domainManager = domainManager;
@@ -54,18 +54,18 @@ public class MRVCellSelector implements HeuristicStrategy {
     }
 
     /**
-     * Active ou désactive la priorisation des bords.
+     * Enables or disables border prioritization.
      *
-     * @param enabled true pour prioriser les cellules de bord
+     * @param enabled true to prioritize border cells
      */
     public void setPrioritizeBorders(boolean enabled) {
         this.prioritizeBorders = enabled;
     }
 
     /**
-     * Active ou désactive l'utilisation des domaines AC-3.
+     * Enables or disables use of AC-3 domains.
      *
-     * @param enabled true pour utiliser les domaines AC-3
+     * @param enabled true to use AC-3 domains
      */
     public void setUseAC3(boolean enabled) {
         this.useAC3 = enabled;
@@ -80,25 +80,25 @@ public class MRVCellSelector implements HeuristicStrategy {
     }
 
     /**
-     * Trouve la prochaine case vide en utilisant l'heuristique MRV (Minimum Remaining Values).
-     * Choisit la case avec le moins de placements valides possibles.
+     * Finds next empty cell using MRV (Minimum Remaining Values) heuristic.
+     * Chooses cell with fewest valid placements possible.
      *
-     * @param board grille actuelle
-     * @param piecesById map des pièces par ID
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @return coordonnées [r, c] de la case la plus contrainte, ou null si aucune
+     * @param board current grid
+     * @param piecesById map of pieces by ID
+     * @param pieceUsed array of used pieces
+     * @param totalPieces total number of pieces
+     * @return coordinates [r, c] of most constrained cell, or null if none
      */
     public int[] findNextCellMRV(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         int[] bestCell = null;
         int minUniquePieces = Integer.MAX_VALUE;
         boolean bestIsBorder = false;
-        int bestBorderNeighbors = 0; // Tracker le nombre de voisins de bord de la meilleure case
+        int bestBorderNeighbors = 0; // Track number of border neighbors of best cell
 
         for (int r = 0; r < board.getRows(); r++) {
             for (int c = 0; c < board.getCols(); c++) {
                 if (board.isEmpty(r, c)) {
-                    // Détecter si c'est une case de bord
+                    // Detect if this is a border cell
                     boolean isBorder = (r == 0 || r == board.getRows() - 1 || c == 0 || c == board.getCols() - 1);
 
                     // Use AC-3 domains if available for more efficient MRV
@@ -111,7 +111,7 @@ public class MRVCellSelector implements HeuristicStrategy {
                         // Fall back to computing from scratch
                         List<ValidPlacement> validPlacements = getValidPlacements(board, r, c, piecesById, pieceUsed, totalPieces);
 
-                        // Extraire les IDs uniques des pièces
+                        // Extract unique piece IDs
                         List<Integer> uniquePieceIds = new ArrayList<>();
                         for (ValidPlacement vp : validPlacements) {
                             if (!uniquePieceIds.contains(vp.pieceId)) {
@@ -121,97 +121,97 @@ public class MRVCellSelector implements HeuristicStrategy {
                         uniquePiecesCount = uniquePieceIds.size();
                     }
 
-                    // Si aucune possibilité, c'est un dead-end immédiat
+                    // If no possibilities, it's an immediate dead-end
                     if (uniquePiecesCount == 0) {
-                        // Dead-end détecté - backtrack silencieux
-                        return new int[]{r, c}; // Retourner immédiatement pour backtrack
+                        // Dead-end detected - silent backtrack
+                        return new int[]{r, c}; // Return immediately to backtrack
                     }
 
-                    // PRIORISATION DES BORDS: si activé, toujours choisir un bord avant l'intérieur
-                    // NOUVELLE LOGIQUE: Pénaliser les gaps (cases sans voisins) et privilégier les séquences continues
+                    // BORDER PRIORITIZATION: if enabled, always choose border before interior
+                    // NEW LOGIC: Penalize gaps (cells without neighbors) and favor continuous sequences
                     boolean shouldUpdate = false;
                     if (prioritizeBorders) {
                         if (isBorder && !bestIsBorder) {
-                            // Cette case est un bord et la meilleure actuelle ne l'est pas -> update
+                            // This cell is border and current best is not -> update
                             shouldUpdate = true;
                         } else if (isBorder == bestIsBorder && isBorder) {
-                            // Deux cases de bord: appliquer la stratégie de remplissage continu
+                            // Two border cells: apply continuous filling strategy
 
-                            // VÉRIFICATION CRITIQUE : Cette case créerait-elle un gap piégé ?
+                            // CRITICAL CHECK: Would this cell create a trapped gap?
                             boolean wouldTrap = neighborAnalyzer.wouldCreateTrappedGap(board, r, c, null, null, null, 0, -1);
                             boolean bestWouldTrap = (bestCell != null) ? neighborAnalyzer.wouldCreateTrappedGap(board, bestCell[0], bestCell[1], null, null, null, 0, -1) : false;
 
-                            // RÈGLE 0 (PRIORITAIRE) : Ne JAMAIS choisir une case qui piège un gap
+                            // RULE 0 (PRIORITY): NEVER choose a cell that traps a gap
                             if (!wouldTrap && bestWouldTrap) {
-                                // Case actuelle ne piège pas, mais meilleure piège -> privilégier case actuelle
+                                // Current cell doesn't trap, but best does -> prefer current
                                 shouldUpdate = true;
                             } else if (wouldTrap && !bestWouldTrap) {
-                                // Case actuelle piège, mais meilleure ne piège pas -> garder meilleure
+                                // Current cell traps, but best doesn't -> keep best
                                 shouldUpdate = false;
                             } else if (!wouldTrap && !bestWouldTrap) {
-                                // Aucune des deux ne piège : appliquer les règles normales de continuité
+                                // Neither traps: apply normal continuity rules
 
-                                // Compter les voisins de bord remplis pour la case actuelle
+                                // Count filled border neighbors for current cell
                                 int currentBorderNeighbors = neighborAnalyzer.countAdjacentFilledBorderCells(board, r, c);
 
-                                // RÈGLE 1: Toujours privilégier les cases avec des voisins de bord (éviter les gaps)
+                                // RULE 1: Always prefer cells with border neighbors (avoid gaps)
                                 if (currentBorderNeighbors > 0 && bestBorderNeighbors == 0) {
-                                    // Case actuelle a des voisins, la meilleure n'en a pas -> privilégier case actuelle
+                                    // Current has neighbors, best doesn't -> prefer current
                                     shouldUpdate = true;
                                 } else if (currentBorderNeighbors == 0 && bestBorderNeighbors > 0) {
-                                    // Meilleure case a des voisins, case actuelle n'en a pas -> garder la meilleure
+                                    // Best has neighbors, current doesn't -> keep best
                                     shouldUpdate = false;
                                 } else if (currentBorderNeighbors == 0 && bestBorderNeighbors == 0) {
-                                    // RÈGLE 2: Si les deux cases n'ont pas de voisins (début ou gap potentiel)
-                                    // N'accepter la case actuelle QUE si elle a significativement moins d'options (≤50%)
+                                    // RULE 2: If both cells have no neighbors (start or potential gap)
+                                    // Accept current ONLY if it has significantly fewer options (≤50%)
                                     if (uniquePiecesCount * 2 <= minUniquePieces) {
-                                        shouldUpdate = true; // Case actuelle a ≤50% des options -> accepter malgré le gap
+                                        shouldUpdate = true; // Current has ≤50% options -> accept despite gap
                                     }
                                 } else {
-                                    // Les deux ont des voisins de bord: comparer d'abord le nombre de voisins
+                                    // Both have border neighbors: compare neighbor count first
                                     if (currentBorderNeighbors > bestBorderNeighbors) {
-                                        // Plus de voisins = meilleure continuité -> TOUJOURS privilégier
+                                        // More neighbors = better continuity -> ALWAYS prefer
                                         shouldUpdate = true;
                                     } else if (currentBorderNeighbors == bestBorderNeighbors) {
-                                        // Même nombre de voisins: utiliser MRV pour départager
+                                        // Same neighbor count: use MRV to break tie
                                         shouldUpdate = (uniquePiecesCount < minUniquePieces);
                                     }
-                                    // Si currentBorderNeighbors < bestBorderNeighbors -> ne pas update, garder la meilleure
+                                    // If currentBorderNeighbors < bestBorderNeighbors -> don't update, keep best
                                 }
                             } else {
-                                // Les DEUX cases piègent un gap : choisir le moindre mal (MRV)
+                                // BOTH cells trap a gap: choose lesser evil (MRV)
                                 shouldUpdate = (uniquePiecesCount < minUniquePieces);
                             }
                         } else if (!isBorder && !bestIsBorder) {
-                            // Deux cases intérieures: MRV normal
+                            // Two interior cells: normal MRV
                             shouldUpdate = (uniquePiecesCount < minUniquePieces);
                         }
-                        // Sinon (!isBorder && bestIsBorder) -> ne pas update, garder le bord
+                        // Otherwise (!isBorder && bestIsBorder) -> don't update, keep border
                     } else {
-                        // Mode normal sans priorisation des bords
+                        // Normal mode without border prioritization
                         shouldUpdate = (uniquePiecesCount < minUniquePieces);
                     }
 
-                    // Choisir la case avec le minimum de pièces uniques (avec priorisation bords si activée)
+                    // Choose cell with minimum unique pieces (with border prioritization if enabled)
                     if (shouldUpdate) {
                         minUniquePieces = uniquePiecesCount;
                         bestCell = new int[]{r, c};
                         bestIsBorder = isBorder;
-                        // IMPORTANT: Mettre à jour le nombre de voisins de bord pour les cases de bord
+                        // IMPORTANT: Update border neighbor count for border cells
                         if (isBorder) {
                             bestBorderNeighbors = neighborAnalyzer.countAdjacentFilledBorderCells(board, r, c);
                         }
                     } else if (uniquePiecesCount == minUniquePieces && bestCell != null && (isBorder == bestIsBorder || !prioritizeBorders)) {
-                        // Tie-breaking: utiliser l'heuristique de degré
-                        // Compter le nombre de voisins OCCUPÉS pour cette case (plus de contraintes = mieux)
+                        // Tie-breaking: use degree heuristic
+                        // Count OCCUPIED neighbors for this cell (more constraints = better)
                         int currentConstraints = neighborAnalyzer.countOccupiedNeighbors(board, r, c);
                         int bestConstraints = neighborAnalyzer.countOccupiedNeighbors(board, bestCell[0], bestCell[1]);
 
-                        // Choisir la case avec le plus de voisins occupés (plus contraignante)
+                        // Choose cell with most occupied neighbors (most constraining)
                         if (currentConstraints > bestConstraints) {
                             bestCell = new int[]{r, c};
                         } else if (currentConstraints == bestConstraints) {
-                            // Second tie-breaking: privilégier les positions centrales
+                            // Second tie-breaking: prefer central positions
                             int centerR = board.getRows() / 2;
                             int centerC = board.getCols() / 2;
                             int currentDistToCenter = Math.abs(r - centerR) + Math.abs(c - centerC);
@@ -230,13 +230,13 @@ public class MRVCellSelector implements HeuristicStrategy {
     }
 
     /**
-     * Obtient les placements valides pour une cellule.
+     * Gets valid placements for a cell.
      */
     private List<ValidPlacement> getValidPlacements(Board board, int r, int c, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         List<ValidPlacement> validPlacements = new ArrayList<>();
 
         for (int pid = 1; pid <= totalPieces; pid++) {
-            if (pieceUsed.get(pid)) continue; // Pièce déjà utilisée
+            if (pieceUsed.get(pid)) continue; // Piece already used
 
             Piece piece = piecesById.get(pid);
             for (int rot = 0; rot < 4; rot++) {

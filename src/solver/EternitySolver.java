@@ -34,24 +34,16 @@ public class EternitySolver {
 
     private static final Logger logger = LoggerFactory.getLogger(EternitySolver.class);
 
-    /**
-     * Type alias for backward compatibility.
-     * Statistics functionality has been moved to StatisticsManager.
-     */
-    public static class Statistics extends StatisticsManager {
-        // Empty class - all functionality inherited from StatisticsManager
-    }
+    /** Type alias for backward compatibility - delegates to StatisticsManager. */
+    public static class Statistics extends StatisticsManager { }
 
-    // State management (Refactoring #11 - extracted to SolverStateManager)
     private SolverStateManager stateManager = new SolverStateManager();
-    Statistics stats = new Statistics(); // Package-private for ParallelSolverOrchestrator
-    private long startTimeMs = 0; // Temps de démarrage de la résolution
+    Statistics stats = new Statistics();
+    private long startTimeMs = 0;
 
-    // Configuration flags
-    private boolean useAC3 = true; // Enable/disable AC-3
-    private boolean useDomainCache = true; // Activer/désactiver le cache des domaines
+    private boolean useAC3 = true;
+    private boolean useDomainCache = true;
 
-    // Extracted utility classes for better code organization
     private DomainManager domainManager;
     private ConstraintPropagator constraintPropagator;
     private SingletonDetector singletonDetector;
@@ -62,35 +54,23 @@ public class EternitySolver {
      * These allow HistoricalSolver to initialize and coordinate solver components
      * when resuming from saved state without breaking encapsulation.
      */
-    PlacementValidator validator; // Used by HistoricalSolver to validate pre-loaded pieces
+    PlacementValidator validator;
     private BoardDisplayManager displayManager;
     private NeighborAnalyzer neighborAnalyzer;
     private PieceOrderingOptimizer pieceOrderingOptimizer;
     private AutoSaveManager autoSaveManager;
     private RecordManager recordManager;
 
-    // Sprint 3 extractions
-    PlacementOrderTracker placementOrderTracker; // Used by HistoricalSolver to initialize placement history
+    PlacementOrderTracker placementOrderTracker;
     private BacktrackingHistoryManager backtrackingHistoryManager;
-
-    // Sprint 4 extractions
     private SymmetryBreakingManager symmetryBreakingManager;
-
-    // Sprint 5 extractions
-    ConfigurationManager configManager = new ConfigurationManager(); // Used by HistoricalSolver for configuration access
-
-    // Sprint 6 extractions - Strategy Pattern for placement
+    ConfigurationManager configManager = new ConfigurationManager();
     private SingletonPlacementStrategy singletonStrategy;
     private MRVPlacementStrategy mrvStrategy;
-
-    // Pre-computed constraints for each cell (optimization)
     private CellConstraints[][] cellConstraints;
+    Random random = new Random();
 
-    // Randomisation pour éviter le thrashing
-    Random random = new Random(); // Package-private for ParallelSolverOrchestrator
-
-    // Parallel search - MIGRATED to ParallelSearchManager (Sprint 4)
-    // Keep minimal references for backward compatibility
+    // Parallel search delegates
     private static AtomicBoolean solutionFound = ParallelSearchManager.getSolutionFound();
     private static AtomicInteger globalMaxDepth = ParallelSearchManager.getGlobalMaxDepth();
     private static AtomicInteger globalBestScore = ParallelSearchManager.getGlobalBestScore();
@@ -98,12 +78,9 @@ public class EternitySolver {
     private static AtomicReference<Board> globalBestBoard = ParallelSearchManager.getGlobalBestBoard();
     private static AtomicReference<Map<Integer, Piece>> globalBestPieces = ParallelSearchManager.getGlobalBestPieces();
     private static final Object lockObject = ParallelSearchManager.getLockObject();
-    int threadId = -1; // ID du thread pour ce solveur (package-private for ParallelSolverOrchestrator)
+    int threadId = -1;
 
-    /**
-     * Réinitialise toutes les variables statiques du solveur
-     * À appeler entre chaque puzzle dans un run séquentiel
-     */
+    /** Delegates to {@link ParallelSearchManager#resetGlobalState} */
     public static void resetGlobalState() {
         ParallelSearchManager.resetGlobalState();
     }
@@ -138,8 +115,7 @@ public class EternitySolver {
         configManager.setThreadLabel(label);
     }
 
-    // Sauvegarde périodique par thread
-    long randomSeed = 0; // Seed du random pour ce thread (package-private for ParallelSolverOrchestrator)
+    long randomSeed = 0;
 
     /** Delegates to {@link BoardVisualizer#printBoardCompact} */
     private void printBoardCompact(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
@@ -153,7 +129,6 @@ public class EternitySolver {
                                             lastPlacedRow, lastPlacedCol, this::fits);
     }
 
-    // ==================== PlacementOrder Helpers ====================
     /** Delegates to {@link PlacementOrderTracker#recordPlacement} */
     void recordPlacement(int row, int col, int pieceId, int rotation) {
         if (placementOrderTracker != null) {
@@ -169,17 +144,13 @@ public class EternitySolver {
         return null;
     }
 
-    // ==================== Step Count and Last Placed Accessors ====================
-
-    // State management methods - delegate to SolverStateManager (Refactoring #11)
+    // State management delegates
     public int getStepCount() { return stateManager.getStepCount(); }
     public void incrementStepCount() { stateManager.incrementStepCount(); }
     public void setLastPlaced(int row, int col) { stateManager.setLastPlaced(row, col); }
     public int getLastPlacedRow() { return stateManager.getLastPlacedRow(); }
     public int getLastPlacedCol() { return stateManager.getLastPlacedCol(); }
     public void findAndSetLastPlaced(Board board) { stateManager.findAndSetLastPlaced(board); }
-
-    // ==================== End Step Count and Last Placed Accessors ====================
 
     /** Assigns initialized components to instance fields. */
     private void assignSolverComponents(SolverInitializer.InitializedComponents components) {
@@ -286,48 +257,17 @@ public class EternitySolver {
         return new BitSet(maxPieceId + 1); // index 0 unused, 1-based
     }
 
-    /**
-     * Vérifie si une pièce candidate peut être placée en (r,c).
-     * Convention : bord extérieur doit être 0 (modifiable selon besoin).
-     *
-     * @param board grille actuelle
-     * @param r ligne
-     * @param c colonne
-     * @param candidateEdges arêtes de la pièce candidate [N, E, S, W]
-     * @return true si la pièce peut être placée
-     */
+    /** Delegates to {@link PlacementValidator#fits} */
     public boolean fits(Board board, int r, int c, int[] candidateEdges) {
-        // Delegate to PlacementValidator (refactored for better code organization)
         return validator.fits(board, r, c, candidateEdges);
     }
 
-
-    /**
-     * Compte le nombre de pièces uniques qui peuvent être placées (sans considérer les rotations multiples).
-     *
-     * @param board grille actuelle
-     * @param r ligne
-     * @param c colonne
-     * @param piecesById map des pièces par ID
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @return nombre de pièces distinctes pouvant être placées
-     */
+    /** Delegates to {@link PieceOrderingOptimizer#countUniquePieces} */
     public int countUniquePieces(Board board, int r, int c, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
-        // Delegate to PieceOrderingOptimizer (Refactoring #12 - eliminate duplication)
         return pieceOrderingOptimizer.countUniquePieces(board, r, c, piecesById, pieceUsed, totalPieces);
     }
 
-    /**
-     * Wrapper method for findNextCellMRV to maintain backward compatibility.
-     * Delegates to the extracted MRVCellSelector and converts the result.
-     *
-     * @param board current board state
-     * @param piecesById map of all pieces
-     * @param pieceUsed array tracking used pieces
-     * @param totalPieces total number of pieces
-     * @return [row, col] of the most constrained cell, or null if no empty cells
-     */
+    /** Delegates to {@link MRVCellSelector#selectNextCell} */
     public int[] findNextCellMRV(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         HeuristicStrategy.CellPosition pos = cellSelector.selectNextCell(board, piecesById, pieceUsed, totalPieces);
         if (pos == null) {
@@ -384,21 +324,17 @@ public class EternitySolver {
      */
     public boolean solve(Board board, Map<Integer, Piece> pieces) {
         stats.start();
-        this.startTimeMs = System.currentTimeMillis(); // Marquer le temps de démarrage
+        this.startTimeMs = System.currentTimeMillis();
 
-        // Initialize PlacementOrderTracker
         this.placementOrderTracker = new PlacementOrderTracker();
         this.placementOrderTracker.initialize();
 
-        // Créer le tableau pieceUsed (Refactoring #14 - extracted to helper)
         int totalPieces = pieces.size();
         BitSet pieceUsed = createPieceUsedBitSet(pieces);
 
-        // Détecter et mémoriser les positions des pièces fixes (déjà placées au début)
         configManager.detectFixedPiecesFromBoard(board, pieceUsed,
             placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>());
 
-        // Initialize managers, components, and strategies (Refactoring #17 - consolidated initialization)
         initializeManagers(pieces);
         initializeComponents(board, pieces, pieceUsed, totalPieces);
         initializeDomains(board, pieces, pieceUsed, totalPieces);
@@ -420,23 +356,16 @@ public class EternitySolver {
         return solved;
     }
 
-    /**
-     * Initialize symmetry breaking constraints
-     * Delegates to SymmetryBreakingManager (extracted in Sprint 4)
-     */
+    /** Initializes symmetry breaking constraints. */
     private void initializeSymmetryBreaking(Board board) {
         if (board == null || board.getRows() == 0 || board.getCols() == 0) {
             return;
         }
-
-        // Create SymmetryBreakingManager
         this.symmetryBreakingManager = new SymmetryBreakingManager(
             board.getRows(),
             board.getCols(),
             configManager.isVerbose()
         );
-
-        // Log configuration
         symmetryBreakingManager.logConfiguration();
     }
 
@@ -466,17 +395,8 @@ public class EternitySolver {
         stateManager.reset();
     }
 
-    /**
-     * Résout le puzzle en parallèle avec plusieurs threads.
-     * Chaque thread explore l'espace de recherche avec une seed aléatoire différente.
-     *
-     * @param board grille avec hint déjà placé
-     * @param pieces map des pièces restantes
-     * @param numThreads nombre de threads à lancer
-     * @return true si une solution a été trouvée
-     */
+    /** Delegates to {@link ParallelSolverOrchestrator#solve} */
     public boolean solveParallel(Board board, Map<Integer, Piece> allPieces, Map<Integer, Piece> availablePieces, int numThreads) {
-        // Delegate to ParallelSolverOrchestrator (Refactoring #13)
         ParallelSolverOrchestrator orchestrator = new ParallelSolverOrchestrator(
             this,
             allPieces,
@@ -493,21 +413,12 @@ public class EternitySolver {
         return orchestrator.solve(board, availablePieces, numThreads);
     }
 
-    /**
-     * Affiche le board avec labels (public pour permettre l'affichage depuis MainSequential)
-     */
+    /** Delegates to {@link BoardDisplayManager#printBoardWithLabels} */
     public void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds) {
         displayManager.printBoardWithLabels(board, piecesById, unusedIds);
     }
 
-    /**
-     * Affiche le board en comparant avec un autre board (pour voir les différences)
-     * Code couleur :
-     * - Magenta : Case occupée dans referenceBoard mais vide dans currentBoard (régression)
-     * - Orange : Case occupée dans les deux mais pièce différente (changement)
-     * - Jaune : Case vide dans referenceBoard mais occupée dans currentBoard (progression)
-     * - Cyan : Case identique dans les deux boards (stabilité)
-     */
+    /** Delegates to {@link BoardDisplayManager#printBoardWithComparison} */
     public void printBoardWithComparison(Board currentBoard, Board referenceBoard,
                                           Map<Integer, Piece> piecesById, List<Integer> unusedIds) {
         displayManager.printBoardWithComparison(currentBoard, referenceBoard, piecesById, unusedIds);

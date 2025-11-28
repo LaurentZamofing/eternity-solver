@@ -1,80 +1,41 @@
 #!/bin/bash
 
-# build_jar.sh - Build executable JAR with all dependencies
+# build_jar.sh - Build executable JAR with Maven Shade Plugin
 # Usage: ./build_jar.sh
 
 set -e
 
 VERSION="1.0.0"
 JAR_NAME="eternity-solver-${VERSION}.jar"
-BUILD_DIR="build"
-MANIFEST="MANIFEST.MF"
 
 echo "════════════════════════════════════════════════════════"
-echo "Building Eternity Solver JAR v${VERSION}"
+echo "Building Eternity Solver JAR v${VERSION} (Maven)"
 echo "════════════════════════════════════════════════════════"
 echo ""
 
-# Step 1: Clean and compile
-echo "1. Cleaning and compiling..."
-rm -rf "$BUILD_DIR"
-mkdir -p "$BUILD_DIR"
-
-./compile.sh > /dev/null 2>&1
-echo "   ✓ Compilation complete"
-
-# Step 2: Extract dependencies
-echo ""
-echo "2. Extracting dependencies..."
-cd "$BUILD_DIR"
-for jar in ../lib/*.jar; do
-    if [[ "$jar" != *"junit"* ]] && [[ "$jar" != *"test"* ]]; then
-        jar xf "$jar" > /dev/null 2>&1
-    fi
-done
-cd ..
-echo "   ✓ Dependencies extracted"
-
-# Step 3: Copy compiled classes
-echo ""
-echo "3. Copying compiled classes..."
-cp -r bin/* "$BUILD_DIR/" 2>/dev/null || true
-echo "   ✓ Classes copied"
-
-# Step 4: Copy resources
-echo ""
-echo "4. Copying resources..."
-if [ -d "src/main/resources" ]; then
-    cp -r src/main/resources/* "$BUILD_DIR/" 2>/dev/null || true
+# Step 1: Build with Maven
+echo "1. Building with Maven (compile + test + package)..."
+if [ -f "./mvnw" ]; then
+    ./mvnw clean package
+else
+    mvn clean package
 fi
-echo "   ✓ Resources copied"
+echo "   ✓ Maven build complete"
 
-# Step 5: Create manifest
+# Step 2: Check if JAR exists
 echo ""
-echo "5. Creating manifest..."
-cat > "$BUILD_DIR/$MANIFEST" << EOF
-Manifest-Version: 1.0
-Main-Class: MainCLI
-Implementation-Title: Eternity Solver
-Implementation-Version: ${VERSION}
-Implementation-Vendor: Eternity Solver Project
-Built-By: ${USER}
-Build-Date: $(date +"%Y-%m-%d %H:%M:%S")
-EOF
-echo "   ✓ Manifest created"
+echo "2. Verifying JAR..."
+if [ -f "target/${JAR_NAME}" ]; then
+    echo "   ✓ JAR found: target/${JAR_NAME}"
+else
+    echo "   ✗ JAR not found!"
+    exit 1
+fi
 
-# Step 6: Create JAR
+# Step 3: Test JAR
 echo ""
-echo "6. Creating JAR file..."
-cd "$BUILD_DIR"
-jar cfm "../${JAR_NAME}" "$MANIFEST" .
-cd ..
-echo "   ✓ JAR created: ${JAR_NAME}"
-
-# Step 7: Test JAR
-echo ""
-echo "7. Testing JAR..."
-java -jar "${JAR_NAME}" --version > /dev/null 2>&1
+echo "3. Testing JAR..."
+java -jar "target/${JAR_NAME}" --version > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "   ✓ JAR works correctly"
 else
@@ -82,18 +43,18 @@ else
     exit 1
 fi
 
-# Step 8: Get JAR size
+# Step 4: Get JAR size
 echo ""
-echo "8. JAR information..."
-JAR_SIZE=$(du -h "${JAR_NAME}" | cut -f1)
+echo "4. JAR information..."
+JAR_SIZE=$(du -h "target/${JAR_NAME}" | cut -f1)
 echo "   Size: ${JAR_SIZE}"
-echo "   Location: $(pwd)/${JAR_NAME}"
+echo "   Location: $(pwd)/target/${JAR_NAME}"
 
-# Cleanup
+# Step 5: Copy to root (optional, for convenience)
 echo ""
-echo "9. Cleaning up..."
-rm -rf "$BUILD_DIR"
-echo "   ✓ Build directory cleaned"
+echo "5. Copying JAR to project root..."
+cp "target/${JAR_NAME}" "./${JAR_NAME}"
+echo "   ✓ JAR copied to: $(pwd)/${JAR_NAME}"
 
 echo ""
 echo "════════════════════════════════════════════════════════"

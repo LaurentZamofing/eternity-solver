@@ -1,40 +1,21 @@
 #!/bin/bash
 
-# Eternity II Solver - Test Runner
-# Compiles and runs JUnit 5 tests for refactored classes
+# Eternity II Solver - Test Runner (Maven)
+# Compiles and runs JUnit 5 tests
 
 set -e
 
-echo "=== Eternity II Solver - Test Suite ==="
+echo "=== Eternity II Solver - Test Suite (Maven) ==="
 echo
 
-# Clean previous test build
-echo "1. Cleaning test build..."
-rm -rf test-bin
-mkdir -p test-bin
-
-# Compile tests
-echo "2. Compiling test classes..."
-javac -d test-bin \
-    -cp "bin:lib/*" \
-    -sourcepath test \
-    $(find test -name "*.java")
-
-if [ $? -eq 0 ]; then
-    echo "   ✓ All test classes compiled successfully"
+# Check if Maven wrapper exists
+if [ -f "./mvnw" ]; then
+    echo "Using Maven wrapper to run tests..."
+    ./mvnw test
 else
-    echo "   ✗ Compilation failed"
-    exit 1
+    echo "Using system Maven to run tests..."
+    mvn test
 fi
-
-echo
-
-# Run tests
-echo "3. Running JUnit 5 tests..."
-echo
-java -jar lib/junit-platform-console-standalone-1.10.1.jar \
-    --class-path "test-bin:bin:lib/slf4j-api-2.0.9.jar:lib/logback-classic-1.4.11.jar:lib/logback-core-1.4.11.jar" \
-    --scan-class-path
 
 echo
 echo "=== Test run complete ==="

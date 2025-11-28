@@ -1,45 +1,30 @@
 #!/bin/bash
-# Script de compilation pour le projet Eternity Solver
-# Compile tous les fichiers sources avec les dépendances
+# Compilation script for Eternity Solver using Maven
+# Compiles all source files with dependencies
 
 set -e
 
 echo "═══════════════════════════════════════════════════════"
-echo "Compilation Eternity Solver"
+echo "Compilation Eternity Solver (Maven)"
 echo "═══════════════════════════════════════════════════════"
 echo
 
-# Créer le répertoire bin si nécessaire
-mkdir -p bin
-
-# Compiler les sources
-echo "1. Compilation des sources..."
-javac -d bin -sourcepath src -cp "lib/*" \
-    $(find src -name "*.java")
-
-if [ $? -eq 0 ]; then
-    echo "   ✓ Sources compilées avec succès"
+# Check if Maven wrapper exists
+if [ -f "./mvnw" ]; then
+    echo "Using Maven wrapper..."
+    ./mvnw clean compile
 else
-    echo "   ✗ Erreur de compilation"
-    exit 1
-fi
-
-# Copier les ressources
-echo
-echo "2. Copie des ressources..."
-if [ -d "src/main/resources" ]; then
-    cp -r src/main/resources/* bin/ 2>/dev/null || true
-    echo "   ✓ Ressources copiées"
-else
-    mkdir -p src/main/resources
-    echo "   ⚠ Pas de ressources à copier"
+    echo "Using system Maven..."
+    mvn clean compile
 fi
 
 echo
 echo "═══════════════════════════════════════════════════════"
-echo "✓ Compilation terminée avec succès"
+echo "✓ Compilation completed successfully"
 echo "═══════════════════════════════════════════════════════"
 echo
-echo "Pour exécuter:"
-echo "  java -cp \"bin:lib/*\" MainCLI --help"
+echo "To run:"
+echo "  ./mvnw exec:java -Dexec.mainClass=MainCLI -Dexec.args=\"--help\""
+echo "  OR"
+echo "  java -cp \"target/classes:lib/*\" MainCLI --help"
 echo

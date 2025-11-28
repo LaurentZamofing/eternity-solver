@@ -1,221 +1,221 @@
 package solver;
 
 /**
- * Constantes centralisées pour les paramètres du solveur Eternity.
+ * Centralized constants for Eternity solver parameters.
  *
- * Cette classe regroupe toutes les valeurs de configuration et seuils
- * utilisés par les différents composants du solveur, permettant une
- * modification facile et une meilleure documentation des paramètres.
+ * This class groups all configuration values and thresholds
+ * used by the different solver components, enabling easy
+ * modification and better documentation of parameters.
  *
  * @author Eternity Solver Team
  * @version 1.0.0
  */
 public final class SolverConstants {
 
-    // Empêche l'instanciation
+    // Prevents instantiation
     private SolverConstants() {
         throw new AssertionError("Cannot instantiate constants class");
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // PARAMÈTRES ALGORITHMIQUES
+    // ALGORITHMIC PARAMETERS
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Probabilité de randomisation de l'ordre des candidats MRV.
-     * Valeur entre 0.0 (aucune randomisation) et 1.0 (toujours randomiser).
+     * Probability of randomizing the order of MRV candidates.
+     * Value between 0.0 (no randomization) and 1.0 (always randomize).
      *
-     * Valeur par défaut: 0.3 (30% de chance de mélanger)
-     * Permet d'explorer différents chemins de recherche.
+     * Default value: 0.3 (30% chance of shuffling)
+     * Allows exploring different search paths.
      */
     public static final double DEFAULT_RANDOMIZATION_PROBABILITY = 0.3;
 
     /**
-     * Seuil de stagnation avant redémarrage partiel.
-     * Nombre de backtracks sans progrès avant de considérer
-     * qu'on est bloqué et tenter une stratégie différente.
+     * Stagnation threshold before partial restart.
+     * Number of backtracks without progress before considering
+     * that we are stuck and trying a different strategy.
      *
-     * Valeur par défaut: 50,000 backtracks
-     * Ajuster selon la taille du puzzle et la patience désirée.
+     * Default value: 50,000 backtracks
+     * Adjust according to puzzle size and desired patience.
      */
     public static final int DEFAULT_STAGNATION_THRESHOLD = 50_000;
 
     /**
-     * Profondeur de travail pour le work-stealing dans le solveur parallèle.
-     * Nombre de niveaux à descendre avant qu'un thread puisse "voler"
-     * du travail à un autre thread.
+     * Work depth for work-stealing in parallel solver.
+     * Number of levels to descend before a thread can "steal"
+     * work from another thread.
      *
-     * Valeur par défaut: 5 niveaux
-     * Voir: ParallelSearchManager.WORK_STEALING_DEPTH_THRESHOLD
+     * Default value: 5 levels
+     * See: ParallelSearchManager.WORK_STEALING_DEPTH_THRESHOLD
      */
     public static final int WORK_STEALING_DEPTH_THRESHOLD = 5;
 
     // ═══════════════════════════════════════════════════════════════
-    // TIMEOUTS ET INTERVALLES (en millisecondes)
+    // TIMEOUTS AND INTERVALS (in milliseconds)
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Intervalle de sauvegarde automatique pour les threads.
-     * Fréquence à laquelle un thread sauvegarde son état.
+     * Automatic save interval for threads.
+     * Frequency at which a thread saves its state.
      *
-     * Valeur: 60,000 ms = 1 minute
+     * Value: 60,000 ms = 1 minute
      */
     public static final long THREAD_SAVE_INTERVAL_MS = 60_000;
 
     /**
-     * Timeout par défaut pour l'exécution d'un puzzle.
-     * Temps maximum d'exécution avant arrêt automatique.
+     * Default timeout for puzzle execution.
+     * Maximum execution time before automatic stop.
      *
-     * Valeur: 600,000 ms = 10 minutes
-     * Voir: MainSequential.PUZZLE_TIMEOUT
+     * Value: 600,000 ms = 10 minutes
+     * See: MainSequential.PUZZLE_TIMEOUT
      */
     public static final long DEFAULT_PUZZLE_TIMEOUT_MS = 600_000;
 
     /**
-     * Limite d'exécution maximale (pas de timeout).
-     * Utilisé quand aucun timeout n'est spécifié.
+     * Maximum execution limit (no timeout).
+     * Used when no timeout is specified.
      *
-     * Valeur: Long.MAX_VALUE (essentiellement infini)
+     * Value: Long.MAX_VALUE (essentially infinite)
      */
     public static final long UNLIMITED_EXECUTION_TIME_MS = Long.MAX_VALUE;
 
     /**
-     * Intervalle de vérification du timeout.
-     * Fréquence à laquelle le solveur vérifie s'il doit s'arrêter.
+     * Timeout check interval.
+     * Frequency at which the solver checks if it should stop.
      *
-     * Valeur: 100 ms
+     * Value: 100 ms
      */
     public static final long TIMEOUT_CHECK_INTERVAL_MS = 100;
 
     // ═══════════════════════════════════════════════════════════════
-    // GESTION DES SAUVEGARDES
+    // SAVE MANAGEMENT
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Nombre maximum de sauvegardes backup à conserver.
-     * Les plus anciennes sont supprimées automatiquement.
+     * Maximum number of backup saves to keep.
+     * Older ones are automatically deleted.
      *
-     * Valeur: 10 sauvegardes
-     * Voir: SaveStateManager.MAX_BACKUP_SAVES
+     * Value: 10 saves
+     * See: SaveStateManager.MAX_BACKUP_SAVES
      */
     public static final int MAX_BACKUP_SAVES = 10;
 
     /**
-     * Intervalle de niveau pour les sauvegardes.
-     * Sauvegarde chaque N pièces placées.
+     * Level interval for saves.
+     * Save every N pieces placed.
      *
-     * Valeur: 1 (sauvegarde à chaque nouvelle pièce)
-     * Voir: SaveStateManager.SAVE_LEVEL_INTERVAL
+     * Value: 1 (save at each new piece)
+     * See: SaveStateManager.SAVE_LEVEL_INTERVAL
      */
     public static final int SAVE_LEVEL_INTERVAL = 1;
 
     /**
-     * Répertoire racine pour les sauvegardes.
+     * Root directory for saves.
      *
-     * Valeur: "saves/"
+     * Value: "saves/"
      */
     public static final String SAVE_DIRECTORY = "saves/";
 
     // ═══════════════════════════════════════════════════════════════
-    // STATISTIQUES ET AFFICHAGE
+    // STATISTICS AND DISPLAY
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Intervalle d'affichage des statistiques (en backtracks).
-     * Affiche les stats tous les N backtracks.
+     * Statistics display interval (in backtracks).
+     * Display stats every N backtracks.
      *
-     * Valeur: 10,000 backtracks
+     * Value: 10,000 backtracks
      */
     public static final int STATS_DISPLAY_INTERVAL = 10_000;
 
     /**
-     * Intervalle de mise à jour des records (en backtracks).
-     * Vérifie les nouveaux records tous les N backtracks.
+     * Record update interval (in backtracks).
+     * Check for new records every N backtracks.
      *
-     * Valeur: 1,000 backtracks
+     * Value: 1,000 backtracks
      */
     public static final int RECORD_CHECK_INTERVAL = 1_000;
 
     /**
-     * Nombre de chiffres de précision pour le pourcentage de progression.
+     * Number of decimal digits for progress percentage precision.
      *
-     * Valeur: 8 décimales
+     * Value: 8 decimals
      */
     public static final int PROGRESS_PRECISION_DECIMALS = 8;
 
     // ═══════════════════════════════════════════════════════════════
-    // OPTIMISATIONS ET HEURISTIQUES
+    // OPTIMIZATIONS AND HEURISTICS
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Nombre minimum de variables pour activer AC-3.
-     * En dessous de ce seuil, AC-3 peut être trop coûteux.
+     * Minimum number of variables to enable AC-3.
+     * Below this threshold, AC-3 can be too expensive.
      *
-     * Valeur: 10 variables
+     * Value: 10 variables
      */
     public static final int MIN_VARIABLES_FOR_AC3 = 10;
 
     /**
-     * Facteur de réduction pour le tri des candidats MRV.
-     * Limite le nombre de candidats considérés pour accélérer.
+     * Reduction factor for MRV candidate sorting.
+     * Limits the number of candidates considered to speed up.
      *
-     * Valeur: 0.5 (considère 50% des meilleurs candidats)
+     * Value: 0.5 (considers 50% of best candidates)
      */
     public static final double MRV_CANDIDATE_REDUCTION_FACTOR = 0.5;
 
     /**
-     * Seuil de domaine pour considérer une case comme contrainte.
-     * Cases avec moins de N candidats sont prioritaires.
+     * Domain threshold to consider a cell as constrained.
+     * Cells with fewer than N candidates are prioritized.
      *
-     * Valeur: 5 candidats
+     * Value: 5 candidates
      */
     public static final int DOMAIN_CONSTRAINT_THRESHOLD = 5;
 
     // ═══════════════════════════════════════════════════════════════
-    // FORMAT DE FICHIERS
+    // FILE FORMAT
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Magic number pour les fichiers de sauvegarde binaire.
-     * Identifie le format de fichier: "ETER" en hexadécimal.
+     * Magic number for binary save files.
+     * Identifies the file format: "ETER" in hexadecimal.
      *
-     * Valeur: 0x45544552
+     * Value: 0x45544552
      */
     public static final int BINARY_SAVE_MAGIC_NUMBER = 0x45544552;
 
     /**
-     * Version du format de sauvegarde binaire.
-     * Incrémenté lors de changements incompatibles.
+     * Binary save format version.
+     * Incremented during incompatible changes.
      *
-     * Valeur: 1
+     * Value: 1
      */
     public static final int BINARY_SAVE_FORMAT_VERSION = 1;
 
     // ═══════════════════════════════════════════════════════════════
-    // PARALLÉLISATION
+    // PARALLELIZATION
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Nombre de threads par défaut pour le solveur parallèle.
-     * Utilisé si non spécifié par l'utilisateur.
+     * Default number of threads for parallel solver.
+     * Used if not specified by user.
      *
-     * Valeur: -1 (auto-détection basée sur le nombre de CPUs)
+     * Value: -1 (auto-detection based on CPU count)
      */
     public static final int DEFAULT_THREAD_COUNT = -1;
 
     /**
-     * Nombre maximum de threads autorisés.
-     * Limite supérieure pour éviter la sur-allocation.
+     * Maximum number of threads allowed.
+     * Upper limit to avoid over-allocation.
      *
-     * Valeur: 64 threads
+     * Value: 64 threads
      */
     public static final int MAX_THREAD_COUNT = 64;
 
     /**
-     * Temps d'attente pour le shutdown des threads (en millisecondes).
-     * Temps d'attente avant force-kill des threads.
+     * Wait time for thread shutdown (in milliseconds).
+     * Wait time before force-killing threads.
      *
-     * Valeur: 5,000 ms = 5 secondes
+     * Value: 5,000 ms = 5 seconds
      */
     public static final long THREAD_SHUTDOWN_TIMEOUT_MS = 5_000;
 }

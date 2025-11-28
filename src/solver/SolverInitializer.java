@@ -11,13 +11,13 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Responsable de l'initialisation des classes auxiliaires du solveur et de leurs dépendances.
- * Extrait de EternitySolver pour éliminer la duplication de code.
+ * Responsible for initializing solver helper classes and their dependencies.
+ * Extracted from EternitySolver to eliminate code duplication.
  */
 public class SolverInitializer {
 
     /**
-     * Conteneur pour tous les objets auxiliaires initialisés.
+     * Container for all initialized helper objects.
      */
     public static class InitializedComponents {
         public DomainManager domainManager;
@@ -40,14 +40,14 @@ public class SolverInitializer {
     private final Set<String> fixedPositions;
 
     /**
-     * Constructeur pour SolverInitializer.
+     * Constructor for SolverInitializer.
      *
-     * @param solver l'instance EternitySolver (pour la vérification d'ajustement)
-     * @param stats gestionnaire de statistiques
-     * @param sortOrder ordre de tri des pièces ("ascending" ou "descending")
-     * @param verbose activer la sortie détaillée ou non
-     * @param prioritizeBorders prioriser les cellules de bord ou non
-     * @param fixedPositions ensemble des positions fixes
+     * @param solver the EternitySolver instance (for fit checking)
+     * @param stats statistics manager
+     * @param sortOrder piece sorting order ("ascending" or "descending")
+     * @param verbose enable verbose output or not
+     * @param prioritizeBorders prioritize border cells or not
+     * @param fixedPositions set of fixed positions
      */
     public SolverInitializer(EternitySolver solver, EternitySolver.Statistics stats, String sortOrder,
                             boolean verbose, boolean prioritizeBorders, Set<String> fixedPositions) {
@@ -60,35 +60,35 @@ public class SolverInitializer {
     }
 
     /**
-     * Initialise tous les composants auxiliaires pour la résolution.
+     * Initializes all helper components for solving.
      *
-     * @param board le plateau de puzzle
-     * @param pieces map de toutes les pièces
-     * @param pieceUsed bitset suivant l'utilisation des pièces
-     * @param totalPieces nombre total de pièces
-     * @return conteneur de composants initialisés
+     * @param board the puzzle board
+     * @param pieces map of all pieces
+     * @param pieceUsed bitset tracking piece usage
+     * @param totalPieces total number of pieces
+     * @return container of initialized components
      */
     public InitializedComponents initializeComponents(Board board, Map<Integer, Piece> pieces,
                                                       BitSet pieceUsed, int totalPieces) {
         InitializedComponents components = new InitializedComponents();
 
-        // Pré-calculer les contraintes de cellule pour optimisation (CRITIQUE : doit être avant l'init AC-3 !)
+        // Pre-compute cell constraints for optimization (CRITICAL: must be before AC-3 init!)
         components.cellConstraints = CellConstraints.createConstraintsMatrix(board.getRows(), board.getCols());
 
-        // Initialiser PlacementValidator avec les contraintes
+        // Initialize PlacementValidator with constraints
         components.validator = new PlacementValidator(components.cellConstraints, stats, sortOrder);
 
-        // Initialiser BoardDisplayManager
+        // Initialize BoardDisplayManager
         components.displayManager = new BoardDisplayManager(fixedPositions, components.validator);
 
-        // Initialiser les classes auxiliaires extraites avec injection de dépendances appropriée
-        // Créer lambda FitChecker qui délègue à la méthode fits() du solveur
+        // Initialize extracted helper classes with proper dependency injection
+        // Create FitChecker lambda that delegates to solver's fits() method
         DomainManager.FitChecker fitChecker = solver::fits;
 
         components.domainManager = new DomainManager(fitChecker);
         components.domainManager.setSortOrder(sortOrder);
 
-        // Créer l'adaptateur Statistics pour ConstraintPropagator
+        // Create Statistics adapter for ConstraintPropagator
         ConstraintPropagator.Statistics cpStats = new ConstraintPropagator.Statistics() {
             public void incrementDeadEnds() {
                 stats.deadEndsDetected++;
@@ -99,7 +99,7 @@ public class SolverInitializer {
         };
         components.constraintPropagator = new ConstraintPropagator(components.domainManager, cpStats);
 
-        // Créer l'adaptateur Statistics pour SingletonDetector
+        // Create Statistics adapter for SingletonDetector
         SingletonDetector.Statistics sdStats = new SingletonDetector.Statistics() {
             public void incrementSingletonsFound() {
                 stats.singletonsFound++;
@@ -115,26 +115,26 @@ public class SolverInitializer {
             }
         };
 
-        // Créer l'adaptateur FitChecker pour SingletonDetector
+        // Create FitChecker adapter for SingletonDetector
         SingletonDetector.FitChecker sdFitChecker = solver::fits;
         components.singletonDetector = new SingletonDetector(sdFitChecker, sdStats, verbose);
 
         components.valueOrderer = new LeastConstrainingValueOrderer(verbose);
 
-        // Construire les tables de compatibilité des bords (optimisation)
+        // Build edge compatibility tables (optimization)
         components.valueOrderer.buildEdgeCompatibilityTables(pieces);
 
-        // Calculer les scores de difficulté des pièces (optimisation)
+        // Calculate piece difficulty scores (optimization)
         components.valueOrderer.computePieceDifficulty(pieces);
 
-        // Créer EdgeCompatibilityIndex pour NeighborAnalyzer et PieceOrderingOptimizer
+        // Create EdgeCompatibilityIndex for NeighborAnalyzer and PieceOrderingOptimizer
         EdgeCompatibilityIndex edgeIndex = new EdgeCompatibilityIndex(pieces, false);
 
-        // Initialiser NeighborAnalyzer
+        // Initialize NeighborAnalyzer
         components.neighborAnalyzer = new NeighborAnalyzer(components.cellConstraints,
             components.validator, edgeIndex);
 
-        // Initialiser PieceOrderingOptimizer
+        // Initialize PieceOrderingOptimizer
         components.pieceOrderingOptimizer = new PieceOrderingOptimizer(
             edgeIndex, components.validator, components.neighborAnalyzer);
 
@@ -143,8 +143,8 @@ public class SolverInitializer {
             components.neighborAnalyzer);
         components.cellSelector.setPrioritizeBorders(prioritizeBorders);
 
-        // Note : L'initialisation AC-3 est faite par l'appelant après l'assignation des composants
-        // pour garantir que this.validator est défini avant d'appeler fits()
+        // Note: AC-3 initialization is done by the caller after component assignment
+        // to ensure that this.validator is defined before calling fits()
 
         return components;
     }

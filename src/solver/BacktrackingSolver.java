@@ -182,34 +182,6 @@ public class BacktrackingSolver {
             }
         }
 
-        // Affichage verbose désactivé pour réduire les logs console
-        // if (verbose && currentDepth >= minDepthToShowRecords) {
-        //     // Nettoyer l'écran (clear terminal)
-        //     System.out.print("\033[H\033[2J");
-        //     System.out.flush();
-        //
-        //     System.out.println("\n" + "=".repeat(60));
-        //     System.out.println("🏆 NOUVEAU RECORD ! " + currentDepth + " pièces placées sur " + piecesById.size());
-        //     System.out.println("=".repeat(60));
-        //
-        //     // Afficher les statistiques
-        //     System.out.println("╔════════════════ STATISTIQUES ═══════════════════╗");
-        //     System.out.println("║ Temps écoulé       : " + String.format("%.2f", (System.currentTimeMillis() - stats.startTime) / 1000.0) + " secondes");
-        //     System.out.println("║ Appels récursifs   : " + stats.recursiveCalls);
-        //     System.out.println("║ Placements testés  : " + stats.placements);
-        //     System.out.println("║ Backtracks         : " + stats.backtracks);
-        //     System.out.println("║ Vérifications fit  : " + stats.fitChecks);
-        //     System.out.println("║ Singletons trouvés : " + stats.singletonsFound);
-        //     System.out.println("║ Singletons posés   : " + stats.singletonsPlaced);
-        //     System.out.println("║ Dead-ends détectés : " + stats.deadEndsDetected);
-        //     System.out.println("╚══════════════════════════════════════════════════╝");
-        //
-        //     // Afficher le board actuel
-        //     System.out.println("\nPuzzle actuel:");
-        //     printBoardCompact(board, piecesById, unusedIds);
-        //     System.out.println();
-        // }
-
         // Sauvegarde périodique de l'état du thread (tous les 5 minutes)
         long currentTime = System.currentTimeMillis();
         if (threadId >= 0 && (currentTime - lastThreadSaveTime > THREAD_SAVE_INTERVAL)) {

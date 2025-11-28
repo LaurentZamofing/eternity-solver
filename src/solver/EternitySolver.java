@@ -7,9 +7,6 @@ import solver.heuristics.*;
 import util.SaveManager;
 import util.SaveStateManager;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -31,8 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
  *   - Méthodes méta-heuristiques
  */
 public class EternitySolver {
-
-    private static final Logger logger = LoggerFactory.getLogger(EternitySolver.class);
 
     /** Type alias for backward compatibility - delegates to StatisticsManager. */
     public static class Statistics extends StatisticsManager { }

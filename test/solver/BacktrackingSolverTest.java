@@ -45,6 +45,14 @@ class BacktrackingSolverTest {
         configManager.setMaxExecutionTime(10000); // 10 seconds default
     }
 
+    /**
+     * Helper method to fully initialize solver components for tests that call solve().
+     * This ensures cellSelector, validator, and other required components are set up.
+     */
+    private void initializeSolver(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
+        solver.initializeComponents(board, pieces, pieceUsed, totalPieces);
+    }
+
     @Test
     @DisplayName("Constructor should accept valid parameters")
     void testConstructorWithValidParameters() {
@@ -78,6 +86,9 @@ class BacktrackingSolverTest {
         Board board = new Board(4, 4);
         Map<Integer, Piece> pieces = createSimplePuzzle(16);
         BitSet pieceUsed = new BitSet(17);
+
+        // Initialize solver components
+        initializeSolver(board, pieces, pieceUsed, 16);
 
         SingletonPlacementStrategy singletonStrategy = createMockSingletonStrategy();
         MRVPlacementStrategy mrvStrategy = createMockMRVStrategy();
@@ -115,6 +126,9 @@ class BacktrackingSolverTest {
         Map<Integer, Piece> pieces = createSolvablePuzzle(2, 2);
         BitSet pieceUsed = new BitSet(5);
 
+        // Initialize solver components
+        initializeSolver(board, pieces, pieceUsed, 4);
+
         SingletonPlacementStrategy singletonStrategy = createMockSingletonStrategy();
         MRVPlacementStrategy mrvStrategy = createMockMRVStrategy();
 
@@ -149,6 +163,9 @@ class BacktrackingSolverTest {
         Map<Integer, Piece> pieces = createSimplePuzzle(4);
         BitSet pieceUsed = new BitSet(5);
 
+        // Initialize solver components
+        initializeSolver(board, pieces, pieceUsed, 4);
+
         SingletonPlacementStrategy singletonStrategy = createMockSingletonStrategy();
         MRVPlacementStrategy mrvStrategy = createMockMRVStrategy();
 
@@ -180,6 +197,9 @@ class BacktrackingSolverTest {
         Map<Integer, Piece> pieces = createSimplePuzzle(4);
         BitSet pieceUsed = new BitSet(5);
 
+        // Initialize solver components
+        initializeSolver(board, pieces, pieceUsed, 4);
+
         SingletonPlacementStrategy singletonStrategy = createMockSingletonStrategy();
         MRVPlacementStrategy mrvStrategy = createMockMRVStrategy();
 
@@ -210,6 +230,9 @@ class BacktrackingSolverTest {
         Board board = new Board(2, 2);
         Map<Integer, Piece> pieces = createSimplePuzzle(4);
         BitSet pieceUsed = new BitSet(5);
+
+        // Initialize solver components
+        initializeSolver(board, pieces, pieceUsed, 4);
 
         SingletonPlacementStrategy singletonStrategy = createMockSingletonStrategy();
         MRVPlacementStrategy mrvStrategy = createMockMRVStrategy();

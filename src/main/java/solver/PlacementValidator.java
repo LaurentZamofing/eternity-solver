@@ -155,6 +155,7 @@ public class PlacementValidator {
                 if (pid == excludePieceId) continue; // Ignore the piece being placed
 
                 Piece piece = piecesById.get(pid);
+                if (piece == null) continue; // Skip null pieces (sparse IDs or corrupted data)
                 // Try all 4 rotations
                 for (int rot = 0; rot < 4; rot++) {
                     int[] edges = piece.edgesRotated(rot);
@@ -175,6 +176,7 @@ public class PlacementValidator {
                 if (pid == excludePieceId) continue; // Ignore the piece being placed
 
                 Piece piece = piecesById.get(pid);
+                if (piece == null) continue; // Skip null pieces (sparse IDs or corrupted data)
                 // Try all 4 rotations
                 for (int rot = 0; rot < 4; rot++) {
                     int[] edges = piece.edgesRotated(rot);

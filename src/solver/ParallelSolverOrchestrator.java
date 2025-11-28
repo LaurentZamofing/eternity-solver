@@ -11,22 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Orchestrates parallel puzzle solving with multiple threads.
- * Extracted from EternitySolver (Refactoring #13) to separate parallel
- * orchestration logic from core solver implementation.
- *
- * Responsibilities:
- * - Thread pool management
- * - Worker thread coordination
- * - Save/restore state handling
- * - Corner piece diversification strategy
- * - Progress monitoring
- * - Result collection and synchronization
- *
- * @author Eternity Solver Team
- * @version 1.0.0
- */
+/** Orchestrates parallel puzzle solving with thread pool, worker coordination, state management, and diversification. */
 public class ParallelSolverOrchestrator {
 
     // Core dependencies
@@ -44,21 +29,7 @@ public class ParallelSolverOrchestrator {
     private final AtomicReference<Map<Integer, Piece>> globalBestPieces;
     private final Object lockObject;
 
-    /**
-     * Constructor with all dependencies.
-     *
-     * @param solverTemplate Template solver for configuration
-     * @param allPieces All puzzle pieces
-     * @param puzzleName Puzzle name for saving
-     * @param useDomainCache Whether to use domain caching
-     * @param solutionFound Shared flag for solution detection
-     * @param globalMaxDepth Shared max depth tracker
-     * @param globalBestScore Shared best score tracker
-     * @param globalBestThreadId Shared best thread ID
-     * @param globalBestBoard Shared best board
-     * @param globalBestPieces Shared best pieces
-     * @param lockObject Lock for synchronization
-     */
+    /** Creates orchestrator with solver template and all shared state dependencies. */
     public ParallelSolverOrchestrator(
             EternitySolver solverTemplate,
             Map<Integer, Piece> allPieces,
@@ -84,14 +55,7 @@ public class ParallelSolverOrchestrator {
         this.lockObject = lockObject;
     }
 
-    /**
-     * Solves the puzzle using multiple parallel threads.
-     *
-     * @param board Initial board state
-     * @param availablePieces Available pieces to place
-     * @param numThreads Number of threads to use
-     * @return true if solution found, false otherwise
-     */
+    /** Solves puzzle using multiple parallel threads; returns true if solution found. */
     public boolean solve(Board board, Map<Integer, Piece> availablePieces, int numThreads) {
         printHeader(numThreads);
 
@@ -123,9 +87,7 @@ public class ParallelSolverOrchestrator {
         return solved;
     }
 
-    /**
-     * Runs a single worker thread.
-     */
+    /** Runs a single worker thread with thread-local state and diversification. */
     private boolean runWorkerThread(int threadId, Board originalBoard, Map<Integer, Piece> availablePieces) {
         try {
             // Prepare thread-local state
@@ -162,9 +124,7 @@ public class ParallelSolverOrchestrator {
         }
     }
 
-    /**
-     * Prepares state for a worker thread.
-     */
+    /** Prepares worker thread state, loading from save if available. */
     private WorkerState prepareWorkerState(int threadId, Board originalBoard,
                                           Map<Integer, Piece> availablePieces) {
         Board localBoard;
@@ -220,9 +180,7 @@ public class ParallelSolverOrchestrator {
                               totalPieces, seed, loadedFromSave);
     }
 
-    /**
-     * Applies corner piece diversification strategy.
-     */
+    /** Applies corner piece diversification strategy for first 4 threads. */
     private void applyCornerDiversification(int threadId, WorkerState state) {
         if (state.loadedFromSave || threadId >= 4 || state.unusedIds.size() <= 10) {
             return; // Skip diversification
@@ -278,9 +236,7 @@ public class ParallelSolverOrchestrator {
         }
     }
 
-    /**
-     * Creates a local solver instance for a thread.
-     */
+    /** Creates local solver instance for thread with specific seed. */
     private EternitySolver createLocalSolver(int threadId, long seed) {
         EternitySolver localSolver = new EternitySolver();
         localSolver.random = new Random(seed);
@@ -292,9 +248,7 @@ public class ParallelSolverOrchestrator {
         return localSolver;
     }
 
-    /**
-     * Starts progress monitoring thread.
-     */
+    /** Starts daemon progress monitoring thread. */
     private Thread startProgressMonitor() {
         Thread monitor = new Thread(() -> {
             try {
@@ -311,9 +265,7 @@ public class ParallelSolverOrchestrator {
         return monitor;
     }
 
-    /**
-     * Waits for all threads to complete or solution to be found.
-     */
+    /** Waits for threads to complete or solution to be found; shuts down executor. */
     private boolean waitForCompletion(ExecutorService executor, Thread monitor,
                                      List<Future<Boolean>> futures) {
         boolean solved = false;
@@ -347,9 +299,7 @@ public class ParallelSolverOrchestrator {
         return solved;
     }
 
-    /**
-     * Handles solution found by a thread.
-     */
+    /** Handles solution found by thread, updating global state. */
     private void handleSolutionFound(int threadId, Board board, Map<Integer, Piece> pieces) {
         synchronized (System.out) {
             System.out.println("\n" + "=".repeat(60));
@@ -363,9 +313,7 @@ public class ParallelSolverOrchestrator {
         }
     }
 
-    /**
-     * Copies solution to original board.
-     */
+    /** Copies solution from global state to target board. */
     private void copySolutionToBoard(Board targetBoard) {
         Board bestBoard = globalBestBoard.get();
         Map<Integer, Piece> bestPieces = globalBestPieces.get();
@@ -385,9 +333,7 @@ public class ParallelSolverOrchestrator {
         }
     }
 
-    /**
-     * Creates a copy of a board.
-     */
+    /** Creates deep copy of board. */
     private Board copyBoard(Board original) {
         Board copy = new Board(original.getRows(), original.getCols());
         for (int r = 0; r < original.getRows(); r++) {
@@ -464,9 +410,7 @@ public class ParallelSolverOrchestrator {
 
     // ==================== Inner Classes ====================
 
-    /**
-     * Encapsulates worker thread state.
-     */
+    /** Encapsulates worker thread state with board, pieces, and diversification info. */
     private static class WorkerState {
         Board localBoard;
         Map<Integer, Piece> localPieces;

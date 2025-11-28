@@ -222,28 +222,18 @@ public class EternitySolver {
 
     /** Delegates to {@link BacktrackingSolver#solve} */
     public boolean solveBacktracking(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
-        BacktrackingSolver backtrackingSolver = new BacktrackingSolver(
-            this,
-            stats,
-            ParallelSearchManager.getSolutionFound(),
-            configManager,
-            recordManager,
-            autoSaveManager,
-            singletonStrategy,
-            mrvStrategy,
-            threadId,
-            randomSeed,
-            startTimeMs
-        );
-        return backtrackingSolver.solve(board, piecesById, pieceUsed, totalPieces);
+        return new BacktrackingSolver(
+            this, stats, ParallelSearchManager.getSolutionFound(), configManager,
+            recordManager, autoSaveManager, singletonStrategy, mrvStrategy,
+            threadId, randomSeed, startTimeMs
+        ).solve(board, piecesById, pieceUsed, totalPieces);
     }
 
     /** Delegates to {@link HistoricalSolver#solveWithHistory} */
     public boolean solveWithHistory(Board board, Map<Integer, Piece> allPieces,
                                      List<Integer> unusedIds,
                                      List<SaveStateManager.PlacementInfo> preloadedOrder) {
-        HistoricalSolver historicalSolver = new HistoricalSolver(this);
-        return historicalSolver.solveWithHistory(board, allPieces, unusedIds, preloadedOrder);
+        return new HistoricalSolver(this).solveWithHistory(board, allPieces, unusedIds, preloadedOrder);
     }
 
     /**

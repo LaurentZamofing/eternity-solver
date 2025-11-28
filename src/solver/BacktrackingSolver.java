@@ -11,26 +11,36 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Core backtracking algorithm for solving Eternity puzzles.
  *
- * Extracted from EternitySolver (Refactoring #16) to:
- * - Separate backtracking logic from solver coordination
- * - Reduce EternitySolver complexity (~100 lines reduction)
- * - Improve testability of core algorithm
- * - Single responsibility: recursive puzzle solving
+ * <p>Extracted from EternitySolver (Refactoring #16) to separate backtracking logic
+ * from solver coordination, reducing complexity and improving testability.</p>
  *
- * Responsibilities:
- * - Recursive backtracking algorithm execution
- * - Record tracking and display coordination
- * - Auto-save coordination (thread state + periodic saves)
- * - Timeout enforcement
- * - Strategy execution (singleton-first, then MRV)
- * - Solution detection and signaling
+ * <h3>Responsibilities</h3>
+ * <ul>
+ *   <li>Recursive backtracking algorithm execution</li>
+ *   <li>Record tracking and display coordination</li>
+ *   <li>Auto-save coordination (thread state + periodic saves)</li>
+ *   <li>Timeout enforcement</li>
+ *   <li>Strategy execution (singleton-first, then MRV)</li>
+ *   <li>Solution detection and signaling across threads</li>
+ * </ul>
  *
- * Dependencies:
- * - EternitySolver: for callback methods (findNextCellMRV)
- * - ConfigurationManager: for all configuration settings
- * - RecordManager: for depth record tracking
- * - AutoSaveManager: for periodic save coordination
- * - Placement strategies: singleton and MRV
+ * <h3>Thread Safety</h3>
+ * <p>Designed for multi-threaded use with shared AtomicBoolean for solution signaling.
+ * Each thread should have its own BacktrackingSolver instance.</p>
+ *
+ * <h3>Performance Optimizations</h3>
+ * <ul>
+ *   <li>Uses BitSet.cardinality() for O(1) depth calculation</li>
+ *   <li>Exception handling around I/O prevents solver crashes</li>
+ *   <li>Early termination when solution found by another thread</li>
+ * </ul>
+ *
+ * <h3>Optional Dependencies</h3>
+ * <p>RecordManager and AutoSaveManager can be null - gracefully degraded functionality.</p>
+ *
+ * @see EternitySolver
+ * @see RecordManager
+ * @see AutoSaveManager
  */
 public class BacktrackingSolver {
 
@@ -148,10 +158,8 @@ public class BacktrackingSolver {
 
         // Vérifier si on a atteint un nouveau record de profondeur
         // IMPORTANT: exclure les pièces fixes du calcul (on compte seulement les pièces posées par le backtracking)
-        int usedCount = 0;
-        for (int i = 1; i <= totalPieces; i++) {
-            if (pieceUsed.get(i)) usedCount++;
-        }
+        // Optimization: Use BitSet.cardinality() instead of manual loop (O(1) vs O(n))
+        int usedCount = pieceUsed.cardinality();
         int currentDepth = usedCount - configManager.getNumFixedPieces();
 
         // Check and update records using RecordManager
@@ -206,7 +214,14 @@ public class BacktrackingSolver {
         long currentTime = System.currentTimeMillis();
         if (threadId >= 0 && (currentTime - lastThreadSaveTime > THREAD_SAVE_INTERVAL)) {
             lastThreadSaveTime = currentTime;
-            SaveManager.saveThreadState(board, piecesById, currentDepth, threadId, randomSeed);
+            try {
+                SaveManager.saveThreadState(board, piecesById, currentDepth, threadId, randomSeed);
+            } catch (Exception e) {
+                // Log error but don't crash the solver - saving is optional
+                if (configManager.isVerbose()) {
+                    System.err.println("⚠️  Erreur lors de la sauvegarde thread " + threadId + ": " + e.getMessage());
+                }
+            }
         }
 
         // Sauvegarde automatique périodique (tous les 10 minutes)

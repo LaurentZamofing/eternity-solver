@@ -12,17 +12,33 @@ import java.util.Map;
 /**
  * Handles solving puzzles from saved states with full backtracking history.
  *
- * Extracted from EternitySolver (Refactoring #25) to:
- * - Separate historical solving logic from standard solving
- * - Reduce EternitySolver complexity (~70 lines reduction)
- * - Improve testability of save/resume functionality
- * - Single responsibility: puzzle solving from saved states
+ * <p>Extracted from EternitySolver (Refactoring #25) to separate historical solving
+ * logic from standard solving, improving maintainability and testability.</p>
  *
- * Responsibilities:
- * - Loading and initializing from saved state
- * - Managing placement history
- * - Coordinating backtracking through history
- * - Integrating with BacktrackingHistoryManager
+ * <h3>Key Features</h3>
+ * <ul>
+ *   <li>Loads and initializes from saved state files</li>
+ *   <li>Preserves full placement history for backtracking</li>
+ *   <li>Accumulates compute time across sessions</li>
+ *   <li>Supports backtracking through pre-loaded pieces</li>
+ * </ul>
+ *
+ * <h3>Usage</h3>
+ * <p>This solver is used when resuming from a saved state. Unlike standard solving,
+ * it can backtrack through pieces that were placed in previous sessions.</p>
+ *
+ * <h3>Initialization Order</h3>
+ * <ol>
+ *   <li>Load placement history and unused pieces</li>
+ *   <li>Initialize solver managers and components</li>
+ *   <li>Create BacktrackingHistoryManager with initialized validator</li>
+ *   <li>Attempt to solve from current state</li>
+ *   <li>If failed, backtrack through history</li>
+ * </ol>
+ *
+ * @see EternitySolver
+ * @see SaveStateManager
+ * @see BacktrackingHistoryManager
  */
 public class HistoricalSolver {
 

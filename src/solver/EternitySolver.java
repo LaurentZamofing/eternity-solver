@@ -57,7 +57,12 @@ public class EternitySolver {
     private SingletonDetector singletonDetector;
     private MRVCellSelector cellSelector;
     private LeastConstrainingValueOrderer valueOrderer;
-    PlacementValidator validator; // Package-private for HistoricalSolver
+    /**
+     * Package-private fields for HistoricalSolver access.
+     * These allow HistoricalSolver to initialize and coordinate solver components
+     * when resuming from saved state without breaking encapsulation.
+     */
+    PlacementValidator validator; // Used by HistoricalSolver to validate pre-loaded pieces
     private BoardDisplayManager displayManager;
     private NeighborAnalyzer neighborAnalyzer;
     private PieceOrderingOptimizer pieceOrderingOptimizer;
@@ -65,14 +70,14 @@ public class EternitySolver {
     private RecordManager recordManager;
 
     // Sprint 3 extractions
-    PlacementOrderTracker placementOrderTracker; // Package-private for HistoricalSolver
+    PlacementOrderTracker placementOrderTracker; // Used by HistoricalSolver to initialize placement history
     private BacktrackingHistoryManager backtrackingHistoryManager;
 
     // Sprint 4 extractions
     private SymmetryBreakingManager symmetryBreakingManager;
 
     // Sprint 5 extractions
-    ConfigurationManager configManager = new ConfigurationManager(); // Package-private for HistoricalSolver
+    ConfigurationManager configManager = new ConfigurationManager(); // Used by HistoricalSolver for configuration access
 
     // Sprint 6 extractions - Strategy Pattern for placement
     private SingletonPlacementStrategy singletonStrategy;
@@ -103,46 +108,32 @@ public class EternitySolver {
         ParallelSearchManager.resetGlobalState();
     }
 
-    /**
-     * Configure les paramètres d'affichage du solveur
-     * @param verbose activer/désactiver l'affichage détaillé
-     * @param minDepth seuil minimum pour afficher les records
-     */
+    /** Delegates to {@link ConfigurationManager#setDisplayConfig} */
     public void setDisplayConfig(boolean verbose, int minDepth) {
         configManager.setDisplayConfig(verbose, minDepth);
     }
 
-    /**
-     * Configure le nom du puzzle pour la sauvegarde automatique
-     * @param name nom du puzzle
-     */
+    /** Delegates to {@link ConfigurationManager#setPuzzleName} */
     public void setPuzzleName(String name) {
         configManager.setPuzzleName(name);
     }
 
-    /**
-     * Configure l'ordre de tri des pièces
-     * @param order "ascending" ou "descending"
-     */
+    /** Delegates to {@link ConfigurationManager#setSortOrder} */
     public void setSortOrder(String order) {
         configManager.setSortOrder(order);
     }
 
+    /** Delegates to {@link ConfigurationManager#setNumFixedPieces} */
     public void setNumFixedPieces(int num) {
         configManager.setNumFixedPieces(num);
     }
 
-    /**
-     * Définir le timeout maximum pour la résolution (en millisecondes)
-     */
+    /** Delegates to {@link ConfigurationManager#setMaxExecutionTime} */
     public void setMaxExecutionTime(long timeMs) {
         configManager.setMaxExecutionTime(timeMs);
     }
 
-    /**
-     * Configure le label du thread pour les logs
-     * @param label label à afficher dans les logs (ex: "[Thread 1 - p01_asc]")
-     */
+    /** Delegates to {@link ConfigurationManager#setThreadLabel} */
     public void setThreadLabel(String label) {
         configManager.setThreadLabel(label);
     }
@@ -150,27 +141,12 @@ public class EternitySolver {
     // Sauvegarde périodique par thread
     long randomSeed = 0; // Seed du random pour ce thread (package-private for ParallelSolverOrchestrator)
 
-    /**
-     * Affiche le board de manière compacte avec les valeurs des arêtes et les bordures.
-     * @param board grille actuelle
-     * @param piecesById map des pièces par ID
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     */
+    /** Delegates to {@link BoardVisualizer#printBoardCompact} */
     private void printBoardCompact(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         BoardVisualizer.printBoardCompact(board, piecesById, pieceUsed, totalPieces, this::fits);
     }
 
-    /**
-     * Affiche le board avec les pièces posées et le nombre de pièces possibles sur les cases vides.
-     *
-     * @param board grille actuelle
-     * @param piecesById map des pièces par ID
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param lastPlacedRow ligne de la dernière pièce posée (-1 si aucune)
-     * @param lastPlacedCol colonne de la dernière pièce posée (-1 si aucune)
-     */
+    /** Delegates to {@link BoardVisualizer#printBoardWithCounts} */
     public void printBoardWithCounts(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces,
                                       int lastPlacedRow, int lastPlacedCol) {
         BoardVisualizer.printBoardWithCounts(board, piecesById, pieceUsed, totalPieces,
@@ -178,27 +154,20 @@ public class EternitySolver {
     }
 
     // ==================== PlacementOrder Helpers ====================
-
-    /**
-     * Record a placement using PlacementOrderTracker
-     */
+    /** Delegates to {@link PlacementOrderTracker#recordPlacement} */
     void recordPlacement(int row, int col, int pieceId, int rotation) {
         if (placementOrderTracker != null) {
             placementOrderTracker.recordPlacement(row, col, pieceId, rotation);
         }
     }
 
-    /**
-     * Remove last placement using PlacementOrderTracker
-     */
+    /** Delegates to {@link PlacementOrderTracker#removeLastPlacement} */
     SaveStateManager.PlacementInfo removeLastPlacement() {
         if (placementOrderTracker != null) {
             return placementOrderTracker.removeLastPlacement();
         }
         return null;
     }
-
-    // ==================== End PlacementOrder Helpers ====================
 
     // ==================== Step Count and Last Placed Accessors ====================
 
@@ -212,12 +181,7 @@ public class EternitySolver {
 
     // ==================== End Step Count and Last Placed Accessors ====================
 
-    /**
-     * Assigns solver components from SolverInitializer to instance fields.
-     * Extracted to eliminate duplication between solve() and solveWithHistory().
-     *
-     * @param components Initialized components from SolverInitializer
-     */
+    /** Assigns initialized components to instance fields. */
     private void assignSolverComponents(SolverInitializer.InitializedComponents components) {
         this.cellConstraints = components.cellConstraints;
         this.validator = components.validator;
@@ -233,9 +197,13 @@ public class EternitySolver {
 
     /**
      * Initializes placement strategies (singleton and MRV).
-     * Extracted to eliminate duplication between solve() and solveWithHistory().
+     *
+     * <p>Package-private for HistoricalSolver access when resuming from saved state.
+     * Extracted to eliminate duplication between solve() and solveWithHistory().</p>
+     *
+     * @see HistoricalSolver#solveWithHistory
      */
-    void initializePlacementStrategies() { // Package-private for HistoricalSolver
+    void initializePlacementStrategies() {
         this.singletonStrategy = new SingletonPlacementStrategy(
             singletonDetector, configManager.isUseSingletons(), configManager.isVerbose(),
             symmetryBreakingManager, constraintPropagator, domainManager
@@ -248,9 +216,14 @@ public class EternitySolver {
 
     /**
      * Initializes managers (AutoSaveManager and RecordManager).
-     * Extracted to eliminate duplication between solve() and solveWithHistory().
+     *
+     * <p>Package-private for HistoricalSolver access when resuming from saved state.
+     * Extracted to eliminate duplication between solve() and solveWithHistory().</p>
+     *
+     * @param pieces map of all puzzle pieces
+     * @see HistoricalSolver#solveWithHistory
      */
-    void initializeManagers(Map<Integer, Piece> pieces) { // Package-private for HistoricalSolver
+    void initializeManagers(Map<Integer, Piece> pieces) {
         this.autoSaveManager = configManager.createAutoSaveManager(
             placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>(),
             pieces);
@@ -262,9 +235,17 @@ public class EternitySolver {
 
     /**
      * Initializes helper components and assigns them to the solver.
-     * Extracted to eliminate duplication between solve() and solveWithHistory().
+     *
+     * <p>Package-private for HistoricalSolver access when resuming from saved state.
+     * Extracted to eliminate duplication between solve() and solveWithHistory().</p>
+     *
+     * @param board the puzzle board
+     * @param pieces map of all puzzle pieces
+     * @param pieceUsed bitset tracking used pieces
+     * @param totalPieces total number of pieces
+     * @see HistoricalSolver#solveWithHistory
      */
-    void initializeComponents(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) { // Package-private for HistoricalSolver
+    void initializeComponents(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
         SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), configManager.isVerbose(),
             configManager.isPrioritizeBorders(), configManager.getFixedPositions());
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
@@ -274,9 +255,17 @@ public class EternitySolver {
 
     /**
      * Initializes domains (AC-3 only - domain cache removed as unused).
-     * Extracted to eliminate duplication between solve() and solveWithHistory().
+     *
+     * <p>Package-private for HistoricalSolver access when resuming from saved state.
+     * Extracted to eliminate duplication between solve() and solveWithHistory().</p>
+     *
+     * @param board the puzzle board
+     * @param pieces map of all puzzle pieces
+     * @param pieceUsed bitset tracking used pieces
+     * @param totalPieces total number of pieces
+     * @see HistoricalSolver#solveWithHistory
      */
-    void initializeDomains(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) { // Package-private for HistoricalSolver
+    void initializeDomains(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
         if (useAC3) {
             this.domainManager.initializeAC3Domains(board, pieces, pieceUsed, totalPieces);
         }
@@ -284,12 +273,15 @@ public class EternitySolver {
 
     /**
      * Creates a BitSet for tracking piece usage, sized according to the maximum piece ID.
-     * Extracted to eliminate duplication between solve() and solveWithHistory() (Refactoring #14).
+     *
+     * <p>Package-private for HistoricalSolver access when resuming from saved state.
+     * Extracted to eliminate duplication between solve() and solveWithHistory() (Refactoring #14).</p>
      *
      * @param pieces map of all pieces
      * @return empty BitSet sized for all pieces (index 0 unused, 1-based)
+     * @see HistoricalSolver#solveWithHistory
      */
-    BitSet createPieceUsedBitSet(Map<Integer, Piece> pieces) { // Package-private for HistoricalSolver
+    BitSet createPieceUsedBitSet(Map<Integer, Piece> pieces) {
         int maxPieceId = pieces.keySet().stream().max(Integer::compareTo).orElse(pieces.size());
         return new BitSet(maxPieceId + 1); // index 0 unused, 1-based
     }
@@ -345,12 +337,7 @@ public class EternitySolver {
     }
 
 
-    /**
-     * Trouve la prochaine case vide (ordre row-major simple).
-     *
-     * @param board grille actuelle
-     * @return coordonnées [r, c] de la première case vide, ou null si aucune
-     */
+    /** Finds next empty cell in row-major order. */
     public int[] findNextCell(Board board) {
         for (int r = 0; r < board.getRows(); r++) {
             for (int c = 0; c < board.getCols(); c++) {
@@ -362,17 +349,8 @@ public class EternitySolver {
         return null;
     }
 
-    /**
-     * Résout le puzzle en utilisant le backtracking récursif.
-     *
-     * @param board grille modifiée en place
-     * @param piecesById map des pièces originales par ID
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @return true si une solution a été trouvée
-     */
+    /** Delegates to {@link BacktrackingSolver#solve} */
     public boolean solveBacktracking(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
-        // Delegate to BacktrackingSolver (Refactoring #16 - extracted backtracking algorithm)
         BacktrackingSolver backtrackingSolver = new BacktrackingSolver(
             this,
             stats,
@@ -389,16 +367,7 @@ public class EternitySolver {
         return backtrackingSolver.solve(board, piecesById, pieceUsed, totalPieces);
     }
 
-    /**
-     * Résout le puzzle en reprenant depuis un état pré-chargé avec historique de placement.
-     * Délègue à HistoricalSolver (Refactoring #25 - extracted historical solving logic).
-     *
-     * @param board grille avec pièces déjà placées
-     * @param allPieces map de TOUTES les pièces (utilisées et non utilisées)
-     * @param unusedIds liste des IDs de pièces non encore utilisées
-     * @param preloadedOrder historique complet de l'ordre de placement
-     * @return true si le puzzle a été résolu
-     */
+    /** Delegates to {@link HistoricalSolver#solveWithHistory} */
     public boolean solveWithHistory(Board board, Map<Integer, Piece> allPieces,
                                      List<Integer> unusedIds,
                                      List<SaveStateManager.PlacementInfo> preloadedOrder) {
@@ -471,43 +440,27 @@ public class EternitySolver {
         symmetryBreakingManager.logConfiguration();
     }
 
-    /**
-     * Retourne les statistiques de la dernière résolution.
-     */
+    /** Returns solver statistics. */
     public Statistics getStatistics() {
         return stats;
     }
 
-    /**
-     * Active ou désactive l'optimisation singleton.
-     * @param enabled true pour activer, false pour désactiver
-     */
+    /** Delegates to {@link ConfigurationManager#setUseSingletons} */
     public void setUseSingletons(boolean enabled) {
         configManager.setUseSingletons(enabled);
     }
 
-    /**
-     * Active ou désactive la priorisation des bords.
-     * Quand activé, le solver remplit d'abord tous les bords avant de remplir l'intérieur.
-     * @param enabled true pour activer, false pour désactiver
-     */
+    /** Delegates to {@link ConfigurationManager#setPrioritizeBorders} */
     public void setPrioritizeBorders(boolean enabled) {
         configManager.setPrioritizeBorders(enabled);
     }
 
-    /**
-     * Active ou désactive l'affichage détaillé.
-     * @param enabled true pour activer, false pour désactiver
-     */
+    /** Delegates to {@link ConfigurationManager#setVerbose} */
     public void setVerbose(boolean enabled) {
         configManager.setVerbose(enabled);
     }
 
-
-    /**
-     * Réinitialise le solveur pour une nouvelle résolution.
-     * Réinitialise les statistiques, le compteur d'étapes, etc.
-     */
+    /** Resets solver state and statistics. */
     public void reset() {
         stats = new Statistics();
         stateManager.reset();

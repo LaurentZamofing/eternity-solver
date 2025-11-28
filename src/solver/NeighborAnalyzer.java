@@ -7,37 +7,14 @@ import model.Placement;
 import java.util.BitSet;
 import java.util.Map;
 
-/**
- * Analyse les relations de voisinage et les motifs spatiaux sur le plateau de puzzle.
- *
- * Cette classe fournit des méthodes pour :
- * - Compter les voisins vides et occupés
- * - Détecter les gaps piégés et les configurations problématiques
- * - Calculer les scores de contrainte pour les placements
- * - Compter les options de pièces valides en tenant compte des voisins
- *
- * Ces analyses supportent les heuristiques comme :
- * - Sélection de cellule MRV (Minimum Remaining Values)
- * - Ordonnancement LCV (Least Constraining Value)
- * - Vérification prospective et détection de cul-de-sac
- *
- * Extrait de EternitySolver dans le Sprint 5 pour améliorer :
- * - La modularité et la testabilité
- * - La séparation de la logique d'analyse spatiale
- * - La réutilisabilité entre différentes heuristiques
- */
+/** Analyzes neighbor relationships and spatial patterns; supports MRV cell selection, LCV ordering, and trapped gap detection for puzzle solving heuristics. */
 public class NeighborAnalyzer {
 
     private final CellConstraints[][] cellConstraints;
     private final PlacementValidator validator;
     private final EdgeCompatibilityIndex edgeIndex;
 
-    /**
-     * Constructeur
-     * @param cellConstraints contraintes pré-calculées pour chaque cellule
-     * @param validator validateur de placement
-     * @param edgeIndex index de compatibilité des bords pour recherches rapides
-     */
+    /** Creates analyzer with pre-calculated cell constraints, placement validator, and edge compatibility index. */
     public NeighborAnalyzer(CellConstraints[][] cellConstraints,
                            PlacementValidator validator,
                            EdgeCompatibilityIndex edgeIndex) {
@@ -46,14 +23,7 @@ public class NeighborAnalyzer {
         this.edgeIndex = edgeIndex;
     }
 
-    /**
-     * Compte les cellules voisines vides (adjacents directs : N, S, E, W).
-     *
-     * @param board état actuel du plateau
-     * @param row position ligne
-     * @param col position colonne
-     * @return nombre de voisins vides (0-4)
-     */
+    /** Counts empty neighbor cells (direct adjacents: N, S, E, W); returns 0-4. */
     public int countEmptyNeighbors(Board board, int row, int col) {
         int count = 0;
         int rows = board.getRows();
@@ -71,14 +41,7 @@ public class NeighborAnalyzer {
         return count;
     }
 
-    /**
-     * Compte les cellules voisines occupées (adjacents directs : N, S, E, W).
-     *
-     * @param board état actuel du plateau
-     * @param row position ligne
-     * @param col position colonne
-     * @return nombre de voisins occupés (0-4)
-     */
+    /** Counts occupied neighbor cells (direct adjacents: N, S, E, W); returns 0-4. */
     public int countOccupiedNeighbors(Board board, int row, int col) {
         int count = 0;
         int rows = board.getRows();
@@ -96,15 +59,7 @@ public class NeighborAnalyzer {
         return count;
     }
 
-    /**
-     * Compte les cellules de bord remplies adjacentes pour une position donnée.
-     * Les cellules de bord sont celles sur le périmètre du plateau (row=0, row=max, col=0, col=max).
-     *
-     * @param board état actuel du plateau
-     * @param row position ligne
-     * @param col position colonne
-     * @return nombre de cellules de bord remplies adjacentes
-     */
+    /** Counts adjacent filled border cells (perimeter cells at row=0, row=max, col=0, col=max) for given position. */
     public int countAdjacentFilledBorderCells(Board board, int row, int col) {
         int count = 0;
         int rows = board.getRows();
@@ -149,26 +104,7 @@ public class NeighborAnalyzer {
         return count;
     }
 
-    /**
-     * Vérifie si placer une pièce à cette position créerait un gap piégé.
-     *
-     * Un gap piégé est une région vide isolée qui ne peut pas être remplie complètement.
-     * Cela se produit quand une cellule vide est entourée de cellules occupées d'une manière
-     * qui rend impossible la satisfaction de toutes les contraintes de bords.
-     *
-     * Stratégie : Après avoir hypothétiquement placé une pièce, vérifier chaque voisin vide
-     * pour voir s'il deviendrait insoluble (plus de pièces valides disponibles).
-     *
-     * @param board état actuel du plateau
-     * @param row ligne où la pièce serait placée
-     * @param col colonne où la pièce serait placée
-     * @param candidateEdges bords de la pièce à placer
-     * @param pieces map de toutes les pièces
-     * @param pieceUsed bitset des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param candidatePieceId ID de la pièce considérée
-     * @return true si le placement créerait un gap piégé
-     */
+    /** Checks if placing piece would create trapped gap (isolated empty region unsolvable due to edge constraints); returns true if any neighbor becomes unsolvable. */
     public boolean wouldCreateTrappedGap(Board board, int row, int col, int[] candidateEdges,
                                         Map<Integer, Piece> pieces, BitSet pieceUsed,
                                         int totalPieces, int candidatePieceId) {
@@ -217,23 +153,7 @@ public class NeighborAnalyzer {
         return false;
     }
 
-    /**
-     * Calcule à quel point un placement serait contraignant pour ses voisins.
-     * Score plus élevé = plus contraignant (moins d'options restantes pour les voisins).
-     *
-     * Utilisé par l'heuristique LCV (Least Constraining Value) pour préférer les placements
-     * qui laissent le plus de flexibilité pour les choix futurs.
-     *
-     * @param board état actuel du plateau
-     * @param r position ligne
-     * @param c position colonne
-     * @param candidateEdges bords de la pièce considérée
-     * @param pieces map de toutes les pièces
-     * @param pieceUsed bitset des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param excludePieceId ID de pièce à exclure des comptages
-     * @return score de contrainte (plus élevé = plus contraignant)
-     */
+    /** Calculates constraint score for placement (higher = more constraining); used by LCV heuristic to prefer placements leaving most flexibility for future choices. */
     public int calculateConstraintScore(Board board, int r, int c, int[] candidateEdges,
                                        Map<Integer, Piece> pieces, BitSet pieceUsed,
                                        int totalPieces, int excludePieceId) {
@@ -272,20 +192,7 @@ public class NeighborAnalyzer {
         return -score;
     }
 
-    /**
-     * Compte les pièces valides qui pourraient être placées à une position avec une contrainte de bord optionnelle.
-     *
-     * @param board état actuel du plateau
-     * @param r position ligne
-     * @param c position colonne
-     * @param requiredEdge valeur de bord qui doit correspondre (-1 si aucune contrainte)
-     * @param edgeIndex quel bord doit correspondre (0=N, 1=E, 2=S, 3=W)
-     * @param pieces map de toutes les pièces
-     * @param pieceUsed bitset des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param excludePieceId ID de pièce à exclure du comptage
-     * @return nombre de pièces valides
-     */
+    /** Counts valid pieces that could be placed at position with optional edge constraint (requiredEdge=-1 for none, edgeIndex: 0=N, 1=E, 2=S, 3=W). */
     public int countValidPieces(Board board, int r, int c, int requiredEdge, int edgeIndex,
                                Map<Integer, Piece> pieces, BitSet pieceUsed,
                                int totalPieces, int excludePieceId) {

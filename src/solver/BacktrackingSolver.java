@@ -133,31 +133,31 @@ public class BacktrackingSolver {
     }
 
     /**
-     * Résout le puzzle en utilisant le backtracking récursif.
+     * Solves the puzzle using recursive backtracking.
      *
-     * Cette méthode implémente l'algorithme de backtracking avec:
-     * - Suivi des records de profondeur
-     * - Sauvegardes périodiques (thread state + auto-save)
-     * - Vérification de timeout
-     * - Stratégies de placement (singleton en premier, puis MRV)
-     * - Signalisation de solution aux autres threads
+     * This method implements the backtracking algorithm with:
+     * - Depth record tracking
+     * - Periodic saves (thread state + auto-save)
+     * - Timeout checking
+     * - Placement strategies (singleton first, then MRV)
+     * - Solution signaling to other threads
      *
-     * @param board grille modifiée en place
-     * @param piecesById map des pièces originales par ID
-     * @param pieceUsed tableau des pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @return true si une solution a été trouvée
+     * @param board board modified in place
+     * @param piecesById map of original pieces by ID
+     * @param pieceUsed array of used pieces
+     * @param totalPieces total number of pieces
+     * @return true if a solution was found
      */
     public boolean solve(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         stats.recursiveCalls++;
 
-        // Vérifier si un autre thread a trouvé la solution
+        // Check if another thread has found the solution
         if (solutionFound.get()) {
-            return false; // Arrêter cette branche
+            return false; // Stop this branch
         }
 
-        // Vérifier si on a atteint un nouveau record de profondeur
-        // IMPORTANT: exclure les pièces fixes du calcul (on compte seulement les pièces posées par le backtracking)
+        // Check if we've reached a new depth record
+        // IMPORTANT: exclude fixed pieces from calculation (count only pieces placed by backtracking)
         // Optimization: Use BitSet.cardinality() instead of manual loop (O(1) vs O(n))
         int usedCount = pieceUsed.cardinality();
         int currentDepth = usedCount - configManager.getNumFixedPieces();
@@ -182,7 +182,7 @@ public class BacktrackingSolver {
             }
         }
 
-        // Sauvegarde périodique de l'état du thread (tous les 5 minutes)
+        // Periodic thread state save (every 5 minutes)
         long currentTime = System.currentTimeMillis();
         if (threadId >= 0 && (currentTime - lastThreadSaveTime > THREAD_SAVE_INTERVAL)) {
             lastThreadSaveTime = currentTime;
@@ -191,31 +191,31 @@ public class BacktrackingSolver {
             } catch (Exception e) {
                 // Log error but don't crash the solver - saving is optional
                 if (configManager.isVerbose()) {
-                    System.err.println("⚠️  Erreur lors de la sauvegarde thread " + threadId + ": " + e.getMessage());
+                    System.err.println("⚠️  Error saving thread " + threadId + " state: " + e.getMessage());
                 }
             }
         }
 
-        // Sauvegarde automatique périodique (tous les 10 minutes)
+        // Periodic auto-save (every 10 minutes)
         if (autoSaveManager != null) {
             autoSaveManager.checkAndSave(board, pieceUsed, totalPieces, stats);
         }
 
-        // Vérifier le timeout
+        // Check timeout
         if (currentTime - startTimeMs > configManager.getMaxExecutionTimeMs()) {
-            System.out.println("⏱️  " + configManager.getThreadLabel() + " Timeout atteint (" + (configManager.getMaxExecutionTimeMs() / 1000) + "s) - arrêt de la recherche");
-            return false; // Timeout atteint
+            System.out.println("⏱️  " + configManager.getThreadLabel() + " Timeout reached (" + (configManager.getMaxExecutionTimeMs() / 1000) + "s) - stopping search");
+            return false; // Timeout reached
         }
 
-        // Vérifier s'il reste des cases vides
+        // Check if any empty cells remain
         int[] cell = solver.findNextCellMRV(board, piecesById, pieceUsed, totalPieces);
         if (cell == null) {
-            // Aucune case vide -> solution trouvée
-            solutionFound.set(true); // Signaler aux autres threads
+            // No empty cells -> solution found
+            solutionFound.set(true); // Signal to other threads
             stats.end();
             if (configManager.isVerbose()) {
                 System.out.println("\n========================================");
-                System.out.println("SOLUTION TROUVÉE !");
+                System.out.println("SOLUTION FOUND!");
                 System.out.println("========================================");
             }
             return true;
@@ -226,12 +226,12 @@ public class BacktrackingSolver {
             board, piecesById, pieceUsed, totalPieces, stats, configManager.getNumFixedPieces()
         );
 
-        // ÉTAPE 1 : Try singleton placement strategy first (most constrained)
+        // STEP 1: Try singleton placement strategy first (most constrained)
         if (singletonStrategy.tryPlacement(context, solver)) {
             return true;
         }
 
-        // ÉTAPE 2 : Try MRV placement strategy
+        // STEP 2: Try MRV placement strategy
         return mrvStrategy.tryPlacement(context, solver);
     }
 }

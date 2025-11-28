@@ -39,7 +39,7 @@ public class PieceOrderingOptimizer {
 
         List<DomainManager.ValidPlacement> validPlacements = new ArrayList<>();
 
-        // Essayer toutes les pièces disponibles
+        // Try all available pieces
         for (int pid = 1; pid <= totalPieces; pid++) {
             if (pieceUsed.get(pid)) continue;
 
@@ -80,7 +80,7 @@ public class PieceOrderingOptimizer {
                 int[] edges = piece.edgesRotated(rot);
                 if (validator.fits(board, r, c, edges)) {
                     uniquePieces.add(pid);
-                    break; // Compter la pièce une fois
+                    break; // Count piece once
                 }
             }
         }
@@ -101,7 +101,7 @@ public class PieceOrderingOptimizer {
             Piece piece = pieces.get(pid);
             if (piece == null) continue;
 
-            // Essayer toutes les rotations et trouver la moins contraignante
+            // Try all rotations and find least constraining
             int bestScore = Integer.MAX_VALUE;
             int maxRotations = piece.getUniqueRotationCount();
 
@@ -119,7 +119,7 @@ public class PieceOrderingOptimizer {
             }
         }
 
-        // Trier par score (contrainte plus basse = meilleur)
+        // Sort by score (lower constraint = better)
         scored.sort(Comparator.comparingInt(ps -> ps.score));
 
         List<Integer> ordered = new ArrayList<>();
@@ -134,7 +134,7 @@ public class PieceOrderingOptimizer {
     public List<Integer> orderByDifficulty(List<Integer> pieceIds,
                                           Map<Integer, Integer> difficultyScores) {
         if (difficultyScores == null || difficultyScores.isEmpty()) {
-            return new ArrayList<>(pieceIds); // Retourner une copie dans l'ordre original
+            return new ArrayList<>(pieceIds); // Return copy in original order
         }
 
         List<Integer> ordered = new ArrayList<>(pieceIds);
@@ -148,10 +148,10 @@ public class PieceOrderingOptimizer {
     public Integer selectCornerPieceForThread(int threadId, List<Integer> unusedIds,
                                              Map<Integer, Piece> pieces) {
         if (threadId >= 4 || unusedIds.size() <= 10) {
-            return null; // Seulement pour les 4 premiers threads, et seulement si assez de pièces
+            return null; // Only for first 4 threads, and only if enough pieces
         }
 
-        // Identifier les pièces de coin (exactement 2 bords = 0)
+        // Identify corner pieces (exactly 2 edges = 0)
         List<Integer> cornerPieces = new ArrayList<>();
         for (int pid : unusedIds) {
             Piece p = pieces.get(pid);
@@ -171,7 +171,7 @@ public class PieceOrderingOptimizer {
             return null;
         }
 
-        // Sélectionner le coin basé sur l'ID du thread (distribuer équitablement)
+        // Select corner based on thread ID (distribute evenly)
         int index = threadId % cornerPieces.size();
         return cornerPieces.get(index);
     }
@@ -179,10 +179,10 @@ public class PieceOrderingOptimizer {
     /** Returns corner position for thread ID; maps threads 0-3 to four board corners. */
     public int[] getCornerPositionForThread(int threadId, int rows, int cols) {
         switch (threadId) {
-            case 0: return new int[]{0, 0};           // Haut-gauche
-            case 1: return new int[]{0, cols - 1};    // Haut-droite
-            case 2: return new int[]{rows - 1, 0};    // Bas-gauche
-            case 3: return new int[]{rows - 1, cols - 1}; // Bas-droite
+            case 0: return new int[]{0, 0};           // Top-left
+            case 1: return new int[]{0, cols - 1};    // Top-right
+            case 2: return new int[]{rows - 1, 0};    // Bottom-left
+            case 3: return new int[]{rows - 1, cols - 1}; // Bottom-right
             default: return null;
         }
     }
@@ -198,17 +198,17 @@ public class PieceOrderingOptimizer {
             int[] edges = piece.edgesRotated(rot);
             boolean valid = true;
 
-            // Vérifier que chaque bord correspond à la contrainte du plateau
-            if (isTopEdge && edges[0] != 0) valid = false;      // Nord doit être 0
-            if (isBottomEdge && edges[2] != 0) valid = false;   // Sud doit être 0
-            if (isLeftEdge && edges[3] != 0) valid = false;     // Ouest doit être 0
-            if (isRightEdge && edges[1] != 0) valid = false;    // Est doit être 0
+            // Check that each edge matches board constraint
+            if (isTopEdge && edges[0] != 0) valid = false;      // North must be 0
+            if (isBottomEdge && edges[2] != 0) valid = false;   // South must be 0
+            if (isLeftEdge && edges[3] != 0) valid = false;     // West must be 0
+            if (isRightEdge && edges[1] != 0) valid = false;    // East must be 0
 
             if (valid) {
                 return rot;
             }
         }
 
-        return -1; // Aucune rotation valide trouvée
+        return -1; // No valid rotation found
     }
 }

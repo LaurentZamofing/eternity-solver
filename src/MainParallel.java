@@ -9,17 +9,17 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Lanceur parallèle pour Eternity II
- * Lance plusieurs threads sur différentes configurations de manière intelligente :
- * 1. Priorité aux configurations jamais commencées
- * 2. Puis reprise des sauvegardes les plus anciennes
+ * Parallel launcher for Eternity II
+ * Launches multiple threads on different configurations intelligently:
+ * 1. Priority to configurations never started
+ * 2. Then resume oldest saves
  */
 public class MainParallel {
 
     private static final String DATA_DIR = "data/";
 
     /**
-     * Information sur une configuration disponible
+     * Information about an available configuration
      */
     private static class ConfigInfo implements Comparable<ConfigInfo> {
         final String filepath;
@@ -38,22 +38,22 @@ public class MainParallel {
 
         @Override
         public int compareTo(ConfigInfo other) {
-            // 1. Priorité aux configs jamais commencées
+            // 1. Priority to never-started configs
             if (!this.hasBeenStarted && other.hasBeenStarted) return -1;
             if (this.hasBeenStarted && !other.hasBeenStarted) return 1;
 
-            // 2. Parmi les commencées, trier par temps cumulé (moins de temps = prioritaire)
+            // 2. Among started ones, sort by cumulative time (less time = priority)
             if (this.hasBeenStarted && other.hasBeenStarted) {
                 return Long.compare(this.totalComputeTimeMs, other.totalComputeTimeMs);
             }
 
-            // 3. Parmi les non commencées, ordre alphabétique
+            // 3. Among non-started, alphabetical order
             return this.filepath.compareTo(other.filepath);
         }
     }
 
     /**
-     * Trouve toutes les configurations Eternity II disponibles
+     * Finds all available Eternity II configurations
      */
     private static List<ConfigInfo> findAllConfigurations() throws IOException {
         List<ConfigInfo> configs = new ArrayList<>();
@@ -64,26 +64,26 @@ public class MainParallel {
         );
 
         if (configFiles == null || configFiles.length == 0) {
-            System.out.println("✗ Aucune configuration trouvée dans " + DATA_DIR);
+            System.out.println("✗ No configuration found in " + DATA_DIR);
             return configs;
         }
 
-        System.out.println("📁 Analyse de " + configFiles.length + " configurations disponibles...");
+        System.out.println("📁 Analyzing " + configFiles.length + " available configurations...");
         System.out.println();
 
         for (File file : configFiles) {
             try {
-                // Charger la config
+                // Load the config
                 PuzzleConfig config = PuzzleConfig.loadFromFile(file.getAbsolutePath());
                 if (config == null) continue;
 
-                // Extraire le configId depuis le nom du fichier
+                // Extract configId from file name
                 String configId = ConfigurationUtils.extractConfigId(file.getAbsolutePath());
 
                 // Chercher une sauvegarde current pour cette config
                 File currentSave = SaveStateManager.findCurrentSave(configId);
 
-                // Lire le temps total de calcul cumulé
+                // Read total cumulative compute time
                 long totalComputeTimeMs = 0;
                 if (currentSave != null) {
                     totalComputeTimeMs = SaveStateManager.readTotalComputeTime(configId);
@@ -96,7 +96,7 @@ public class MainParallel {
             }
         }
 
-        // Trier selon la priorité
+        // Sort by priority
         Collections.sort(configs);
 
         return configs;
@@ -106,7 +106,7 @@ public class MainParallel {
     // Removed: ConfigurationUtils.createThreadLabel() - now using ConfigurationUtils.ConfigurationUtils.createThreadLabel()
 
     /**
-     * Affiche les statistiques des configurations
+     * Displays configuration statistics
      */
     private static void displayConfigStats(List<ConfigInfo> configs) {
         int notStarted = 0;
@@ -121,17 +121,17 @@ public class MainParallel {
         }
 
         System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-        System.out.println("║              STATISTIQUES DES CONFIGURATIONS                     ║");
+        System.out.println("║              CONFIGURATION STATISTICS                     ║");
         System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
         System.out.println();
         System.out.println("  📊 Total configurations : " + configs.size());
-        System.out.println("  🆕 Jamais commencées    : " + notStarted);
-        System.out.println("  🔄 En cours             : " + inProgress);
+        System.out.println("  🆕 Never started        : " + notStarted);
+        System.out.println("  🔄 In progress          : " + inProgress);
         System.out.println();
     }
 
     /**
-     * Lance la résolution d'une configuration dans un thread avec timeout
+     * Launches resolution of a configuration in a thread with timeout
      */
     private static class SolverTask implements Callable<Boolean> {
         private final ConfigInfo configInfo;
@@ -147,31 +147,31 @@ public class MainParallel {
         @Override
         public Boolean call() {
             try {
-                System.out.println("🚀 [Thread " + threadId + "] Démarrage: " + configInfo.config.getName());
-                System.out.println("   Fichier: " + new File(configInfo.filepath).getName());
+                System.out.println("🚀 [Thread " + threadId + "] Starting: " + configInfo.config.getName());
+                System.out.println("   File: " + new File(configInfo.filepath).getName());
                 if (configInfo.hasBeenStarted) {
                     long totalSeconds = configInfo.totalComputeTimeMs / 1000;
                     long hours = totalSeconds / 3600;
                     long minutes = (totalSeconds % 3600) / 60;
                     long seconds = totalSeconds % 60;
-                    System.out.println("   Statut: REPRISE (temps cumulé: " +
+                    System.out.println("   Status: RESUME (cumulative time: " +
                         String.format("%dh %02dm %02ds", hours, minutes, seconds) + ")");
                 } else {
-                    System.out.println("   Statut: NOUVEAU");
+                    System.out.println("   Status: NEW");
                 }
                 System.out.println();
 
-                // Charger le puzzle
+                // Load the puzzle
                 PuzzleConfig config = configInfo.config;
 
-                // Créer un ID unique basé sur le nom du fichier (ex: eternity2_p01_ascending)
+                // Create a unique ID based on file name (e.g.: eternity2_p01_ascending)
                 String configId = ConfigurationUtils.extractConfigId(configInfo.filepath);
 
-                // Chercher une sauvegarde current pour cette config spécifique
+                // Look for a current save for this specific config
                 File currentSave = SaveStateManager.findCurrentSave(configId);
 
                 if (currentSave != null && currentSave.exists()) {
-                    // Reprise depuis sauvegarde
+                    // Resume from save
                     SaveStateManager.SaveState saveState = SaveStateManager.loadStateFromFile(currentSave, config.getType());
 
                     if (saveState != null) {
@@ -182,33 +182,33 @@ public class MainParallel {
                         if (restored) {
                             List<Integer> unusedIds = new ArrayList<>(saveState.unusedPieceIds);
 
-                            // Trier selon l'ordre configuré
+                            // Sort according to configured order
                             if ("descending".equalsIgnoreCase(config.getSortOrder())) {
                                 Collections.sort(unusedIds, Collections.reverseOrder());
                             } else {
                                 Collections.sort(unusedIds);
                             }
 
-                            // Créer et configurer le solveur
+                            // Create and configure the solver
                             EternitySolver.resetGlobalState();
                             EternitySolver solver = new EternitySolver();
                             solver.setDisplayConfig(config.isVerbose(), config.getMinDepthToShowRecords());
 
-                            // Utiliser le configId déjà extrait
+                            // Use the already extracted configId
                             solver.setPuzzleName(configId);
                             solver.setSortOrder(config.getSortOrder());
                             solver.setPrioritizeBorders(config.isPrioritizeBorders());
                             solver.setNumFixedPieces(config.getFixedPieces().size());
                             solver.setThreadLabel(ConfigurationUtils.createThreadLabel(threadId, configId));
 
-                            System.out.println("   [Thread " + threadId + "] Reprise: " + saveState.depth + " pièces placées");
+                            System.out.println("   [Thread " + threadId + "] Resume: " + saveState.depth + " pieces placed");
 
-                            // Résoudre
+                            // Solve
                             boolean solved = solver.solveWithHistory(board, allPieces, unusedIds,
                                                                      new ArrayList<>(saveState.placementOrder));
 
                             if (solved) {
-                                System.out.println("✅ [Thread " + threadId + "] SOLUTION TROUVÉE!");
+                                System.out.println("✅ [Thread " + threadId + "] SOLUTION FOUND!");
                             }
 
                             return solved;
@@ -216,64 +216,64 @@ public class MainParallel {
                     }
                 }
 
-                // Démarrage depuis le début
-                System.out.println("   [Thread " + threadId + "] Démarrage depuis le début");
+                // Starting from scratch
+                System.out.println("   [Thread " + threadId + "] Starting from scratch");
 
                 Board board = new Board(config.getRows(), config.getCols());
                 Map<Integer, Piece> allPieces = new HashMap<>(config.getPieces());
 
-                // Placer les pièces fixes
+                // Place fixed pieces
                 for (PuzzleConfig.FixedPiece fp : config.getFixedPieces()) {
                     Piece piece = allPieces.get(fp.pieceId);
                     if (piece != null) {
                         board.place(fp.row, fp.col, piece, fp.rotation);
-                        allPieces.remove(fp.pieceId);  // Retirer de la copie locale, pas du config original
+                        allPieces.remove(fp.pieceId);  // Remove from local copy, not from original config
                     }
                 }
 
-                // Résoudre
+                // Solve
                 EternitySolver.resetGlobalState();
                 EternitySolver solver = new EternitySolver();
                 solver.setDisplayConfig(config.isVerbose(), config.getMinDepthToShowRecords());
 
-                // Utiliser le configId déjà extrait
+                // Use the already extracted configId
                 solver.setPuzzleName(configId);
                 solver.setSortOrder(config.getSortOrder());
                 solver.setPrioritizeBorders(config.isPrioritizeBorders());
                 solver.setThreadLabel(ConfigurationUtils.createThreadLabel(threadId, configId));
-                solver.setMaxExecutionTime(timeoutMs); // Configurer le timeout
+                solver.setMaxExecutionTime(timeoutMs); // Configure timeout
 
-                System.out.println("   [Thread " + threadId + "] Pièces à placer: " + allPieces.size() + " pièces");
-                System.out.println("   [Thread " + threadId + "] Pièces fixes sur le board: " + config.getFixedPieces().size());
-                System.out.println("   [Thread " + threadId + "] Timeout configuré: " + (timeoutMs / 1000) + " secondes");
-                System.out.println("   [Thread " + threadId + "] Démarrage du solver...");
+                System.out.println("   [Thread " + threadId + "] Pieces to place: " + allPieces.size() + " pieces");
+                System.out.println("   [Thread " + threadId + "] Fixed pieces on board: " + config.getFixedPieces().size());
+                System.out.println("   [Thread " + threadId + "] Configured timeout: " + (timeoutMs / 1000) + " seconds");
+                System.out.println("   [Thread " + threadId + "] Starting solver...");
 
                 boolean solved = solver.solve(board, allPieces);
 
-                System.out.println("   [Thread " + threadId + "] Solver terminé. Résultat: " + (solved ? "SOLUTION TROUVÉE" : "Pas de solution"));
+                System.out.println("   [Thread " + threadId + "] Solver finished. Result: " + (solved ? "SOLUTION FOUND" : "No solution"));
 
                 if (solved) {
-                    System.out.println("✅ [Thread " + threadId + "] SOLUTION TROUVÉE!");
+                    System.out.println("✅ [Thread " + threadId + "] SOLUTION FOUND!");
                 }
 
                 return solved;
 
             } catch (Exception e) {
-                System.err.println("✗ [Thread " + threadId + "] Erreur: " + e.getMessage());
+                System.err.println("✗ [Thread " + threadId + "] Error: " + e.getMessage());
                 e.printStackTrace();
                 return false;
             }
         }
     }
 
-    // Verrou pour éviter que plusieurs threads prennent la même config
+    // Lock to prevent multiple threads from taking the same config
     private static final Object configSelectionLock = new Object();
 
-    // Tracker pour les configs en cours d'exécution
+    // Tracker for configs currently running
     private static final Set<String> runningConfigs = Collections.synchronizedSet(new HashSet<>());
 
     /**
-     * Worker thread qui tourne en boucle avec rotation automatique
+     * Worker thread that loops with automatic rotation
      */
     private static void runWorkerWithRotation(int threadId, long timeoutMs,
                                                ExecutorService executor,
@@ -282,64 +282,64 @@ public class MainParallel {
             ConfigInfo nextConfig = null;
             String configId = null;
 
-            // Sélection atomique de la prochaine config disponible
+            // Atomic selection of next available config
             synchronized (configSelectionLock) {
-                // Recharger la liste des configurations pour obtenir les priorités à jour
+                // Reload configuration list to get updated priorities
                 List<ConfigInfo> configs = findAllConfigurations();
 
-                // Filtrer les configs déjà résolues ou en cours d'exécution
+                // Filter already solved or currently running configs
                 for (ConfigInfo config : configs) {
                     String cid = ConfigurationUtils.extractConfigId(config.filepath);
                     if (!solvedConfigs.contains(cid) && !runningConfigs.contains(cid)) {
                         nextConfig = config;
                         configId = cid;
-                        runningConfigs.add(configId); // Réserver cette config
+                        runningConfigs.add(configId); // Reserve this config
                         break;
                     }
                 }
             }
 
             if (nextConfig == null) {
-                System.out.println("🎉 [Thread " + threadId + "] Toutes les configurations sont résolues ou en cours!");
+                System.out.println("🎉 [Thread " + threadId + "] All configurations are solved or in progress!");
                 break;
             }
 
             try {
-                // Afficher la rotation
+                // Display rotation
                 if (nextConfig.hasBeenStarted) {
                     long totalSeconds = nextConfig.totalComputeTimeMs / 1000;
                     long hours = totalSeconds / 3600;
                     long minutes = (totalSeconds % 3600) / 60;
-                    System.out.println("🔄 [Thread " + threadId + "] Rotation vers: " + configId +
-                        " (temps cumulé: " + String.format("%dh%02dm", hours, minutes) + ")");
+                    System.out.println("🔄 [Thread " + threadId + "] Rotating to: " + configId +
+                        " (cumulative time: " + String.format("%dh%02dm", hours, minutes) + ")");
                 } else {
-                    System.out.println("🔄 [Thread " + threadId + "] Rotation vers: " + configId + " (NOUVEAU)");
+                    System.out.println("🔄 [Thread " + threadId + "] Rotating to: " + configId + " (NEW)");
                 }
 
-                // Lancer la résolution directement (pas via executor pour éviter deadlock)
+                // Launch resolution directly (not via executor to avoid deadlock)
                 SolverTask task = new SolverTask(nextConfig, threadId, timeoutMs);
 
                 try {
-                    // Exécuter directement dans le thread actuel
+                    // Execute directly in current thread
                     Boolean solved = task.call();
 
                     if (solved != null && solved) {
-                        System.out.println("✅ [Thread " + threadId + "] SOLUTION TROUVÉE pour " + configId);
+                        System.out.println("✅ [Thread " + threadId + "] SOLUTION FOUND for " + configId);
                         solvedConfigs.add(configId);
                     } else {
-                        System.out.println("⏱️  [Thread " + threadId + "] Timeout atteint pour " + configId + " - rotation");
+                        System.out.println("⏱️  [Thread " + threadId + "] Timeout reached for " + configId + " - rotation");
                     }
 
                 } catch (Exception e) {
-                    System.err.println("✗ [Thread " + threadId + "] Erreur lors de l'exécution: " + e.getMessage());
+                    System.err.println("✗ [Thread " + threadId + "] Error during execution: " + e.getMessage());
                 }
 
             } finally {
-                // Libérer la config pour les autres threads
+                // Release config for other threads
                 runningConfigs.remove(configId);
             }
 
-            // Petite pause avant la prochaine itération
+            // Small pause before next iteration
             Thread.sleep(1000);
         }
     }
@@ -347,21 +347,21 @@ public class MainParallel {
     public static void main(String[] args) {
         System.out.println("\n");
         System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-        System.out.println("║          ETERNITY II - RÉSOLVEUR PARALLÈLE                       ║");
+        System.out.println("║          ETERNITY II - PARALLEL SOLVER                       ║");
         System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
         System.out.println();
 
-        // Nombre de threads (par défaut: nombre de processeurs disponibles)
+        // Number of threads (default: number of available processors)
         int numThreads = Runtime.getRuntime().availableProcessors();
 
-        // Durée par configuration en minutes (par défaut: 60 minutes = 1 heure)
+        // Duration per configuration in minutes (default: 60 minutes = 1 hour)
         double timePerConfigMinutes = 60.0;
 
         if (args.length > 0) {
             try {
                 numThreads = Integer.parseInt(args[0]);
             } catch (NumberFormatException e) {
-                System.err.println("⚠️  Argument 1 invalide, utilisation de " + numThreads + " threads");
+                System.err.println("⚠️  Invalid argument 1, using " + numThreads + " threads");
             }
         }
 
@@ -369,75 +369,75 @@ public class MainParallel {
             try {
                 timePerConfigMinutes = Double.parseDouble(args[1]);
             } catch (NumberFormatException e) {
-                System.err.println("⚠️  Argument 2 invalide, utilisation de " + timePerConfigMinutes + " minutes par config");
+                System.err.println("⚠️  Invalid argument 2, using " + timePerConfigMinutes + " minutes per config");
             }
         }
 
-        System.out.println("⚙️  Nombre de threads: " + numThreads);
-        System.out.println("⏱️  Durée par configuration: " + timePerConfigMinutes + " minute(s)");
+        System.out.println("⚙️  Number of threads: " + numThreads);
+        System.out.println("⏱️  Duration per configuration: " + timePerConfigMinutes + " minute(s)");
         System.out.println();
 
         try {
-            // Trouver toutes les configurations
+            // Find all configurations
             List<ConfigInfo> configs = findAllConfigurations();
 
             if (configs.isEmpty()) {
-                System.out.println("✗ Aucune configuration disponible");
+                System.out.println("✗ No configuration available");
                 return;
             }
 
-            // Afficher les statistiques
+            // Display statistics
             displayConfigStats(configs);
 
-            // Créer le pool de threads
+            // Create thread pool
             ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 
             System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-            System.out.println("║              LANCEMENT DES THREADS AVEC ROTATION                 ║");
+            System.out.println("║              LAUNCHING THREADS WITH ROTATION                 ║");
             System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
             System.out.println();
-            System.out.println("📋 Stratégie de rotation:");
-            System.out.println("   1. Chaque thread travaille " + timePerConfigMinutes + " min sur une configuration");
-            System.out.println("   2. Après timeout, le thread passe à la config moins avancée");
-            System.out.println("   3. Rotation continue pour faire avancer toutes les configs");
+            System.out.println("📋 Rotation strategy:");
+            System.out.println("   1. Each thread works " + timePerConfigMinutes + " min on a configuration");
+            System.out.println("   2. After timeout, thread moves to least advanced config");
+            System.out.println("   3. Continuous rotation to advance all configs");
             System.out.println();
-            System.out.println("📋 Ordre de priorité:");
-            System.out.println("   1. Configurations jamais commencées");
-            System.out.println("   2. Sauvegardes avec le moins de temps cumulé");
+            System.out.println("📋 Priority order:");
+            System.out.println("   1. Never-started configurations");
+            System.out.println("   2. Saves with least cumulative time");
             System.out.println();
 
-            // Tracker pour les configs terminées (solution trouvée)
+            // Tracker for finished configs (solution found)
             Set<String> solvedConfigs = Collections.synchronizedSet(new HashSet<>());
 
-            // Lancer les threads avec rotation
+            // Launch threads with rotation
             long timeoutMs = (long)(timePerConfigMinutes * 60 * 1000);
 
-            System.out.println("✓ Démarrage de " + numThreads + " thread(s) avec rotation automatique");
+            System.out.println("✓ Starting " + numThreads + " thread(s) with automatic rotation");
             System.out.println();
             System.out.println("═".repeat(70));
             System.out.println();
 
-            // Lancer les threads initiaux
+            // Launch initial threads
             for (int threadId = 1; threadId <= numThreads; threadId++) {
                 final int tid = threadId;
                 executor.submit(() -> {
                     try {
                         runWorkerWithRotation(tid, timeoutMs, executor, solvedConfigs);
                     } catch (Exception e) {
-                        System.err.println("✗ [Thread " + tid + "] Erreur fatale: " + e.getMessage());
+                        System.err.println("✗ [Thread " + tid + "] Fatal error: " + e.getMessage());
                         e.printStackTrace();
                     }
                 });
             }
 
-            System.out.println("⏳ Les threads travaillent avec rotation automatique... (Ctrl+C pour arrêter)");
+            System.out.println("⏳ Threads working with automatic rotation... (Ctrl+C to stop)");
             System.out.println();
 
-            // Attendre indéfiniment (les threads tournent en rotation)
+            // Wait indefinitely (threads rotate continuously)
             Thread.sleep(Long.MAX_VALUE);
 
         } catch (Exception e) {
-            System.err.println("✗ Erreur fatale: " + e.getMessage());
+            System.err.println("✗ Fatal error: " + e.getMessage());
             e.printStackTrace();
         }
     }

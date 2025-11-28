@@ -10,27 +10,27 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Point d'entrée principal de l'application.
- * Exécute le solveur sur l'exemple 3x3 prédéfini.
+ * Main entry point of the application.
+ * Runs the solver on the predefined 3x3 example.
  */
 public class Main {
 
     public static void main(String[] args) {
-        // CHOISIR LE PUZZLE À LANCER :
+        // CHOOSE THE PUZZLE TO RUN:
 
-        // Puzzle 16x16 (lignes A-P, colonnes 1-16)
+        // Puzzle 16x16 (rows A-P, columns 1-16)
         // runPuzzle16x16();
 
-        // Puzzle 6x12 (lignes A-F, colonnes 1-12)
+        // Puzzle 6x12 (rows A-F, columns 1-12)
         runPuzzle6x12();
 
-        // Puzzle de validation 6x6 (lignes A-F, colonnes 1-6)
+        // Validation puzzle 6x6 (rows A-F, columns 1-6)
         // runValidation6x6();
 
-        // Ou décommenter pour lancer le vrai puzzle Eternity II 16x16
+        // Or uncomment to run the real Eternity II 16x16 puzzle
         // runEternityII();
 
-        // Autres exemples disponibles :
+        // Other available examples:
         // compareWithAndWithoutSingletons();  // 5x5
         // runExample4x4();
         // runExample4x4Easy();
@@ -38,19 +38,19 @@ public class Main {
     }
 
     /**
-     * Compare les performances avec et sans l'optimisation singleton.
+     * Compares performance with and without singleton optimization.
      */
     private static void compareWithAndWithoutSingletons() {
         int rows = 5, cols = 5;
         Map<Integer, Piece> pieces = PuzzleFactory.createExample5x5();
 
         System.out.println("╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║   COMPARAISON 5x5 : AVEC vs SANS optimisation SINGLETON ║");
+        System.out.println("║   COMPARISON 5x5 : WITH vs WITHOUT SINGLETON optimization ║");
         System.out.println("╚══════════════════════════════════════════════════════════╝\n");
 
-        // ===== AVEC SINGLETONS =====
+        // ===== WITH SINGLETONS =====
         System.out.println("\n█████████████████████████████████████████████████████████");
-        System.out.println("█  TEST 1 : AVEC optimisation SINGLETON                 █");
+        System.out.println("█  TEST 1 : WITH SINGLETON optimization                 █");
         System.out.println("█████████████████████████████████████████████████████████\n");
 
         Board board1 = new Board(rows, cols);
@@ -61,12 +61,12 @@ public class Main {
         EternitySolver.Statistics stats1 = solver1.getStatistics();
 
         if (!solved1) {
-            System.out.println("⚠ Aucune solution trouvée (avec singletons)");
+            System.out.println("⚠ No solution found (with singletons)");
         }
 
-        // ===== SANS SINGLETONS =====
+        // ===== WITHOUT SINGLETONS =====
         System.out.println("\n\n█████████████████████████████████████████████████████████");
-        System.out.println("█  TEST 2 : SANS optimisation SINGLETON (MRV seul)      █");
+        System.out.println("█  TEST 2 : WITHOUT SINGLETON optimization (MRV only)      █");
         System.out.println("█████████████████████████████████████████████████████████\n");
 
         Board board2 = new Board(rows, cols);
@@ -77,39 +77,39 @@ public class Main {
         EternitySolver.Statistics stats2 = solver2.getStatistics();
 
         if (!solved2) {
-            System.out.println("⚠ Aucune solution trouvée (sans singletons)");
+            System.out.println("⚠ No solution found (without singletons)");
         }
 
-        // ===== COMPARAISON =====
+        // ===== COMPARISON =====
         System.out.println("\n\n╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║                   RÉSUMÉ COMPARATIF                      ║");
+        System.out.println("║                   COMPARATIVE SUMMARY                      ║");
         System.out.println("╚══════════════════════════════════════════════════════════╝\n");
 
         System.out.println("┌──────────────────────────┬─────────────────┬─────────────────┬─────────────┐");
-        System.out.println("│ Métrique                 │ AVEC Singleton  │ SANS Singleton  │ Gain        │");
+        System.out.println("│ Metric                   │ WITH Singleton  │ WITHOUT Singleton  │ Gain        │");
         System.out.println("├──────────────────────────┼─────────────────┼─────────────────┼─────────────┤");
 
-        printComparisonRow("Temps (secondes)",
+        printComparisonRow("Time (seconds)",
             stats1.getElapsedTimeSec(), stats2.getElapsedTimeSec());
-        printComparisonRow("Appels récursifs",
+        printComparisonRow("Recursive calls",
             stats1.recursiveCalls, stats2.recursiveCalls);
-        printComparisonRow("Placements testés",
+        printComparisonRow("Placements tested",
             stats1.placements, stats2.placements);
         printComparisonRow("Backtracks",
             stats1.backtracks, stats2.backtracks);
-        printComparisonRow("Vérifications fit()",
+        printComparisonRow("fit() checks",
             stats1.fitChecks, stats2.fitChecks);
 
         System.out.println("└──────────────────────────┴─────────────────┴─────────────────┴─────────────┘\n");
 
-        System.out.println("Singletons détectés (test 1) : " + stats1.singletonsFound);
-        System.out.println("Singletons posés (test 1)    : " + stats1.singletonsPlaced);
+        System.out.println("Singletons detected (test 1) : " + stats1.singletonsFound);
+        System.out.println("Singletons placed (test 1)    : " + stats1.singletonsPlaced);
         System.out.println("\nDead-ends (test 1) : " + stats1.deadEndsDetected);
         System.out.println("Dead-ends (test 2) : " + stats2.deadEndsDetected);
     }
 
     /**
-     * Affiche une ligne de comparaison dans le tableau.
+     * Displays a comparison row in the table.
      */
     private static void printComparisonRow(String label, double val1, double val2) {
         double gain = val2 > 0 ? ((val2 - val1) / val2) * 100 : 0;
@@ -127,14 +127,14 @@ public class Main {
     }
 
     /**
-     * Affiche une ligne de comparaison dans le tableau (version int).
+     * Displays a comparison row in the table (int version).
      */
     private static void printComparisonRow(String label, int val1, int val2) {
         printComparisonRow(label, (double)val1, (double)val2);
     }
 
     /**
-     * Exécute le solveur sur l'exemple 4x4 prédéfini (version difficile).
+     * Runs the solver on the predefined 4x4 example (hard version).
      */
     private static void runExample4x4() {
         int rows = 4, cols = 4;
@@ -142,19 +142,19 @@ public class Main {
         Board board = new Board(rows, cols);
         EternitySolver solver = new EternitySolver();
 
-        System.out.println("Lancement du solveur pour exemple 4x4 (DIFFICILE)...");
+        System.out.println("Starting solver for 4x4 example (HARD)...");
         boolean solved = solver.solve(board, pieces);
 
         if (!solved) {
-            System.out.println("Aucune solution trouvée pour l'exemple 4x4.");
+            System.out.println("No solution found for 4x4 example.");
         } else {
-            System.out.println("Solution trouvée :\n");
+            System.out.println("Solution found:\n");
             board.prettyPrint(pieces);
         }
     }
 
     /**
-     * Exécute le solveur sur l'exemple 4x4 (version facile).
+     * Runs the solver on the 4x4 example (easy version).
      */
     private static void runExample4x4Easy() {
         int rows = 4, cols = 4;
@@ -162,19 +162,19 @@ public class Main {
         Board board = new Board(rows, cols);
         EternitySolver solver = new EternitySolver();
 
-        System.out.println("Lancement du solveur pour exemple 4x4 (FACILE)...");
+        System.out.println("Starting solver for 4x4 example (EASY)...");
         boolean solved = solver.solve(board, pieces);
 
         if (!solved) {
-            System.out.println("Aucune solution trouvée pour l'exemple 4x4.");
+            System.out.println("No solution found for 4x4 example.");
         } else {
-            System.out.println("Solution trouvée :\n");
+            System.out.println("Solution found:\n");
             board.prettyPrint(pieces);
         }
     }
 
     /**
-     * Exécute le solveur sur l'exemple 4x4 (version ordonnée/triviale).
+     * Runs the solver on the 4x4 example (ordered/trivial version).
      */
     private static void runExample4x4Ordered() {
         int rows = 4, cols = 4;
@@ -182,19 +182,19 @@ public class Main {
         Board board = new Board(rows, cols);
         EternitySolver solver = new EternitySolver();
 
-        System.out.println("Lancement du solveur pour exemple 4x4 (TRIVIALE - ordonnée)...");
+        System.out.println("Starting solver for 4x4 example (TRIVIAL - ordered)...");
         boolean solved = solver.solve(board, pieces);
 
         if (!solved) {
-            System.out.println("Aucune solution trouvée pour l'exemple 4x4.");
+            System.out.println("No solution found for 4x4 example.");
         } else {
-            System.out.println("Solution trouvée :\n");
+            System.out.println("Solution found:\n");
             board.prettyPrint(pieces);
         }
     }
 
     /**
-     * Exécute le solveur sur l'exemple 3x3 prédéfini.
+     * Runs the solver on the predefined 3x3 example.
      */
     private static void runExample3x3() {
         int rows = 3, cols = 3;
@@ -202,39 +202,39 @@ public class Main {
         Board board = new Board(rows, cols);
         EternitySolver solver = new EternitySolver();
 
-        System.out.println("Lancement du solveur pour exemple 3x3...");
+        System.out.println("Starting solver for 3x3 example...");
         boolean solved = solver.solve(board, pieces);
 
         if (!solved) {
-            System.out.println("Aucune solution trouvée pour l'exemple 3x3.");
+            System.out.println("No solution found for 3x3 example.");
         } else {
-            System.out.println("Solution trouvée :\n");
+            System.out.println("Solution found:\n");
             board.prettyPrint(pieces);
         }
     }
 
     /**
-     * Exécute le solveur sur le vrai puzzle Eternity II (16x16, 256 pièces).
+     * Runs the solver on the real Eternity II puzzle (16x16, 256 pieces).
      */
     private static void runEternityII() {
         int rows = 16, cols = 16;
 
         System.out.println("╔══════════════════════════════════════════════════════════╗");
         System.out.println("║              ETERNITY II - PUZZLE 16x16                  ║");
-        System.out.println("║                  256 pièces - 22 motifs                  ║");
+        System.out.println("║                  256 pieces - 22 patterns                  ║");
         System.out.println("╚══════════════════════════════════════════════════════════╝\n");
 
-        System.out.println("Chargement des 256 pièces officielles...");
+        System.out.println("Loading the 256 official pieces...");
         Map<Integer, Piece> allPieces = PuzzleFactory.createEternityII();
-        System.out.println("✓ " + allPieces.size() + " pièces chargées\n");
+        System.out.println("✓ " + allPieces.size() + " pieces loaded\n");
 
         Board board;
         Map<Integer, Piece> pieces;
 
-        // Vérifier s'il existe une sauvegarde
+        // Check if a save exists
         if (SaveManager.hasSavedState()) {
             System.out.println("╔══════════════════════════════════════════════════════════╗");
-            System.out.println("║              SAUVEGARDE DÉTECTÉE                         ║");
+            System.out.println("║              SAVE DETECTED                         ║");
             System.out.println("╚══════════════════════════════════════════════════════════╝\n");
 
             Object[] savedState = SaveManager.loadBestState(allPieces);
@@ -245,22 +245,22 @@ public class Main {
                 int savedDepth = (int) savedState[2];
                 int savedThread = (int) savedState[3];
 
-                // Créer la map des pièces restantes
+                // Create the map of remaining pieces
                 pieces = new java.util.HashMap<>(allPieces);
                 for (int usedId : usedPieceIds) {
                     pieces.remove(usedId);
                 }
 
-                System.out.println("✓ État restauré: " + savedDepth + " pièces placées");
-                System.out.println("  Pièces restantes: " + pieces.size() + "\n");
+                System.out.println("✓ State restored: " + savedDepth + " pieces placed");
+                System.out.println("  Remaining pieces: " + pieces.size() + "\n");
             } else {
-                System.out.println("✗ Erreur lors du chargement - démarrage nouveau\n");
+                System.out.println("✗ Loading error - starting new\n");
                 board = new Board(rows, cols);
                 pieces = new java.util.HashMap<>(allPieces);
 
-                // Pré-placer la pièce d'indice obligatoire (piece 139)
+                // Pre-place the mandatory hint piece (piece 139)
                 System.out.println("╔══════════════════════════════════════════════════════════╗");
-                System.out.println("║           PRÉ-PLACEMENT DE LA PIÈCE D'INDICE            ║");
+                System.out.println("║           PRE-PLACING THE HINT PIECE            ║");
                 System.out.println("╚══════════════════════════════════════════════════════════╝\n");
 
                 int hintPieceId = 139;
@@ -268,17 +268,17 @@ public class Main {
                 if (hintPiece != null) {
                     board.place(8, 7, hintPiece, 3);
                     pieces.remove(hintPieceId);
-                    System.out.println("✓ Pièce " + hintPieceId + " placée à (8, 7) avec rotation 3");
-                    System.out.println("  Pièces restantes: " + pieces.size() + "\n");
+                    System.out.println("✓ Piece " + hintPieceId + " placed at (8, 7) with rotation 3");
+                    System.out.println("  Remaining pieces: " + pieces.size() + "\n");
                 }
             }
         } else {
             board = new Board(rows, cols);
             pieces = new java.util.HashMap<>(allPieces);
 
-            // Pré-placer la pièce d'indice obligatoire (piece 139)
+            // Pre-place the mandatory hint piece (piece 139)
             System.out.println("╔══════════════════════════════════════════════════════════╗");
-            System.out.println("║           PRÉ-PLACEMENT DE LA PIÈCE D'INDICE            ║");
+            System.out.println("║           PRE-PLACING THE HINT PIECE            ║");
             System.out.println("╚══════════════════════════════════════════════════════════╝\n");
 
             int hintPieceId = 139;
@@ -288,73 +288,73 @@ public class Main {
 
             Piece hintPiece = pieces.get(hintPieceId);
             if (hintPiece == null) {
-                System.out.println("✗ ERREUR: Pièce d'indice " + hintPieceId + " introuvable!");
+                System.out.println("✗ ERROR: Hint piece " + hintPieceId + " not found!");
                 return;
             }
 
             board.place(hintRow, hintCol, hintPiece, hintRotation);
             pieces.remove(hintPieceId);
 
-            System.out.println("✓ Pièce " + hintPieceId + " placée à (" + hintRow + ", " + hintCol + ") avec rotation " + hintRotation);
+            System.out.println("✓ Piece " + hintPieceId + " placed at (" + hintRow + ", " + hintCol + ") with rotation " + hintRotation);
             System.out.println("  Edges: " + java.util.Arrays.toString(hintPiece.getEdges()));
-            System.out.println("  Pièces restantes: " + pieces.size() + "\n");
+            System.out.println("  Remaining pieces: " + pieces.size() + "\n");
         }
 
         EternitySolver solver = new EternitySolver();
         solver.setUseSingletons(true);
-        solver.setVerbose(false); // Désactiver l'affichage détaillé
+        solver.setVerbose(false); // Disable detailed display
 
-        // Déterminer le nombre de threads (utiliser 75% des cœurs disponibles)
+        // Determine the number of threads (use 75% of available cores)
         int numCores = Runtime.getRuntime().availableProcessors();
         int numThreads = Math.max(4, (int)(numCores * 0.75));
 
-        System.out.println("Lancement du solveur avec optimisations...");
-        System.out.println("- Heuristique MRV (Minimum Remaining Values)");
-        System.out.println("- Détection de singletons (forced moves)");
-        System.out.println("- Détection de dead-ends");
-        System.out.println("- Randomisation anti-thrashing");
-        System.out.println("- Recherche parallèle (" + numThreads + " threads sur " + numCores + " cœurs)");
-        System.out.println("- Pièce d'indice obligatoire pré-placée\n");
+        System.out.println("Starting solver with optimizations...");
+        System.out.println("- MRV heuristic (Minimum Remaining Values)");
+        System.out.println("- Singleton detection (forced moves)");
+        System.out.println("- Dead-end detection");
+        System.out.println("- Anti-thrashing randomization");
+        System.out.println("- Parallel search (" + numThreads + " threads on " + numCores + " cores)");
+        System.out.println("- Mandatory hint piece pre-placed\n");
 
-        System.out.println("⚠ ATTENTION: Ce puzzle n'a jamais été résolu!");
-        System.out.println("Le solveur va explorer l'espace de recherche...\n");
+        System.out.println("⚠ WARNING: This puzzle has never been solved!");
+        System.out.println("The solver will explore the search space...\n");
 
-        // Utiliser la recherche parallèle
-        // IMPORTANT: passer allPieces (toutes les 256 pièces) pour pouvoir reconstruire le board
-        // et pieces (pièces restantes) pour la recherche
+        // Use parallel search
+        // IMPORTANT: pass allPieces (all 256 pieces) to be able to reconstruct the board
+        // and pieces (remaining pieces) for the search
         boolean solved = solver.solveParallel(board, allPieces, pieces, numThreads);
 
         if (!solved) {
-            System.out.println("\n⚠ Aucune solution trouvée (ou timeout)");
+            System.out.println("\n⚠ No solution found (or timeout)");
         } else {
             System.out.println("\n" + "=".repeat(60));
-            System.out.println("🎉 SOLUTION TROUVÉE! 🎉");
+            System.out.println("🎉 SOLUTION FOUND! 🎉");
             System.out.println("=".repeat(60) + "\n");
             board.prettyPrint(pieces);
         }
 
-        // Afficher les statistiques finales
+        // Display final statistics
         solver.getStatistics().print();
     }
 
     /**
-     * Lance le puzzle 16x16.
-     * Lignes: A-P (0-15)
-     * Colonnes: 1-16 (0-15)
+     * Runs the 16x16 puzzle.
+     * Rows: A-P (0-15)
+     * Columns: 1-16 (0-15)
      */
     private static void runPuzzle16x16() {
         System.out.println("╔════════════════════════════════════════════════════════╗");
-        System.out.println("║             PUZZLE 16×16 (256 pièces)                  ║");
-        System.out.println("║        Lignes: A-P / Colonnes: 1-16                    ║");
+        System.out.println("║             PUZZLE 16×16 (256 pieces)                  ║");
+        System.out.println("║        Rows: A-P / Columns: 1-16                    ║");
         System.out.println("╚════════════════════════════════════════════════════════╝\n");
 
-        // Charger les pièces
+        // Load the pieces
         Map<Integer, Piece> pieces = PuzzleFactory.createPuzzle16x16();
-        System.out.println("✓ " + pieces.size() + " pièces chargées\n");
+        System.out.println("✓ " + pieces.size() + " pieces loaded\n");
 
-        // Afficher les pièces
+        // Display the pieces
         System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("PIÈCES DU PUZZLE");
+        System.out.println("PUZZLE PIECES");
         System.out.println("═══════════════════════════════════════════════════════");
         System.out.println("ID  | N  E  S  W");
         System.out.println("────┼────────────");
@@ -366,11 +366,11 @@ public class Main {
         }
         System.out.println();
 
-        // Créer le board
+        // Create the board
         Board board = new Board(16, 16);
 
-        // TEST: Désactiver les indices pour tester si le solver fonctionne avec les nouvelles données
-        // Format: ligne (0-indexed), colonne (0-indexed), pièce, rotation
+        // TEST: Disable hints to test if the solver works with the new data
+        // Format: row (0-indexed), column (0-indexed), piece, rotation
         // Source: https://github.com/TheSil/edge_puzzle/blob/main/data/eternity2/eternity2_256_all_hints.csv
         int[][] clues = {
             // {8, 7, 139, 3},   // I8
@@ -381,13 +381,13 @@ public class Main {
         };
 
         System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("PLACEMENT DES INDICES");
+        System.out.println("PLACING HINTS");
         System.out.println("═══════════════════════════════════════════════════════");
 
         Set<Integer> usedPieceIds = new HashSet<>();
         for (int[] clue : clues) {
-            int row = clue[0];    // CSV est déjà 0-indexed
-            int col = clue[1];    // CSV est déjà 0-indexed
+            int row = clue[0];    // CSV is already 0-indexed
+            int col = clue[1];    // CSV is already 0-indexed
             int pieceId = clue[2];
             int rotation = clue[3];
 
@@ -396,43 +396,43 @@ public class Main {
                 board.place(row, col, piece, rotation);
                 usedPieceIds.add(pieceId);
                 char rowLabel = (char) ('A' + row);
-                System.out.printf("  ✓ Pièce %d (rotation %d) placée en %c%d%n",
+                System.out.printf("  ✓ Piece %d (rotation %d) placed at %c%d%n",
                     pieceId, rotation, rowLabel, col + 1);
             }
         }
         System.out.println();
-        System.out.printf("  → %d pièces pré-placées, %d pièces restantes à placer%n%n",
+        System.out.printf("  → %d pieces pre-placed, %d remaining pieces to place%n%n",
             usedPieceIds.size(), pieces.size() - usedPieceIds.size());
 
-        // Afficher le board avec les indices placés
+        // Display the board with hints placed
         System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("BOARD AVEC INDICES (16×16)");
+        System.out.println("BOARD WITH HINTS (16×16)");
         System.out.println("═══════════════════════════════════════════════════════");
         printBoardWithCoordinates(board, pieces);
 
-        // Afficher le score maximum
+        // Display the maximum score
         int[] score = board.calculateScore();
-        System.out.println("Score maximum théorique:");
-        System.out.println("  - Arêtes internes horizontales: " + ((16-1) * 16) + " (15 × 16)");
-        System.out.println("  - Arêtes internes verticales: " + (16 * (16-1)) + " (16 × 15)");
-        System.out.println("  - Total: " + score[1] + " arêtes internes");
+        System.out.println("Theoretical maximum score:");
+        System.out.println("  - Horizontal internal edges: " + ((16-1) * 16) + " (15 × 16)");
+        System.out.println("  - Vertical internal edges: " + (16 * (16-1)) + " (16 × 15)");
+        System.out.println("  - Total: " + score[1] + " internal edges");
         System.out.println();
 
-        // Créer une copie de la map des pièces sans les pièces pré-placées
+        // Create a copy of the pieces map without the pre-placed pieces
         Map<Integer, Piece> remainingPieces = new HashMap<>(pieces);
         for (int usedId : usedPieceIds) {
             remainingPieces.remove(usedId);
         }
 
-        // Lancer le solver
+        // Run the solver
         System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("LANCEMENT DU SOLVER");
+        System.out.println("STARTING THE SOLVER");
         System.out.println("═══════════════════════════════════════════════════════\n");
-        System.out.println("Note: Le solver peut prendre plusieurs heures/jours");
-        System.out.println("pour un puzzle 16×16 avec 251 pièces à placer.\n");
+        System.out.println("Note: The solver may take several hours/days");
+        System.out.println("for a 16×16 puzzle with 251 pieces to place.\n");
 
         EternitySolver solver = new EternitySolver();
-        solver.setVerbose(false); // Désactiver verbose, afficher seulement les records
+        solver.setVerbose(false); // Disable verbose, only display records
         long startTime = System.currentTimeMillis();
 
         boolean solved = solver.solve(board, remainingPieces);
@@ -441,39 +441,39 @@ public class Main {
         double duration = (endTime - startTime) / 1000.0;
 
         System.out.println("\n═══════════════════════════════════════════════════════");
-        System.out.println("RÉSULTAT");
+        System.out.println("RESULT");
         System.out.println("═══════════════════════════════════════════════════════");
 
         if (solved) {
-            System.out.println("✓ PUZZLE RÉSOLU!");
-            System.out.println("Temps: " + String.format("%.2f", duration) + " secondes\n");
+            System.out.println("✓ PUZZLE SOLVED!");
+            System.out.println("Time: " + String.format("%.2f", duration) + " seconds\n");
 
             printBoardWithCoordinates(board, pieces);
             board.printScore();
         } else {
-            System.out.println("✗ Aucune solution trouvée");
-            System.out.println("Temps: " + String.format("%.2f", duration) + " secondes\n");
+            System.out.println("✗ No solution found");
+            System.out.println("Time: " + String.format("%.2f", duration) + " seconds\n");
         }
     }
 
     /**
-     * Lance le puzzle 6x12.
-     * Lignes: A-F (0-5)
-     * Colonnes: 1-12 (0-11)
+     * Runs the 6x12 puzzle.
+     * Rows: A-F (0-5)
+     * Columns: 1-12 (0-11)
      */
     private static void runPuzzle6x12() {
         System.out.println("╔════════════════════════════════════════════════════════╗");
-        System.out.println("║              PUZZLE 6×12 (72 pièces)                   ║");
-        System.out.println("║        Lignes: A-F / Colonnes: 1-12                    ║");
+        System.out.println("║              PUZZLE 6×12 (72 pieces)                   ║");
+        System.out.println("║        Rows: A-F / Columns: 1-12                    ║");
         System.out.println("╚════════════════════════════════════════════════════════╝\n");
 
-        // Charger les pièces
+        // Load the pieces
         Map<Integer, Piece> pieces = PuzzleFactory.createPuzzle6x12();
-        System.out.println("✓ " + pieces.size() + " pièces chargées\n");
+        System.out.println("✓ " + pieces.size() + " pieces loaded\n");
 
-        // Afficher les pièces
+        // Display the pieces
         System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("PIÈCES DU PUZZLE");
+        System.out.println("PUZZLE PIECES");
         System.out.println("═══════════════════════════════════════════════════════");
         System.out.println("ID  | N  E  S  W");
         System.out.println("────┼────────────");
@@ -485,21 +485,21 @@ public class Main {
         }
         System.out.println();
 
-        // Créer le board
+        // Create the board
         Board board = new Board(6, 12);
 
-        // Afficher le board vide avec coordonnées A-F et 1-12
+        // Display the empty board with coordinates A-F and 1-12
         System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("BOARD VIDE (6×12)");
+        System.out.println("EMPTY BOARD (6×12)");
         System.out.println("═══════════════════════════════════════════════════════");
         printBoardWithCoordinates(board, pieces);
 
-        // Afficher le score maximum
+        // Display the maximum score
         int[] score = board.calculateScore();
-        System.out.println("Score maximum théorique:");
-        System.out.println("  - Arêtes internes horizontales: " + ((6-1) * 12) + " (5 × 12)");
-        System.out.println("  - Arêtes internes verticales: " + (6 * (12-1)) + " (6 × 11)");
-        System.out.println("  - Total: " + score[1] + " arêtes internes");
+        System.out.println("Theoretical maximum score:");
+        System.out.println("  - Horizontal internal edges: " + ((6-1) * 12) + " (5 × 12)");
+        System.out.println("  - Vertical internal edges: " + (6 * (12-1)) + " (6 × 11)");
+        System.out.println("  - Total: " + score[1] + " internal edges");
         System.out.println();
 
         // Lancer le solver
@@ -533,23 +533,23 @@ public class Main {
     }
 
     /**
-     * Lance le puzzle de validation 6x6.
-     * Lignes: A-F (0-5)
-     * Colonnes: 1-6 (0-5)
+     * Runs the validation puzzle 6x6.
+     * Rows: A-F (0-5)
+     * Columns: 1-6 (0-5)
      */
     private static void runValidation6x6() {
         System.out.println("╔════════════════════════════════════════════════════════╗");
-        System.out.println("║        TEST DE VALIDATION - PUZZLE 6×6                 ║");
-        System.out.println("║        Lignes: A-F / Colonnes: 1-6                     ║");
+        System.out.println("║        VALIDATION TEST - PUZZLE 6×6                 ║");
+        System.out.println("║        Rows: A-F / Columns: 1-6                     ║");
         System.out.println("╚════════════════════════════════════════════════════════╝\n");
 
-        // Charger les pièces
+        // Load the pieces
         Map<Integer, Piece> pieces = PuzzleFactory.createValidation6x6();
-        System.out.println("✓ " + pieces.size() + " pièces chargées\n");
+        System.out.println("✓ " + pieces.size() + " pieces loaded\n");
 
-        // Afficher les pièces
+        // Display the pieces
         System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("PIÈCES DU PUZZLE");
+        System.out.println("PUZZLE PIECES");
         System.out.println("═══════════════════════════════════════════════════════");
         System.out.println("ID  | N  E  S  W");
         System.out.println("────┼────────────");
@@ -561,21 +561,21 @@ public class Main {
         }
         System.out.println();
 
-        // Créer le board
+        // Create the board
         Board board = new Board(6, 6);
 
-        // Afficher le board vide avec coordonnées A-F et 1-6
+        // Display the empty board with coordinates A-F and 1-6
         System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("BOARD VIDE (6×6)");
+        System.out.println("EMPTY BOARD (6×6)");
         System.out.println("═══════════════════════════════════════════════════════");
         printBoardWithCoordinates(board, pieces);
 
-        // Afficher le score maximum
+        // Display the maximum score
         int[] score = board.calculateScore();
-        System.out.println("Score maximum théorique:");
-        System.out.println("  - Arêtes internes horizontales: " + ((6-1) * 6) + " (5 × 6)");
-        System.out.println("  - Arêtes internes verticales: " + (6 * (6-1)) + " (6 × 5)");
-        System.out.println("  - Total: " + score[1] + " arêtes internes");
+        System.out.println("Theoretical maximum score:");
+        System.out.println("  - Horizontal internal edges: " + ((6-1) * 6) + " (5 × 6)");
+        System.out.println("  - Vertical internal edges: " + (6 * (6-1)) + " (6 × 5)");
+        System.out.println("  - Total: " + score[1] + " internal edges");
         System.out.println();
 
         // Lancer le solver
@@ -609,14 +609,14 @@ public class Main {
     }
 
     /**
-     * Affiche le board avec les coordonnées A-F (lignes) et 1-12 (colonnes).
-     * Chaque case affiche le numéro de pièce au centre avec les valeurs d'arêtes autour.
+     * Displays the board with coordinates A-F (rows) and 1-12 (columns).
+     * Each cell displays the piece number in the center with edge values around it.
      */
     private static void printBoardWithCoordinates(Board board, Map<Integer, Piece> pieces) {
         int rows = board.getRows();
         int cols = board.getCols();
 
-        // En-tête avec numéros de colonnes (alignés à droite sur 2 caractères)
+        // Header with column numbers (right-aligned on 2 characters)
         System.out.print("     ");
         for (int c = 0; c < cols; c++) {
             System.out.printf("  %2d    ", (c + 1));
@@ -624,7 +624,7 @@ public class Main {
         }
         System.out.println();
 
-        // Ligne supérieure
+        // Top line
         System.out.print("   ─");
         for (int c = 0; c < cols; c++) {
             System.out.print("────────");
@@ -635,20 +635,20 @@ public class Main {
         for (int r = 0; r < rows; r++) {
             char rowLabel = (char) ('A' + r);
 
-            // Ligne 1: Arête Nord
+            // Line 1: North Edge
             System.out.print("   │");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
                     System.out.print("        ");
                 } else {
                     int[] edges = board.getPlacement(r, c).edges;
-                    System.out.printf("   %2d   ", edges[0]); // Nord
+                    System.out.printf("   %2d   ", edges[0]); // North
                 }
                 System.out.print("│");
             }
             System.out.println();
 
-            // Ligne 2: Ouest + ID pièce + Est
+            // Line 2: West + Piece ID + East
             System.out.print(" " + rowLabel + " │");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
@@ -656,26 +656,26 @@ public class Main {
                 } else {
                     int pieceId = board.getPlacement(r, c).getPieceId();
                     int[] edges = board.getPlacement(r, c).edges;
-                    System.out.printf("%2d %2d %2d", edges[3], pieceId, edges[1]); // Ouest, ID, Est
+                    System.out.printf("%2d %2d %2d", edges[3], pieceId, edges[1]); // West, ID, East
                 }
                 System.out.print("│");
             }
             System.out.println();
 
-            // Ligne 3: Arête Sud
+            // Line 3: South Edge
             System.out.print("   │");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
                     System.out.print("        ");
                 } else {
                     int[] edges = board.getPlacement(r, c).edges;
-                    System.out.printf("   %2d   ", edges[2]); // Sud
+                    System.out.printf("   %2d   ", edges[2]); // South
                 }
                 System.out.print("│");
             }
             System.out.println();
 
-            // Séparateur entre lignes
+            // Separator between rows
             if (r < rows - 1) {
                 System.out.print("   ─");
                 for (int c = 0; c < cols; c++) {
@@ -686,7 +686,7 @@ public class Main {
             }
         }
 
-        // Ligne inférieure
+        // Bottom line
         System.out.print("   ─");
         for (int c = 0; c < cols; c++) {
             System.out.print("────────");

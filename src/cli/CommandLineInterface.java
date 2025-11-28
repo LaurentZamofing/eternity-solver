@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Interface en ligne de commande pour le solveur Eternity.
- * Parse et valide les arguments passés au programme.
+ * Command line interface for the Eternity solver.
+ * Parses and validates arguments passed to the program.
  */
 public class CommandLineInterface {
 
@@ -22,16 +22,16 @@ public class CommandLineInterface {
     private String errorMessage = null;
 
     /**
-     * Parse les arguments de la ligne de commande.
+     * Parses command line arguments.
      *
-     * Formats supportés:
-     * - Options courtes: -v, -h
-     * - Options longues: --verbose, --help
-     * - Options avec valeur: --puzzle <name>, --threads <n>, --timeout <seconds>
-     * - Arguments positionnels: puzzle_name
+     * Supported formats:
+     * - Short options: -v, -h
+     * - Long options: --verbose, --help
+     * - Options with value: --puzzle <name>, --threads <n>, --timeout <seconds>
+     * - Positional arguments: puzzle_name
      *
-     * @param args arguments de main()
-     * @return true si le parsing a réussi, false sinon
+     * @param args arguments from main()
+     * @return true if parsing succeeded, false otherwise
      */
     public boolean parse(String[] args) {
         try {
@@ -63,7 +63,7 @@ public class CommandLineInterface {
                 }
                 else if (arg.equals("--puzzle")) {
                     if (i + 1 >= args.length) {
-                        errorMessage = "Option --puzzle nécessite un argument";
+                        errorMessage = "Option --puzzle requires an argument";
                         return false;
                     }
                     options.put("puzzle", args[++i]);
@@ -71,19 +71,19 @@ public class CommandLineInterface {
                 else if (arg.startsWith("--threads=")) {
                     String value = arg.substring("--threads=".length());
                     if (!validatePositiveInteger(value)) {
-                        errorMessage = "Option --threads nécessite un entier positif: " + value;
+                        errorMessage = "Option --threads requires a positive integer: " + value;
                         return false;
                     }
                     options.put("threads", value);
                 }
                 else if (arg.equals("--threads") || arg.equals("-t")) {
                     if (i + 1 >= args.length) {
-                        errorMessage = "Option --threads nécessite un argument";
+                        errorMessage = "Option --threads requires an argument";
                         return false;
                     }
                     String value = args[++i];
                     if (!validatePositiveInteger(value)) {
-                        errorMessage = "Option --threads nécessite un entier positif: " + value;
+                        errorMessage = "Option --threads requires a positive integer: " + value;
                         return false;
                     }
                     options.put("threads", value);
@@ -91,19 +91,19 @@ public class CommandLineInterface {
                 else if (arg.startsWith("--timeout=")) {
                     String value = arg.substring("--timeout=".length());
                     if (!validatePositiveInteger(value)) {
-                        errorMessage = "Option --timeout nécessite un entier positif: " + value;
+                        errorMessage = "Option --timeout requires a positive integer: " + value;
                         return false;
                     }
                     options.put("timeout", value);
                 }
                 else if (arg.equals("--timeout")) {
                     if (i + 1 >= args.length) {
-                        errorMessage = "Option --timeout nécessite un argument";
+                        errorMessage = "Option --timeout requires an argument";
                         return false;
                     }
                     String value = args[++i];
                     if (!validatePositiveInteger(value)) {
-                        errorMessage = "Option --timeout nécessite un entier positif: " + value;
+                        errorMessage = "Option --timeout requires a positive integer: " + value;
                         return false;
                     }
                     options.put("timeout", value);
@@ -111,33 +111,33 @@ public class CommandLineInterface {
                 else if (arg.startsWith("--min-depth=")) {
                     String value = arg.substring("--min-depth=".length());
                     if (!validateNonNegativeInteger(value)) {
-                        errorMessage = "Option --min-depth nécessite un entier non-négatif: " + value;
+                        errorMessage = "Option --min-depth requires a non-negative integer: " + value;
                         return false;
                     }
                     options.put("min-depth", value);
                 }
                 else if (arg.equals("--min-depth")) {
                     if (i + 1 >= args.length) {
-                        errorMessage = "Option --min-depth nécessite un argument";
+                        errorMessage = "Option --min-depth requires an argument";
                         return false;
                     }
                     String value = args[++i];
                     if (!validateNonNegativeInteger(value)) {
-                        errorMessage = "Option --min-depth nécessite un entier non-négatif: " + value;
+                        errorMessage = "Option --min-depth requires a non-negative integer: " + value;
                         return false;
                     }
                     options.put("min-depth", value);
                 }
                 else if (arg.startsWith("--")) {
-                    errorMessage = "Option inconnue: " + arg;
+                    errorMessage = "Unknown option: " + arg;
                     return false;
                 }
                 else if (arg.startsWith("-") && arg.length() > 1 && !arg.equals("-")) {
-                    errorMessage = "Option courte inconnue: " + arg;
+                    errorMessage = "Unknown short option: " + arg;
                     return false;
                 }
                 else {
-                    // Argument positionnel (nom du puzzle)
+                    // Positional argument (puzzle name)
                     arguments.add(arg);
                 }
             }
@@ -145,14 +145,14 @@ public class CommandLineInterface {
             return true;
 
         } catch (Exception e) {
-            errorMessage = "Erreur lors du parsing: " + e.getMessage();
-            logger.error("Erreur de parsing CLI", e);
+            errorMessage = "Parsing error: " + e.getMessage();
+            logger.error("CLI parsing error", e);
             return false;
         }
     }
 
     /**
-     * Valide qu'une chaîne est un entier positif (> 0)
+     * Validates that a string is a positive integer (> 0)
      */
     private boolean validatePositiveInteger(String value) {
         try {
@@ -164,7 +164,7 @@ public class CommandLineInterface {
     }
 
     /**
-     * Valide qu'une chaîne est un entier non-négatif (>= 0)
+     * Validates that a string is a non-negative integer (>= 0)
      */
     private boolean validateNonNegativeInteger(String value) {
         try {
@@ -176,62 +176,62 @@ public class CommandLineInterface {
     }
 
     /**
-     * Affiche le message d'aide
+     * Displays the help message
      */
     public void printHelp() {
         System.out.println("╔═══════════════════════════════════════════════════════════╗");
-        System.out.println("║           ETERNITY PUZZLE SOLVER - AIDE                   ║");
+        System.out.println("║           ETERNITY PUZZLE SOLVER - HELP                   ║");
         System.out.println("╚═══════════════════════════════════════════════════════════╝");
         System.out.println();
         System.out.println("USAGE:");
         System.out.println("  java -jar eternity-solver.jar [OPTIONS] [PUZZLE_NAME]");
         System.out.println();
         System.out.println("OPTIONS:");
-        System.out.println("  -h, --help              Affiche ce message d'aide");
-        System.out.println("  --version               Affiche la version du programme");
-        System.out.println("  -v, --verbose           Active le mode verbeux (détails)");
-        System.out.println("  -q, --quiet             Mode silencieux (erreurs uniquement)");
-        System.out.println("  -p, --parallel          Active la recherche parallèle");
-        System.out.println("  --no-singletons         Désactive l'optimisation singletons");
+        System.out.println("  -h, --help              Display this help message");
+        System.out.println("  --version               Display program version");
+        System.out.println("  -v, --verbose           Enable verbose mode (details)");
+        System.out.println("  -q, --quiet             Quiet mode (errors only)");
+        System.out.println("  -p, --parallel          Enable parallel search");
+        System.out.println("  --no-singletons         Disable singleton optimization");
         System.out.println();
-        System.out.println("  --puzzle <name>         Nom du puzzle à résoudre");
-        System.out.println("  -t, --threads <n>       Nombre de threads (défaut: auto)");
-        System.out.println("  --timeout <seconds>     Timeout en secondes (défaut: illimité)");
-        System.out.println("  --min-depth <n>         Profondeur min pour afficher records");
+        System.out.println("  --puzzle <name>         Puzzle name to solve");
+        System.out.println("  -t, --threads <n>       Number of threads (default: auto)");
+        System.out.println("  --timeout <seconds>     Timeout in seconds (default: unlimited)");
+        System.out.println("  --min-depth <n>         Minimum depth to display records");
         System.out.println();
-        System.out.println("EXEMPLES:");
-        System.out.println("  # Résoudre puzzle 6x12 en mode verbeux");
+        System.out.println("EXAMPLES:");
+        System.out.println("  # Solve 6x12 puzzle in verbose mode");
         System.out.println("  java -jar eternity-solver.jar --puzzle puzzle_6x12 --verbose");
         System.out.println();
-        System.out.println("  # Recherche parallèle avec 8 threads");
+        System.out.println("  # Parallel search with 8 threads");
         System.out.println("  java -jar eternity-solver.jar -p --threads 8 eternity2_p1");
         System.out.println();
-        System.out.println("  # Mode silencieux avec timeout de 1 heure");
+        System.out.println("  # Quiet mode with 1 hour timeout");
         System.out.println("  java -jar eternity-solver.jar -q --timeout 3600 puzzle_16x16");
         System.out.println();
-        System.out.println("PUZZLES DISPONIBLES:");
-        System.out.println("  - puzzle_6x12       Puzzle 6×12 (72 pièces)");
-        System.out.println("  - puzzle_16x16      Puzzle 16×16 (256 pièces)");
-        System.out.println("  - validation_6x6    Puzzle de test 6×6 (36 pièces)");
-        System.out.println("  - eternity2_p*      Configurations Eternity II");
-        System.out.println("  - example_3x3       Exemple simple 3×3 (9 pièces)");
-        System.out.println("  - example_4x4       Exemple 4×4 (16 pièces)");
+        System.out.println("AVAILABLE PUZZLES:");
+        System.out.println("  - puzzle_6x12       Puzzle 6×12 (72 pieces)");
+        System.out.println("  - puzzle_16x16      Puzzle 16×16 (256 pieces)");
+        System.out.println("  - validation_6x6    Test puzzle 6×6 (36 pieces)");
+        System.out.println("  - eternity2_p*      Eternity II configurations");
+        System.out.println("  - example_3x3       Simple example 3×3 (9 pieces)");
+        System.out.println("  - example_4x4       Example 4×4 (16 pieces)");
         System.out.println();
     }
 
     /**
-     * Affiche la version du programme
+     * Displays the program version
      */
     public void printVersion() {
         System.out.println("Eternity Puzzle Solver v1.0.0");
-        System.out.println("Solveur de puzzle d'edge-matching avec backtracking optimisé");
+        System.out.println("Edge-matching puzzle solver with optimized backtracking");
         System.out.println();
-        System.out.println("Fonctionnalités:");
-        System.out.println("  - Heuristique MRV (Minimum Remaining Values)");
-        System.out.println("  - Détection de singletons (forced moves)");
-        System.out.println("  - Propagation de contraintes AC-3");
-        System.out.println("  - Recherche parallèle multi-thread");
-        System.out.println("  - Sauvegarde/reprise automatique");
+        System.out.println("Features:");
+        System.out.println("  - MRV heuristic (Minimum Remaining Values)");
+        System.out.println("  - Singleton detection (forced moves)");
+        System.out.println("  - AC-3 constraint propagation");
+        System.out.println("  - Multi-threaded parallel search");
+        System.out.println("  - Automatic save/resume");
         System.out.println();
     }
 
@@ -250,11 +250,11 @@ public class CommandLineInterface {
     }
 
     public String getPuzzleName() {
-        // Priorité à l'option --puzzle
+        // Priority to --puzzle option
         if (options.containsKey("puzzle")) {
             return options.get("puzzle");
         }
-        // Sinon premier argument positionnel
+        // Otherwise first positional argument
         if (!arguments.isEmpty()) {
             return arguments.get(0);
         }
@@ -274,7 +274,7 @@ public class CommandLineInterface {
     }
 
     public boolean useSingletons() {
-        // Par défaut true, false si --no-singletons
+        // Default true, false if --no-singletons
         return !"false".equals(options.get("singletons"));
     }
 
@@ -316,10 +316,10 @@ public class CommandLineInterface {
     }
 
     /**
-     * Affiche un résumé de la configuration parsée (pour debug)
+     * Displays a summary of the parsed configuration (for debug)
      */
     public void printConfiguration() {
-        logger.info("Configuration CLI:");
+        logger.info("CLI Configuration:");
         logger.info("  Puzzle: {}", getPuzzleName());
         logger.info("  Verbose: {}", isVerbose());
         logger.info("  Quiet: {}", isQuiet());

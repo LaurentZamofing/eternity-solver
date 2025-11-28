@@ -12,8 +12,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * Point d'entrée principal avec interface CLI professionnelle.
- * Remplace Main.java avec support complet des arguments.
+ * Main entry point with professional CLI interface.
+ * Replaces Main.java with full argument support.
  */
 public class MainCLI {
 
@@ -22,59 +22,59 @@ public class MainCLI {
     public static void main(String[] args) {
         CommandLineInterface cli = new CommandLineInterface();
 
-        // Parser les arguments
+        // Parse arguments
         if (!cli.parse(args)) {
-            System.err.println("Erreur: " + cli.getErrorMessage());
+            System.err.println("Error: " + cli.getErrorMessage());
             System.err.println();
             cli.printHelp();
             System.exit(1);
         }
 
-        // Afficher l'aide si demandé
+        // Display help if requested
         if (cli.isHelpRequested()) {
             cli.printHelp();
             System.exit(0);
         }
 
-        // Afficher la version si demandé
+        // Display version if requested
         if (cli.isVersionRequested()) {
             cli.printVersion();
             System.exit(0);
         }
 
-        // Vérifier qu'un puzzle a été spécifié
+        // Check that a puzzle was specified
         String puzzleName = cli.getPuzzleName();
         if (puzzleName == null) {
-            System.err.println("Erreur: Aucun puzzle spécifié");
+            System.err.println("Error: No puzzle specified");
             System.err.println();
             cli.printHelp();
             System.exit(1);
         }
 
-        // Logger la configuration
+        // Log configuration
         if (!cli.isQuiet()) {
             cli.printConfiguration();
         }
 
-        // Créer le puzzle selon le nom
+        // Create the puzzle according to name
         PuzzleInfo puzzleInfo = createPuzzle(puzzleName);
         if (puzzleInfo == null) {
-            System.err.println("Erreur: Puzzle inconnu: " + puzzleName);
+            System.err.println("Error: Unknown puzzle: " + puzzleName);
             System.err.println();
-            System.err.println("Puzzles disponibles:");
+            System.err.println("Available puzzles:");
             System.err.println("  - puzzle_6x12, puzzle_16x16, validation_6x6");
             System.err.println("  - example_3x3, example_4x4, example_4x4_easy");
             System.err.println("  - eternity2_p* (voir data/eternity2/)");
             System.exit(1);
         }
 
-        // Afficher l'en-tête
+        // Display header
         if (!cli.isQuiet()) {
             printHeader(puzzleInfo.name, puzzleInfo.board.getRows(), puzzleInfo.board.getCols(),
                        puzzleInfo.pieces.size());
         }
 
-        // Configurer le runner
+        // Configure the runner
         PuzzleRunnerConfig config = new PuzzleRunnerConfig()
             .setVerbose(cli.isVerbose() && !cli.isQuiet())
             .setParallel(cli.isParallel())
@@ -88,19 +88,19 @@ public class MainCLI {
             config.setTimeoutSeconds(cli.getTimeout());
         }
 
-        // Créer et lancer le runner
+        // Create and run the runner
         PuzzleRunner runner = new PuzzleRunner(puzzleInfo.board, puzzleInfo.pieces, config);
         PuzzleResult result = runner.run();
 
-        // Afficher le résultat
+        // Display result
         System.out.println();
         System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("RÉSULTAT");
+        System.out.println("RESULT");
         System.out.println("═══════════════════════════════════════════════════════");
 
         if (result.isSolved()) {
-            System.out.println("✓ PUZZLE RÉSOLU!");
-            System.out.println("Temps: " + String.format("%.2f", result.getDurationSeconds()) + " secondes");
+            System.out.println("✓ PUZZLE SOLVED!");
+            System.out.println("Time: " + String.format("%.2f", result.getDurationSeconds()) + " seconds");
             System.out.println();
 
             if (!cli.isQuiet()) {
@@ -109,14 +109,14 @@ public class MainCLI {
             }
             System.exit(0);
         } else {
-            System.out.println("✗ Aucune solution trouvée");
-            System.out.println("Temps: " + String.format("%.2f", result.getDurationSeconds()) + " secondes");
+            System.out.println("✗ No solution found");
+            System.out.println("Time: " + String.format("%.2f", result.getDurationSeconds()) + " seconds");
             System.exit(1);
         }
     }
 
     /**
-     * Affiche l'en-tête du programme
+     * Displays the program header
      */
     private static void printHeader(String puzzleName, int rows, int cols, int numPieces) {
         System.out.println("╔═══════════════════════════════════════════════════════╗");
@@ -124,12 +124,12 @@ public class MainCLI {
         System.out.println("╚═══════════════════════════════════════════════════════╝");
         System.out.println();
         System.out.println("Puzzle: " + puzzleName);
-        System.out.println("Taille: " + rows + "×" + cols + " (" + numPieces + " pièces)");
+        System.out.println("Size: " + rows + "×" + cols + " (" + numPieces + " pieces)");
         System.out.println();
     }
 
     /**
-     * Crée le puzzle selon le nom
+     * Creates the puzzle according to name
      */
     private static PuzzleInfo createPuzzle(String name) {
         switch (name) {
@@ -150,27 +150,27 @@ public class MainCLI {
 
             case "example_3x3":
             case "3x3":
-                return new PuzzleInfo("Exemple 3×3", new Board(3, 3),
+                return new PuzzleInfo("Example 3×3", new Board(3, 3),
                                      PuzzleFactory.createExample3x3());
 
             case "example_4x4":
             case "4x4":
-                return new PuzzleInfo("Exemple 4×4", new Board(4, 4),
+                return new PuzzleInfo("Example 4×4", new Board(4, 4),
                                      PuzzleFactory.createExample4x4());
 
             case "example_4x4_easy":
             case "4x4_easy":
-                return new PuzzleInfo("Exemple 4×4 (facile)", new Board(4, 4),
+                return new PuzzleInfo("Example 4×4 (easy)", new Board(4, 4),
                                      PuzzleFactory.createExample4x4Easy());
 
             case "example_4x4_ordered":
             case "4x4_ordered":
-                return new PuzzleInfo("Exemple 4×4 (ordonné)", new Board(4, 4),
+                return new PuzzleInfo("Example 4×4 (ordered)", new Board(4, 4),
                                      PuzzleFactory.createExample4x4Ordered());
 
             case "example_5x5":
             case "5x5":
-                return new PuzzleInfo("Exemple 5×5", new Board(5, 5),
+                return new PuzzleInfo("Example 5×5", new Board(5, 5),
                                      PuzzleFactory.createExample5x5());
 
             case "eternity2":
@@ -179,16 +179,16 @@ public class MainCLI {
                                      PuzzleFactory.createEternityII());
 
             default:
-                // Vérifier si c'est une config eternity2_p*
+                // Check if it's an eternity2_p* config
                 if (name.startsWith("eternity2_p") || name.startsWith("indice_")) {
-                    logger.warn("Configuration {} nécessite PuzzleConfig.loadFromFile()", name);
+                    logger.warn("Configuration {} requires PuzzleConfig.loadFromFile()", name);
                 }
                 return null;
         }
     }
 
     /**
-     * Classe interne pour stocker les informations d'un puzzle
+     * Inner class to store puzzle information
      */
     private static class PuzzleInfo {
         final String name;

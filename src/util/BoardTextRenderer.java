@@ -14,18 +14,18 @@ import java.util.Map;
 public class BoardTextRenderer {
 
     /**
-     * Génère un affichage visuel ASCII du plateau AVEC les arêtes détaillées.
-     * Format: affiche chaque pièce avec ses 4 arêtes (N, E, S, W) et son ID.
+     * Generates a visual ASCII display of the board WITH detailed edges.
+     * Format: displays each piece with its 4 edges (N, E, S, W) and its ID.
      *
-     * @param writer destination pour l'output
-     * @param board état actuel du plateau
-     * @param allPieces map de toutes les pièces disponibles
+     * @param writer destination for output
+     * @param board current board state
+     * @param allPieces map of all available pieces
      */
     public static void generateBoardVisualDetailed(PrintWriter writer, Board board, Map<Integer, Piece> allPieces) {
         int rows = board.getRows();
         int cols = board.getCols();
 
-        // Générer un séparateur horizontal
+        // Generate a horizontal separator
         StringBuilder separator = new StringBuilder("# ");
         for (int c = 0; c < cols; c++) {
             separator.append("─────────");
@@ -34,7 +34,7 @@ public class BoardTextRenderer {
         writer.println(separator.toString());
 
         for (int r = 0; r < rows; r++) {
-            // Ligne 1: arêtes nord
+            // Line 1: north edges
             StringBuilder line1 = new StringBuilder("# ");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
@@ -44,7 +44,7 @@ public class BoardTextRenderer {
                     Piece piece = allPieces.get(p.getPieceId());
                     if (piece != null) {
                         int[] edges = piece.getEdges();
-                        // Appliquer la rotation
+                        // Apply rotation
                         int northEdge = edges[p.getRotation()];
                         line1.append(String.format("   %2d    ", northEdge));
                     } else {
@@ -55,7 +55,7 @@ public class BoardTextRenderer {
             }
             writer.println(line1.toString());
 
-            // Ligne 2: ID de la pièce avec arêtes ouest et est
+            // Line 2: piece ID with west and east edges
             StringBuilder line2 = new StringBuilder("# ");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
@@ -76,7 +76,7 @@ public class BoardTextRenderer {
             }
             writer.println(line2.toString());
 
-            // Ligne 3: arêtes sud
+            // Line 3: south edges
             StringBuilder line3 = new StringBuilder("# ");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
@@ -96,7 +96,7 @@ public class BoardTextRenderer {
             }
             writer.println(line3.toString());
 
-            // Séparateur entre lignes
+            // Separator between lines
             if (r < rows - 1) {
                 StringBuilder sep = new StringBuilder("# ");
                 for (int c = 0; c < cols; c++) {
@@ -107,7 +107,7 @@ public class BoardTextRenderer {
             }
         }
 
-        // Séparateur final
+        // Final separator
         StringBuilder finalSep = new StringBuilder("# ");
         for (int c = 0; c < cols; c++) {
             finalSep.append("─────────");
@@ -117,11 +117,11 @@ public class BoardTextRenderer {
     }
 
     /**
-     * Génère un affichage visuel ASCII du plateau (simple, sans arêtes).
-     * Format compact: affiche l'ID de la pièce et sa rotation.
+     * Generates a visual ASCII display of the board (simple, without edges).
+     * Compact format: displays the piece ID and its rotation.
      *
-     * @param writer destination pour l'output
-     * @param board état actuel du plateau
+     * @param writer destination for output
+     * @param board current board state
      */
     public static void generateBoardVisual(PrintWriter writer, Board board) {
         int rows = board.getRows();

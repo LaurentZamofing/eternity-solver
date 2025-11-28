@@ -3,18 +3,18 @@ package model;
 import java.util.Arrays;
 
 /**
- * Représente une pièce du puzzle avec ses arêtes.
- * Les pièces sont immuables - les rotations génèrent de nouveaux tableaux.
+ * Represents a puzzle piece with its edges.
+ * Pieces are immutable - rotations generate new arrays.
  */
 public class Piece {
-    private final int id;            // identifiant unique de la pièce
-    private final int[] edges;       // arêtes dans l'ordre [N, E, S, W]
+    private final int id;            // unique piece identifier
+    private final int[] edges;       // edges in order [N, E, S, W]
 
     /**
-     * Constructeur
-     * @param id identifiant unique de la pièce
-     * @param edges tableau d'entiers de longueur 4 représentant [N, E, S, W]
-     * @throws IllegalArgumentException si edges n'a pas exactement 4 éléments
+     * Constructor
+     * @param id unique piece identifier
+     * @param edges integer array of length 4 representing [N, E, S, W]
+     * @throws IllegalArgumentException if edges doesn't have exactly 4 elements
      */
     public Piece(int id, int[] edges) {
         if (edges.length != 4) {
@@ -25,33 +25,33 @@ public class Piece {
     }
 
     /**
-     * Retourne l'identifiant de la pièce.
+     * Returns the piece identifier.
      */
     public int getId() {
         return id;
     }
 
     /**
-     * Retourne une copie défensive des arêtes de la pièce.
-     * La copie garantit l'immutabilité de la pièce.
+     * Returns a defensive copy of the piece's edges.
+     * The copy guarantees piece immutability.
      */
     public int[] getEdges() {
         return Arrays.copyOf(edges, 4);
     }
 
     /**
-     * Retourne un nouveau tableau représentant les arêtes après rotation clockwise k*90°.
-     * k est réduit modulo 4.
-     * Mapping (90° cw) : newN = W, newE = N, newS = E, newW = S
+     * Returns a new array representing the edges after clockwise k*90° rotation.
+     * k is reduced modulo 4.
+     * Mapping (90° cw): newN = W, newE = N, newS = E, newW = S
      *
-     * @param k nombre de rotations de 90° dans le sens horaire
-     * @return nouveau tableau d'arêtes après rotation (ou tableau interne si k=0)
+     * @param k number of 90° clockwise rotations
+     * @return new edge array after rotation (or internal array if k=0)
      */
     public int[] edgesRotated(int k) {
         k = ((k % 4) + 4) % 4;
         if (k == 0) return Arrays.copyOf(edges, 4);  // Return defensive copy for immutability
 
-        // Optimisation: rotation directe sans boucle
+        // Optimization: direct rotation without loop
         int n = edges[0], e = edges[1], s = edges[2], w = edges[3];
         switch (k) {
             case 1:  // 90° clockwise: N<-W, E<-N, S<-E, W<-S
@@ -66,25 +66,25 @@ public class Piece {
     }
 
     /**
-     * Retourne le nombre de rotations uniques pour cette pièce.
-     * Une pièce peut avoir 1, 2 ou 4 rotations uniques selon sa symétrie.
+     * Returns the number of unique rotations for this piece.
+     * A piece can have 1, 2, or 4 unique rotations depending on its symmetry.
      *
-     * @return nombre de rotations distinctes (1, 2 ou 4)
+     * @return number of distinct rotations (1, 2, or 4)
      */
     public int getUniqueRotationCount() {
         int n = edges[0], e = edges[1], s = edges[2], w = edges[3];
 
-        // Cas 1: Toutes les arêtes identiques (symétrie 4-fold) -> 1 rotation unique
+        // Case 1: All edges identical (4-fold symmetry) -> 1 unique rotation
         if (n == e && e == s && s == w) {
             return 1;
         }
 
-        // Cas 2: Symétrie 2-fold (opposés identiques) -> 2 rotations uniques
+        // Case 2: 2-fold symmetry (opposite sides identical) -> 2 unique rotations
         if (n == s && e == w) {
             return 2;
         }
 
-        // Cas 3: Aucune symétrie -> 4 rotations uniques
+        // Case 3: No symmetry -> 4 unique rotations
         return 4;
     }
 

@@ -108,8 +108,8 @@ public class NeighborAnalyzer {
     public boolean wouldCreateTrappedGap(Board board, int row, int col, int[] candidateEdges,
                                         Map<Integer, Piece> pieces, BitSet pieceUsed,
                                         int totalPieces, int candidatePieceId) {
-        // Si candidateEdges est null, on ne peut pas déterminer les gaps piégés
-        // Retourner false (optimiste - supposer qu'il n'y a pas de piège)
+        // If candidateEdges is null, cannot determine trapped gaps
+        // Return false (optimistic - assume no trap)
         if (candidateEdges == null || pieces == null || pieceUsed == null) {
             return false;
         }
@@ -117,34 +117,34 @@ public class NeighborAnalyzer {
         int rows = board.getRows();
         int cols = board.getCols();
 
-        // Vérifier chaque voisin vide
-        // Voisin Nord
+        // Check each empty neighbor
+        // North neighbor
         if (row > 0 && board.isEmpty(row - 1, col)) {
-            int requiredSouth = candidateEdges[0]; // Bord Nord du candidat
+            int requiredSouth = candidateEdges[0]; // North edge of candidate
             if (countValidPieces(board, row - 1, col, requiredSouth, 2, pieces, pieceUsed, totalPieces, candidatePieceId) == 0) {
                 return true;
             }
         }
 
-        // Voisin Sud
+        // South neighbor
         if (row < rows - 1 && board.isEmpty(row + 1, col)) {
-            int requiredNorth = candidateEdges[2]; // Bord Sud du candidat
+            int requiredNorth = candidateEdges[2]; // South edge of candidate
             if (countValidPieces(board, row + 1, col, requiredNorth, 0, pieces, pieceUsed, totalPieces, candidatePieceId) == 0) {
                 return true;
             }
         }
 
-        // Voisin Est
+        // East neighbor
         if (col < cols - 1 && board.isEmpty(row, col + 1)) {
-            int requiredWest = candidateEdges[1]; // Bord Est du candidat
+            int requiredWest = candidateEdges[1]; // East edge of candidate
             if (countValidPieces(board, row, col + 1, requiredWest, 3, pieces, pieceUsed, totalPieces, candidatePieceId) == 0) {
                 return true;
             }
         }
 
-        // Voisin Ouest
+        // West neighbor
         if (col > 0 && board.isEmpty(row, col - 1)) {
-            int requiredEast = candidateEdges[3]; // Bord Ouest du candidat
+            int requiredEast = candidateEdges[3]; // West edge of candidate
             if (countValidPieces(board, row, col - 1, requiredEast, 1, pieces, pieceUsed, totalPieces, candidatePieceId) == 0) {
                 return true;
             }
@@ -161,34 +161,34 @@ public class NeighborAnalyzer {
         int rows = board.getRows();
         int cols = board.getCols();
 
-        // Pour chaque voisin vide, compter combien de pièces pourraient encore s'adapter
-        // Comptages élevés = moins contraignant
+        // For each empty neighbor, count how many pieces could still fit
+        // High counts = less constraining
 
-        // Voisin Nord
+        // North neighbor
         if (r > 0 && board.isEmpty(r - 1, c)) {
             int requiredSouth = candidateEdges[0];
             score += countValidPieces(board, r - 1, c, requiredSouth, 2, pieces, pieceUsed, totalPieces, excludePieceId);
         }
 
-        // Voisin Sud
+        // South neighbor
         if (r < rows - 1 && board.isEmpty(r + 1, c)) {
             int requiredNorth = candidateEdges[2];
             score += countValidPieces(board, r + 1, c, requiredNorth, 0, pieces, pieceUsed, totalPieces, excludePieceId);
         }
 
-        // Voisin Est
+        // East neighbor
         if (c < cols - 1 && board.isEmpty(r, c + 1)) {
             int requiredWest = candidateEdges[1];
             score += countValidPieces(board, r, c + 1, requiredWest, 3, pieces, pieceUsed, totalPieces, excludePieceId);
         }
 
-        // Voisin Ouest
+        // West neighbor
         if (c > 0 && board.isEmpty(r, c - 1)) {
             int requiredEast = candidateEdges[3];
             score += countValidPieces(board, r, c - 1, requiredEast, 1, pieces, pieceUsed, totalPieces, excludePieceId);
         }
 
-        // Retourner le négatif pour préférer moins contraignant (comptage de pièces valides plus élevé)
+        // Return negative to prefer less constraining (higher valid piece count)
         return -score;
     }
 
@@ -208,15 +208,15 @@ public class NeighborAnalyzer {
             for (int rot = 0; rot < maxRotations; rot++) {
                 int[] edges = piece.edgesRotated(rot);
 
-                // Vérifier la contrainte de bord requise
+                // Check required edge constraint
                 if (requiredEdge != -1 && edges[edgeIndex] != requiredEdge) {
                     continue;
                 }
 
-                // Vérifier si le placement satisfait toutes les contraintes
+                // Check if placement satisfies all constraints
                 if (validator.fits(board, r, c, edges)) {
                     count++;
-                    break; // Compter la pièce une fois, indépendamment des rotations
+                    break; // Count piece once, regardless of rotations
                 }
             }
         }

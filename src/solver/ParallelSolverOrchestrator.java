@@ -281,7 +281,7 @@ public class ParallelSolverOrchestrator {
                     }
                 } catch (Exception e) {
                     synchronized (System.err) {
-                        System.err.println("Erreur dans un thread: " + e.getMessage());
+                        System.err.println("Error in thread: " + e.getMessage());
                     }
                 }
             }
@@ -292,7 +292,7 @@ public class ParallelSolverOrchestrator {
             }
 
         } catch (InterruptedException e) {
-            System.err.println("Interruption: " + e.getMessage());
+            System.err.println("Interrupted: " + e.getMessage());
             executor.shutdownNow();
         }
 
@@ -303,7 +303,7 @@ public class ParallelSolverOrchestrator {
     private void handleSolutionFound(int threadId, Board board, Map<Integer, Piece> pieces) {
         synchronized (System.out) {
             System.out.println("\n" + "=".repeat(60));
-            System.out.println("🎉 Thread " + threadId + " a trouvé une SOLUTION! 🎉");
+            System.out.println("🎉 Thread " + threadId + " found SOLUTION! 🎉");
             System.out.println("=".repeat(60));
         }
 
@@ -354,38 +354,38 @@ public class ParallelSolverOrchestrator {
 
     private void printHeader(int numThreads) {
         System.out.println("\n╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║           RECHERCHE PARALLÈLE AVEC " + numThreads + " THREADS            ║");
+        System.out.println("║           PARALLEL SEARCH WITH " + numThreads + " THREADS            ║");
         System.out.println("╚══════════════════════════════════════════════════════════╝\n");
     }
 
     private void printThreadRestored(int threadId, int depth) {
         synchronized (System.out) {
-            System.out.println("📂 Thread " + threadId + " restauré depuis sauvegarde: " +
-                             depth + " pièces placées");
+            System.out.println("📂 Thread " + threadId + " restored from save: " +
+                             depth + " pieces placed");
         }
     }
 
     private void printThreadStart(int threadId, WorkerState state) {
         synchronized (System.out) {
             if (state.cornerPieceId != null) {
-                System.out.println("🚀 Thread " + threadId + " démarré (seed=" + state.seed +
-                                 ") - Coin fixé: pièce " + state.cornerPieceId +
-                                 " à (" + state.cornerRow + "," + state.cornerCol + ")");
+                System.out.println("🚀 Thread " + threadId + " started (seed=" + state.seed +
+                                 ") - Fixed corner: piece " + state.cornerPieceId +
+                                 " at (" + state.cornerRow + "," + state.cornerCol + ")");
             } else {
-                System.out.println("🚀 Thread " + threadId + " démarré (seed=" + state.seed + ")");
+                System.out.println("🚀 Thread " + threadId + " started (seed=" + state.seed + ")");
             }
         }
     }
 
     private void printThreadComplete(int threadId) {
         synchronized (System.out) {
-            System.out.println("✗ Thread " + threadId + " terminé sans solution");
+            System.out.println("✗ Thread " + threadId + " completed without solution");
         }
     }
 
     private void printThreadError(int threadId, Exception e) {
         synchronized (System.err) {
-            System.err.println("✗ Thread " + threadId + " erreur: " + e.getMessage());
+            System.err.println("✗ Thread " + threadId + " error: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -399,11 +399,11 @@ public class ParallelSolverOrchestrator {
             double percentage = maxScore > 0 ? (score * 100.0 / maxScore) : 0.0;
 
             System.out.println("\n╔════════════════════════════════════════════════════════╗");
-            System.out.println("║                  PROGRÈS - 30 minutes                  ║");
+            System.out.println("║                  PROGRESS - 30 minutes                 ║");
             System.out.println("╚════════════════════════════════════════════════════════╝");
-            System.out.println("📊 Profondeur max:  " + depth + " pièces placées");
-            System.out.println("⭐ Meilleur score:  " + score + "/" + maxScore +
-                             " arêtes internes (" + String.format("%.1f%%", percentage) + ")");
+            System.out.println("📊 Max depth:  " + depth + " pieces placed");
+            System.out.println("⭐ Best score:  " + score + "/" + maxScore +
+                             " internal edges (" + String.format("%.1f%%", percentage) + ")");
             System.out.println();
         }
     }

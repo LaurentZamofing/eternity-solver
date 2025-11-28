@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /** Manages parallel search execution with work-stealing, thread coordination, and diversification strategies. */
 public class ParallelSearchManager {
 
-    // État global pour la résolution parallèle
+    // Global state for parallel solving
     private static AtomicBoolean solutionFound = new AtomicBoolean(false);
     private static AtomicInteger globalMaxDepth = new AtomicInteger(0);
     private static AtomicInteger globalBestScore = new AtomicInteger(0);
@@ -23,12 +23,12 @@ public class ParallelSearchManager {
     private static AtomicReference<Map<Integer, Piece>> globalBestPieces = new AtomicReference<>(null);
     private static final Object lockObject = new Object();
 
-    // Parallélisme par vol de travail
+    // Work-stealing parallelism
     private static ForkJoinPool workStealingPool = null;
     public static final int WORK_STEALING_DEPTH_THRESHOLD = 5;
     private static final long THREAD_SAVE_INTERVAL = 60000; // 1 minute
 
-    // Dépendances
+    // Dependencies
     private final DomainManager domainManager;
 
     /** Creates ParallelSearchManager with required domain manager. */
@@ -185,17 +185,17 @@ public class ParallelSearchManager {
 
         @Override
         protected Boolean compute() {
-            // Vérifier si une solution a déjà été trouvée
+            // Check if solution already found
             if (solutionFound.get()) {
                 return false;
             }
 
-            // Si la profondeur est assez faible, fourcher les tâches
+            // If depth is low enough, fork tasks
             if (currentDepth < WORK_STEALING_DEPTH_THRESHOLD && workStealingPool != null) {
-                // Trouver la prochaine cellule vide avec l'heuristique MRV (version simplifiée)
+                // Find next empty cell with MRV heuristic (simplified version)
                 int[] cell = findNextEmptyCell(board);
 
-                // Si aucune cellule trouvée, vérifier si le plateau est complet
+                // If no cell found, check if board is complete
                 if (cell == null) {
                     int usedCount = pieceUsed.cardinality();
                     return usedCount == totalPieces;
@@ -205,11 +205,11 @@ public class ParallelSearchManager {
                 List<DomainManager.ValidPlacement> validPlacements =
                     domainManager.computeDomain(board, r, c, piecesById, pieceUsed, totalPieces);
 
-                // Créer des tâches parallèles pour les différents placements de pièces
+                // Create parallel tasks for different piece placements
                 List<ParallelSearchTask> tasks = new ArrayList<>();
                 for (DomainManager.ValidPlacement vp : validPlacements) {
                     try {
-                        // Créer une copie profonde du plateau
+                        // Create deep copy of board
                         Board boardCopy = copyBoard(board, piecesById);
 
                         Piece piece = piecesById.get(vp.pieceId);
@@ -223,14 +223,14 @@ public class ParallelSearchManager {
                                 currentDepth + 1, domainManager, sequentialSolver
                             );
                             tasks.add(task);
-                            task.fork(); // Soumettre au pool de vol de travail
+                            task.fork(); // Submit to work-stealing pool
                         }
                     } catch (Exception e) {
-                        // Continuer avec le prochain placement si la copie échoue
+                        // Continue with next placement if copy fails
                     }
                 }
 
-                // Attendre qu'une tâche trouve une solution
+                // Wait for task to find solution
                 for (ParallelSearchTask task : tasks) {
                     try {
                         if (task.join() && !solutionFound.get()) {
@@ -238,12 +238,12 @@ public class ParallelSearchManager {
                             return true;
                         }
                     } catch (Exception e) {
-                        // Continuer avec la prochaine tâche
+                        // Continue with next task
                     }
                 }
                 return false;
             } else {
-                // Assez profond - utiliser la recherche séquentielle
+                // Deep enough - use sequential search
                 return sequentialSolver.solve(board, piecesById, pieceUsed, totalPieces);
             }
         }
@@ -283,17 +283,17 @@ public class ParallelSearchManager {
                                 Map<Integer, Piece> availablePieces, int numThreads,
                                 String puzzleName, SequentialSolver sequentialSolver) {
         System.out.println("\n╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║           RECHERCHE PARALLÈLE AVEC " + numThreads + " THREADS            ║");
+        System.out.println("║           PARALLEL SEARCH WITH " + numThreads + " THREADS            ║");
         System.out.println("╚══════════════════════════════════════════════════════════╝\n");
 
-        // Réinitialiser les drapeaux globaux
+        // Reset global flags
         solutionFound.set(false);
         globalMaxDepth.set(0);
 
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         List<Future<Boolean>> futures = new ArrayList<>();
 
-        // Lancer numThreads workers avec des seeds différentes
+        // Launch numThreads workers with different seeds
         for (int i = 0; i < numThreads; i++) {
             final int threadId = i;
 
@@ -305,7 +305,7 @@ public class ParallelSearchManager {
                     long seed = System.currentTimeMillis() + threadId * 1000;
                     boolean loadedFromSave = false;
 
-                    // Vérifier si ce thread a un état sauvegardé
+                    // Check if this thread has saved state
                     if (SaveManager.hasThreadState(threadId)) {
                         Object[] savedState = SaveManager.loadThreadState(threadId, allPieces);
                         if (savedState != null) {
@@ -325,23 +325,23 @@ public class ParallelSearchManager {
 
                             loadedFromSave = true;
                             synchronized (System.out) {
-                                System.out.println("📂 Thread " + threadId + " restauré depuis sauvegarde: "
-                                    + savedDepth + " pièces placées");
+                                System.out.println("📂 Thread " + threadId + " restored from save: "
+                                    + savedDepth + " pieces placed");
                             }
                         } else {
-                            // Erreur de chargement, démarrer normalement
+                            // Load error, start normally
                             localBoard = copyBoard(board, allPieces);
                             localPieces = new HashMap<>(allPieces);
                             unusedIds = new ArrayList<>(availablePieces.keySet());
                         }
                     } else {
-                        // Pas de sauvegarde - créer une copie du plateau pour ce thread
+                        // No save - create board copy for this thread
                         localBoard = copyBoard(board, allPieces);
                         localPieces = new HashMap<>(allPieces);
                         unusedIds = new ArrayList<>(availablePieces.keySet());
                     }
 
-                    // Créer le BitSet pieceUsed
+                    // Create BitSet pieceUsed
                     int totalPieces = localPieces.size();
                     int maxPieceId = localPieces.keySet().stream().max(Integer::compareTo).orElse(totalPieces);
                     BitSet pieceUsed = new BitSet(maxPieceId + 1);
@@ -351,12 +351,12 @@ public class ParallelSearchManager {
                         }
                     }
 
-                    // Stratégie de diversification : pré-placer un coin différent pour chaque thread
+                    // Diversification strategy: pre-place different corner for each thread
                     if (!loadedFromSave) {
                         diversifySearchStrategy(threadId, localBoard, localPieces, unusedIds, pieceUsed);
                     }
 
-                    // Résoudre avec la configuration de ce thread
+                    // Solve with this thread's configuration
                     return sequentialSolver.solve(localBoard, localPieces, pieceUsed, totalPieces);
 
                 } catch (Exception e) {
@@ -368,7 +368,7 @@ public class ParallelSearchManager {
             futures.add(future);
         }
 
-        // Attendre tous les threads et vérifier si l'un a trouvé une solution
+        // Wait for all threads and check if one found solution
         boolean solved = false;
         for (Future<Boolean> future : futures) {
             try {
@@ -394,10 +394,10 @@ public class ParallelSearchManager {
     private void diversifySearchStrategy(int threadId, Board board, Map<Integer, Piece> pieces,
                                         List<Integer> unusedIds, BitSet pieceUsed) {
         if (threadId >= 4 || unusedIds.size() <= 10) {
-            return; // Diversifier uniquement les 4 premiers threads et si assez de pièces
+            return; // Diversify only first 4 threads and if enough pieces
         }
 
-        // Identifier les pièces de coin (avec 2 bords à zéro)
+        // Identify corner pieces (with 2 edges at zero)
         List<Integer> cornerPieces = new ArrayList<>();
         for (int pid : unusedIds) {
             Piece p = pieces.get(pid);
@@ -418,16 +418,16 @@ public class ParallelSearchManager {
         int cornerPieceId = cornerPieces.get(threadId);
         int cornerRow = -1, cornerCol = -1;
 
-        // Position basée sur l'ID du thread
+        // Position based on thread ID
         switch (threadId) {
-            case 0: cornerRow = 0; cornerCol = 0; break;      // Haut-gauche
-            case 1: cornerRow = 0; cornerCol = 15; break;     // Haut-droit
-            case 2: cornerRow = 15; cornerCol = 0; break;     // Bas-gauche
-            case 3: cornerRow = 15; cornerCol = 15; break;    // Bas-droit
+            case 0: cornerRow = 0; cornerCol = 0; break;      // Top-left
+            case 1: cornerRow = 0; cornerCol = 15; break;     // Top-right
+            case 2: cornerRow = 15; cornerCol = 0; break;     // Bottom-left
+            case 3: cornerRow = 15; cornerCol = 15; break;    // Bottom-right
         }
 
         Piece cornerPiece = pieces.get(cornerPieceId);
-        // Trouver la rotation qui place les zéros aux bons bords
+        // Find rotation that places zeros on correct edges
         for (int rot = 0; rot < 4; rot++) {
             int[] rotEdges = cornerPiece.edgesRotated(rot);
             boolean valid = false;

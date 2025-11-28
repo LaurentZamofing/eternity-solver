@@ -10,14 +10,14 @@ import java.util.Set;
 /** Implements LCV (Least Constraining Value) heuristic by computing piece difficulty scores based on edge compatibility; lower score = more constrained = try first (fail-fast). */
 public class LeastConstrainingValueOrderer {
 
-    // Tables de compatibilité des bords pour un ordonnancement rapide des pièces
-    private Map<Integer, Set<Integer>> northEdgeCompatible;  // valeurBord -> IDs des pièces
+    // Edge compatibility tables for fast piece ordering
+    private Map<Integer, Set<Integer>> northEdgeCompatible;  // edgeValue -> piece IDs
     private Map<Integer, Set<Integer>> eastEdgeCompatible;
     private Map<Integer, Set<Integer>> southEdgeCompatible;
     private Map<Integer, Set<Integer>> westEdgeCompatible;
 
-    // Scores de difficulté des pièces : idPièce -> difficulté
-    // Score plus bas = plus contraint = plus difficile à placer
+    // Piece difficulty scores: pieceId -> difficulty
+    // Lower score = more constrained = harder to place
     private Map<Integer, Integer> pieceDifficultyScores;
 
     private final boolean verbose;
@@ -35,16 +35,16 @@ public class LeastConstrainingValueOrderer {
         southEdgeCompatible = new HashMap<>();
         westEdgeCompatible = new HashMap<>();
 
-        // Pour chaque pièce, pour chaque rotation, enregistrer quels bords elle peut fournir
+        // For each piece, for each rotation, record which edges it can provide
         for (Map.Entry<Integer, Piece> entry : pieces.entrySet()) {
             int pieceId = entry.getKey();
             Piece piece = entry.getValue();
 
-            // Essayer les 4 rotations
+            // Try all 4 rotations
             for (int rot = 0; rot < 4; rot++) {
                 int[] edges = piece.edgesRotated(rot);
 
-                // Cette pièce (à cette rotation) fournit ces valeurs de bord :
+                // This piece (at this rotation) provides these edge values:
                 northEdgeCompatible.computeIfAbsent(edges[0], k -> new HashSet<>()).add(pieceId);
                 eastEdgeCompatible.computeIfAbsent(edges[1], k -> new HashSet<>()).add(pieceId);
                 southEdgeCompatible.computeIfAbsent(edges[2], k -> new HashSet<>()).add(pieceId);
@@ -67,15 +67,15 @@ public class LeastConstrainingValueOrderer {
             Piece piece = entry.getValue();
             int[] edges = piece.getEdges();
 
-            // Pour chaque bord, compter combien de pièces pourraient potentiellement correspondre
+            // For each edge, count how many pieces could potentially match
             int totalCompatibility = 0;
             for (int i = 0; i < 4; i++) {
                 int edgeValue = edges[i];
-                // Compter les pièces qui ont cette valeur de bord dans n'importe quelle rotation
+                // Count pieces that have this edge value in any rotation
                 Set<Integer> compatiblePieces = new HashSet<>();
                 for (int rot = 0; rot < 4; rot++) {
                     int[] rotatedEdges = piece.edgesRotated(rot);
-                    // Vérifier toutes les tables de compatibilité
+                    // Check all compatibility tables
                     if (northEdgeCompatible.containsKey(edgeValue)) {
                         compatiblePieces.addAll(northEdgeCompatible.get(edgeValue));
                     }
@@ -92,7 +92,7 @@ public class LeastConstrainingValueOrderer {
                 totalCompatibility += compatiblePieces.size();
             }
 
-            // Score plus bas = moins de pièces compatibles = plus difficile à placer = devrait essayer en premier
+            // Lower score = fewer compatible pieces = harder to place = should try first
             pieceDifficultyScores.put(pieceId, totalCompatibility);
         }
 
@@ -135,7 +135,7 @@ public class LeastConstrainingValueOrderer {
     public Set<Integer> getCandidatePieces(int northEdge, int eastEdge, int southEdge, int westEdge) {
         Set<Integer> candidates = null;
 
-        // Construire l'ensemble de contraintes en intersectant les pièces compatibles pour chaque bord
+        // Build constraint set by intersecting compatible pieces for each edge
         if (northEdge >= 0) {
             candidates = new HashSet<>(getNorthCompatiblePieces(northEdge));
         }
@@ -184,7 +184,7 @@ public class LeastConstrainingValueOrderer {
     /** Returns statistics string describing edge compatibility tables (unique edge values, average pieces per edge). */
     public String getStatistics() {
         if (!isInitialized()) {
-            return "Tables de compatibilité des bords non initialisées";
+            return "Edge compatibility tables not initialized";
         }
 
         int uniqueEdgeValues = northEdgeCompatible.size();
@@ -197,7 +197,7 @@ public class LeastConstrainingValueOrderer {
             avgPiecesPerEdge = totalPieces / uniqueEdgeValues;
         }
 
-        return String.format("Compatibilité des bords : %d valeurs de bord uniques, ~%d pièces/bord en moyenne",
+        return String.format("Edge compatibility: %d unique edge values, ~%d pieces/edge average",
                            uniqueEdgeValues, avgPiecesPerEdge);
     }
 }

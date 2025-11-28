@@ -13,10 +13,10 @@ public class SymmetryBreakingManager {
     private final int rows;
     private final int cols;
 
-    // Drapeaux de stratégie de brisure de symétrie
+    // Symmetry-breaking strategy flags
     private boolean enableLexicographicOrdering = true;
     private boolean enableRotationalFixing = true;
-    private boolean enableReflectionPruning = false; // Future : symétrie horizontale/verticale
+    private boolean enableReflectionPruning = false; // Future: horizontal/vertical symmetry
 
     /** Creates symmetry-breaking manager with board dimensions and verbose flag for detailed logging. */
     public SymmetryBreakingManager(int rows, int cols, boolean verbose) {
@@ -38,21 +38,21 @@ public class SymmetryBreakingManager {
     /** Returns true if placement is allowed; called before placing piece to prune branches violating symmetry constraints (lexicographic ordering or rotation fixing). */
     public boolean isPlacementAllowed(Board board, int row, int col, int pieceId,
                                      int rotation, Map<Integer, Piece> allPieces) {
-        // Vérifie l'ordre lexicographique sur les coins
+        // Check lexicographic ordering on corners
         if (enableLexicographicOrdering) {
             if (!checkLexicographicOrdering(board, row, col, pieceId)) {
                 if (verbose) {
-                    System.out.println("  ⛔ Symétrie : Rejet de la pièce " + pieceId + " à (" + row + "," + col + ") - viole l'ordre lexicographique");
+                    System.out.println("  ⛔ Symmetry: Rejecting piece " + pieceId + " at (" + row + "," + col + ") - violates lexicographic ordering");
                 }
                 return false;
             }
         }
 
-        // Vérifie la fixation de rotation pour la première pièce (si applicable)
+        // Check rotation fixing for first piece (if applicable)
         if (enableRotationalFixing) {
             if (!checkRotationFixing(board, row, col, rotation)) {
                 if (verbose) {
-                    System.out.println("  ⛔ Symétrie : Rejet de la rotation " + rotation + " à (" + row + "," + col + ") - viole la fixation de rotation");
+                    System.out.println("  ⛔ Symmetry: Rejecting rotation " + rotation + " at (" + row + "," + col + ") - violates rotation fixing");
                 }
                 return false;
             }
@@ -63,35 +63,35 @@ public class SymmetryBreakingManager {
 
     /** Enforces lexicographic ordering on corner pieces; top-left must have smallest ID (eliminates horizontal/vertical reflection and 180° rotation, 4x reduction). */
     private boolean checkLexicographicOrdering(Board board, int row, int col, int pieceId) {
-        // Applique l'ordre uniquement sur les positions de coin
+        // Apply ordering only on corner positions
         boolean isTopLeft = (row == 0 && col == 0);
         boolean isTopRight = (row == 0 && col == cols - 1);
         boolean isBottomLeft = (row == rows - 1 && col == 0);
         boolean isBottomRight = (row == rows - 1 && col == cols - 1);
 
         if (!isTopLeft && !isTopRight && !isBottomLeft && !isBottomRight) {
-            return true; // Pas un coin, pas de contrainte
+            return true; // Not a corner, no constraint
         }
 
         Placement topLeft = board.getPlacement(0, 0);
 
-        // Si on place le coin supérieur gauche en premier, toujours autoriser (il devient la référence)
+        // If placing top-left corner first, always allow (becomes reference)
         if (isTopLeft) {
             return true;
         }
 
-        // Si le coin supérieur gauche n'est pas encore placé, autoriser les autres coins (seront contraints plus tard)
+        // If top-left corner not yet placed, allow other corners (will be constrained later)
         if (topLeft == null) {
             return true;
         }
 
         int topLeftId = topLeft.getPieceId();
 
-        // Applique : Tous les autres coins doivent avoir un ID de pièce >= ID du coin supérieur gauche
-        // Cela élimine les duplicatas rotationnels/réflexionnels
+        // Apply: All other corners must have piece ID >= top-left corner ID
+        // This eliminates rotational/reflective duplicates
         if (isTopRight || isBottomLeft || isBottomRight) {
             if (pieceId < topLeftId) {
-                return false; // Viole la contrainte d'ordre
+                return false; // Violates ordering constraint
             }
         }
 
@@ -100,13 +100,13 @@ public class SymmetryBreakingManager {
 
     /** Fixes rotation of top-left corner piece to 0° to eliminate rotational symmetry (eliminates 3/4 of rotationally equivalent solutions). */
     private boolean checkRotationFixing(Board board, int row, int col, int rotation) {
-        // Fixe la rotation uniquement pour le coin supérieur gauche
+        // Fix rotation only for top-left corner
         if (row != 0 || col != 0) {
-            return true; // Pas le coin supérieur gauche, pas de contrainte
+            return true; // Not top-left corner, no constraint
         }
 
-        // Fixe le coin supérieur gauche à la rotation 0
-        // Cela brise la symétrie rotationnelle de la solution entière
+        // Fix top-left corner to rotation 0
+        // This breaks rotational symmetry of entire solution
         return rotation == 0;
     }
 
@@ -118,12 +118,12 @@ public class SymmetryBreakingManager {
 
         Placement topLeft = board.getPlacement(0, 0);
         if (topLeft == null) {
-            return true; // Impossible de valider pour l'instant
+            return true; // Cannot validate yet
         }
 
         int topLeftId = topLeft.getPieceId();
 
-        // Vérifie que tous les coins respectent l'ordre lexicographique
+        // Check that all corners respect lexicographic ordering
         Placement topRight = board.getPlacement(0, cols - 1);
         if (topRight != null && topRight.getPieceId() < topLeftId) {
             return false;
@@ -145,10 +145,10 @@ public class SymmetryBreakingManager {
     /** Logs symmetry-breaking configuration at solver start. */
     public void logConfiguration() {
         if (verbose) {
-            System.out.println("  🔄 Brisure de symétrie :");
-            System.out.println("     - Ordre lexicographique : " + (enableLexicographicOrdering ? "✓" : "✗"));
-            System.out.println("     - Fixation de rotation : " + (enableRotationalFixing ? "✓" : "✗"));
-            System.out.println("     - Élagage par réflexion : " + (enableReflectionPruning ? "✓" : "✗"));
+            System.out.println("  🔄 Symmetry breaking:");
+            System.out.println("     - Lexicographic ordering: " + (enableLexicographicOrdering ? "✓" : "✗"));
+            System.out.println("     - Rotation fixing: " + (enableRotationalFixing ? "✓" : "✗"));
+            System.out.println("     - Reflection pruning: " + (enableReflectionPruning ? "✓" : "✗"));
         }
     }
 
@@ -157,15 +157,15 @@ public class SymmetryBreakingManager {
         double factor = 1.0;
 
         if (enableLexicographicOrdering) {
-            factor *= 4.0; // Élimine la symétrie rotationnelle 4-voies
+            factor *= 4.0; // Eliminates 4-way rotational symmetry
         }
 
         if (enableRotationalFixing) {
-            // Déjà compté dans le lexicographique
+            // Already counted in lexicographic
         }
 
         if (enableReflectionPruning) {
-            factor *= 2.0; // Élimine la réflexion horizontale/verticale
+            factor *= 2.0; // Eliminates horizontal/vertical reflection
         }
 
         return factor;

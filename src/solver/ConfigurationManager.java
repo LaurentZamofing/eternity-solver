@@ -12,38 +12,38 @@ import java.util.concurrent.atomic.AtomicReference;
 /** Manages all solver configuration: flags, puzzle metadata, fixed pieces detection, and manager initialization. */
 public class ConfigurationManager {
 
-    // Drapeaux de configuration principaux
+    // Main configuration flags
     private boolean useSingletons = true;
     private boolean verbose = true;
     private boolean useAC3 = true;
     private boolean useDomainCache = true;
     private boolean prioritizeBorders = false;
 
-    // Configuration d'affichage et de log
+    // Display and logging configuration
     private int minDepthToShowRecords = 0;
 
-    // Configuration du timeout
+    // Timeout configuration
     private long maxExecutionTimeMs = Long.MAX_VALUE;
 
-    // Métadonnées du puzzle
+    // Puzzle metadata
     private String puzzleName = "eternity2";
     private String threadLabel = "";
     private String sortOrder = "ascending";
     private int threadId = -1;
 
-    // État des pièces fixes
+    // Fixed pieces state
     private int numFixedPieces = 0;
     private Set<String> fixedPositions = new HashSet<>();
     private List<SaveStateManager.PlacementInfo> initialFixedPieces = new ArrayList<>();
 
-    // Gestion des threads et sauvegarde
+    // Thread management and saving
     private long randomSeed = 0;
     private static final long THREAD_SAVE_INTERVAL = 60000; // 1 minute
 
     public ConfigurationManager() {
     }
 
-    // ============ Setters de Configuration ============
+    // ============ Configuration Setters ============
 
     public void setDisplayConfig(boolean verbose, int minDepth) {
         this.verbose = verbose;
@@ -85,7 +85,7 @@ public class ConfigurationManager {
     public void setPrioritizeBorders(boolean enabled) {
         this.prioritizeBorders = enabled;
         if (verbose && enabled) {
-            System.out.println("  🔲 Priorisation des bords activée - les bords seront remplis en premier");
+            System.out.println("  🔲 Border prioritization enabled - borders will be filled first");
         }
     }
 
@@ -105,7 +105,7 @@ public class ConfigurationManager {
         this.randomSeed = seed;
     }
 
-    // ============ Getters de Configuration ============
+    // ============ Configuration Getters ============
 
     public boolean isUseSingletons() {
         return useSingletons;
@@ -171,7 +171,7 @@ public class ConfigurationManager {
         return THREAD_SAVE_INTERVAL;
     }
 
-    // ============ Détection des Pièces Fixes ============
+    // ============ Fixed Pieces Detection ============
 
     /** Detects and initializes fixed pieces from board state; used when starting with pre-placed pieces. */
     public void detectFixedPiecesFromBoard(Board board, BitSet pieceUsed,
@@ -206,11 +206,11 @@ public class ConfigurationManager {
     /** Calculates number of fixed pieces based on puzzle name; used when resuming from saved state. */
     public int calculateNumFixedPieces(String puzzleName) {
         if (puzzleName.startsWith("eternity2")) {
-            return 9; // 4 coins + 5 indices pour Eternity II
+            return 9; // 4 corners + 5 hints for Eternity II
         } else if (puzzleName.startsWith("indice")) {
-            return 0; // Pas de pièces fixes pour les puzzles d'indices
+            return 0; // No fixed pieces for hint puzzles
         } else {
-            return 0; // Par défaut: pas de pièces fixes
+            return 0; // Default: no fixed pieces
         }
     }
 
@@ -226,7 +226,7 @@ public class ConfigurationManager {
         }
     }
 
-    // ============ Initialisation des Managers ============
+    // ============ Manager Initialization ============
 
     /** Creates and initializes AutoSaveManager with current configuration. */
     public AutoSaveManager createAutoSaveManager(

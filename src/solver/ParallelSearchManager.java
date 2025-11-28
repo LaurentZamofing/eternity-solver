@@ -11,13 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Gère l'exécution de recherche parallèle pour le solveur de puzzle Eternity.
- * Gère le parallélisme par vol de travail (work-stealing), la coordination des threads, l'état global,
- * et les stratégies de diversification pour la résolution multi-thread.
- *
- * Extrait de EternitySolver pour séparer la complexité parallèle de l'algorithme séquentiel.
- */
+/** Manages parallel search execution with work-stealing, thread coordination, and diversification strategies. */
 public class ParallelSearchManager {
 
     // État global pour la résolution parallèle
@@ -37,26 +31,19 @@ public class ParallelSearchManager {
     // Dépendances
     private final DomainManager domainManager;
 
-    /**
-     * Constructeur avec les dépendances requises.
-     */
+    /** Creates ParallelSearchManager with required domain manager. */
     public ParallelSearchManager(DomainManager domainManager) {
         this.domainManager = domainManager;
     }
 
-    /**
-     * Active le parallélisme par vol de travail pour un seul puzzle.
-     */
+    /** Enables work-stealing parallelism with specified thread count. */
     public void enableWorkStealing(int numThreads) {
         if (workStealingPool == null || workStealingPool.isShutdown()) {
             workStealingPool = new ForkJoinPool(numThreads);
         }
     }
 
-    /**
-     * Réinitialise toutes les variables d'état global statiques.
-     * Doit être appelé entre les puzzles dans les exécutions séquentielles.
-     */
+    /** Resets all static global state variables; call between puzzles in sequential runs. */
     public static void resetGlobalState() {
         solutionFound.set(false);
         globalMaxDepth.set(0);
@@ -70,51 +57,37 @@ public class ParallelSearchManager {
         }
     }
 
-    /**
-     * Obtient l'objet verrou global pour les opérations synchronisées.
-     */
+    /** Returns global lock object for synchronized operations. */
     public static Object getLockObject() {
         return lockObject;
     }
 
-    /**
-     * Obtient le booléen atomique indiquant si une solution a été trouvée (rétrocompatibilité).
-     */
+    /** Returns atomic boolean indicating solution found (backward compatibility). */
     public static AtomicBoolean getSolutionFound() {
         return solutionFound;
     }
 
-    /**
-     * Obtient le pool de vol de travail (rétrocompatibilité).
-     */
+    /** Returns work-stealing pool (backward compatibility). */
     public static ForkJoinPool getWorkStealingPool() {
         return workStealingPool;
     }
 
-    /**
-     * Vérifie si une solution a été trouvée par un thread.
-     */
+    /** Checks if solution has been found by any thread. */
     public static boolean isSolutionFound() {
         return solutionFound.get();
     }
 
-    /**
-     * Marque qu'une solution a été trouvée.
-     */
+    /** Marks that a solution has been found. */
     public static void markSolutionFound() {
         solutionFound.set(true);
     }
 
-    /**
-     * Obtient l'entier atomique de profondeur maximale globale (rétrocompatibilité).
-     */
+    /** Returns global max depth atomic integer (backward compatibility). */
     public static AtomicInteger getGlobalMaxDepth() {
         return globalMaxDepth;
     }
 
-    /**
-     * Met à jour la profondeur maximale globale si la nouvelle profondeur est plus grande.
-     */
+    /** Updates global max depth if new depth is greater; returns true if updated. */
     public static boolean updateGlobalMaxDepth(int depth) {
         int current;
         do {
@@ -124,16 +97,12 @@ public class ParallelSearchManager {
         return true;
     }
 
-    /**
-     * Obtient l'entier atomique du meilleur score global (rétrocompatibilité).
-     */
+    /** Returns global best score atomic integer (backward compatibility). */
     public static AtomicInteger getGlobalBestScore() {
         return globalBestScore;
     }
 
-    /**
-     * Met à jour le meilleur score global si le nouveau score est meilleur.
-     */
+    /** Updates global best score if new score is better; returns true if updated. */
     public static boolean updateGlobalBestScore(int score) {
         int current;
         do {
@@ -143,59 +112,37 @@ public class ParallelSearchManager {
         return true;
     }
 
-    /**
-     * Obtient l'entier atomique de l'ID du meilleur thread (rétrocompatibilité).
-     */
+    /** Returns global best thread ID atomic integer (backward compatibility). */
     public static AtomicInteger getGlobalBestThreadId() {
         return globalBestThreadId;
     }
 
-    /**
-     * Définit l'ID du thread qui a trouvé la meilleure solution.
-     */
+    /** Sets the thread ID that found the best solution. */
     public static void setGlobalBestThreadId(int threadId) {
         globalBestThreadId.set(threadId);
     }
 
-    /**
-     * Obtient la référence atomique du meilleur plateau global (rétrocompatibilité).
-     */
+    /** Returns global best board atomic reference (backward compatibility). */
     public static AtomicReference<Board> getGlobalBestBoard() {
         return globalBestBoard;
     }
 
-    /**
-     * Définit le meilleur plateau global.
-     */
+    /** Sets the global best board. */
     public static void setGlobalBestBoard(Board board) {
         globalBestBoard.set(board);
     }
 
-    /**
-     * Obtient la référence atomique des meilleures pièces globales (rétrocompatibilité).
-     */
+    /** Returns global best pieces atomic reference (backward compatibility). */
     public static AtomicReference<Map<Integer, Piece>> getGlobalBestPieces() {
         return globalBestPieces;
     }
 
-    /**
-     * Définit la map des meilleures pièces globales.
-     */
+    /** Sets the global best pieces map. */
     public static void setGlobalBestPieces(Map<Integer, Piece> pieces) {
         globalBestPieces.set(pieces);
     }
 
-    /**
-     * Résout le puzzle en utilisant le parallélisme par vol de travail (framework Fork/Join).
-     * Cette méthode crée une tâche parallèle et la soumet au pool de vol de travail.
-     *
-     * @param board état initial du plateau
-     * @param pieces toutes les pièces disponibles
-     * @param pieceUsed bitset suivant les pièces utilisées
-     * @param totalPieces nombre total de pièces
-     * @param sequentialSolver référence au solveur séquentiel pour les recherches profondes
-     * @return true si une solution est trouvée
-     */
+    /** Solves puzzle using work-stealing parallelism (Fork/Join framework); creates parallel task and submits to pool. */
     public boolean solveWithWorkStealing(Board board, Map<Integer, Piece> pieces,
                                          BitSet pieceUsed, int totalPieces,
                                          SequentialSolver sequentialSolver) {
@@ -209,16 +156,12 @@ public class ParallelSearchManager {
         return workStealingPool.invoke(task);
     }
 
-    /**
-     * Interface pour le callback du solveur séquentiel.
-     */
+    /** Callback interface for sequential solver. */
     public interface SequentialSolver {
         boolean solve(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces);
     }
 
-    /**
-     * Tâche récursive pour le parallélisme Fork/Join avec vol de travail.
-     */
+    /** Recursive task for Fork/Join parallelism with work-stealing. */
     private static class ParallelSearchTask extends RecursiveTask<Boolean> {
         private final Board board;
         private final Map<Integer, Piece> piecesById;
@@ -305,9 +248,7 @@ public class ParallelSearchManager {
             }
         }
 
-        /**
-         * Trouve la prochaine cellule vide en ordre ligne-majeur.
-         */
+        /** Finds next empty cell in row-major order. */
         private int[] findNextEmptyCell(Board board) {
             for (int r = 0; r < board.getRows(); r++) {
                 for (int c = 0; c < board.getCols(); c++) {
@@ -319,9 +260,7 @@ public class ParallelSearchManager {
             return null;
         }
 
-        /**
-         * Crée une copie profonde du plateau.
-         */
+        /** Creates deep copy of board. */
         private Board copyBoard(Board original, Map<Integer, Piece> pieces) {
             Board copy = new Board(original.getRows(), original.getCols());
             for (int r = 0; r < original.getRows(); r++) {
@@ -339,18 +278,7 @@ public class ParallelSearchManager {
         }
     }
 
-    /**
-     * Résout le puzzle avec plusieurs threads parallèles (basé sur un pool de threads)
-     * Chaque thread reçoit sa propre copie du plateau et explore indépendamment.
-     *
-     * @param board état initial du plateau
-     * @param allPieces toutes les pièces du puzzle
-     * @param availablePieces pièces disponibles à placer
-     * @param numThreads nombre de threads parallèles
-     * @param puzzleName nom du puzzle pour la sauvegarde
-     * @param sequentialSolver callback vers le solveur séquentiel
-     * @return true si un thread a trouvé une solution
-     */
+    /** Solves puzzle with multiple parallel threads (thread pool); each thread explores independently with own board copy. */
     public boolean solveParallel(Board board, Map<Integer, Piece> allPieces,
                                 Map<Integer, Piece> availablePieces, int numThreads,
                                 String puzzleName, SequentialSolver sequentialSolver) {
@@ -462,10 +390,7 @@ public class ParallelSearchManager {
         return solved;
     }
 
-    /**
-     * Applique une stratégie de diversification en pré-plaçant différentes pièces de coin
-     * pour que différents threads explorent différentes branches de recherche.
-     */
+    /** Applies diversification strategy by pre-placing different corner pieces so threads explore different search branches. */
     private void diversifySearchStrategy(int threadId, Board board, Map<Integer, Piece> pieces,
                                         List<Integer> unusedIds, BitSet pieceUsed) {
         if (threadId >= 4 || unusedIds.size() <= 10) {
@@ -520,9 +445,7 @@ public class ParallelSearchManager {
         }
     }
 
-    /**
-     * Méthode auxiliaire pour copier un plateau
-     */
+    /** Helper method to copy a board. */
     private Board copyBoard(Board original, Map<Integer, Piece> pieces) {
         Board copy = new Board(original.getRows(), original.getCols());
         for (int r = 0; r < original.getRows(); r++) {

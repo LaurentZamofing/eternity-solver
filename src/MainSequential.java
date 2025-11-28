@@ -9,8 +9,8 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Résolveur séquentiel de tous les puzzles Eternity II
- * Résout dans l'ordre: Online → Indices 1-4 → Eternity 2
+ * Sequential solver for all Eternity II puzzles
+ * Solve in order: Online → Indices 1-4 → Eternity 2
  */
 public class MainSequential {
 
@@ -18,115 +18,115 @@ public class MainSequential {
 
     // Removed: extractConfigId() - now using ConfigurationUtils.extractConfigId()
 
-    // Liste des puzzles dans l'ordre de résolution
+    // List of puzzles in order of resolution
     private static final String[] PUZZLE_FILES = {
         "online/online.txt",
         "indice1/indice1.txt",
         "indice2/indice2.txt",
         "indice3/indice3.txt",
         "indice4/indice4.txt",
-        "eternity2/eternity2.txt"  // 256 pièces
+        "eternity2/eternity2.txt"  // 256 pieces
     };
 
-    // Timeout pour chaque puzzle (10 minutes)
-    private static final long PUZZLE_TIMEOUT = 600000; // 10 minutes en millisecondes
+    // Timeout for each puzzle (10 minutes)
+    private static final long PUZZLE_TIMEOUT = 600000; // 10 minutes in milliseconds
 
     public static void main(String[] args) {
         System.out.println("\n");
         System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-        System.out.println("║          ETERNITY II - RÉSOLVEUR SÉQUENTIEL DE PUZZLES           ║");
+        System.out.println("║          ETERNITY II - SEQUENTIAL PUZZLE SOLVER                  ║");
         System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
         System.out.println();
 
         List<PuzzleResult> results = new ArrayList<>();
         long totalStartTime = System.currentTimeMillis();
 
-        // Résoudre chaque puzzle dans l'ordre (avec rotation toutes les 10 minutes)
+        // Solve each puzzle in order (with rotation every 10 minutes)
         while (true) {
             for (String puzzleFile : PUZZLE_FILES) {
                 String filepath = DATA_DIR + puzzleFile;
 
                 try {
-                    // Charger le puzzle
+                    // Load the puzzle
                     PuzzleConfig config = PuzzleConfig.loadFromFile(filepath);
 
                     if (config == null) {
-                        System.out.println("✗ Impossible de charger: " + puzzleFile);
+                        System.out.println("✗ Unable to load: " + puzzleFile);
                         System.out.println();
                         continue;
                     }
 
-                    // Afficher les informations
+                    // Display information
                     config.printInfo();
                     System.out.println();
 
-                    // Résoudre le puzzle avec timeout de 10 minutes
+                    // Solve the puzzle with 10 minute timeout
                     long startTime = System.currentTimeMillis();
                     boolean solved = solvePuzzleWithTimeout(config, filepath, PUZZLE_TIMEOUT);
                     long duration = System.currentTimeMillis() - startTime;
 
-                    // Enregistrer le résultat
+                    // Record the result
                     results.add(new PuzzleResult(config.getName(), config.getType(),
                                                  config.getPieces().size(), solved, duration));
 
-                    // Afficher le résumé
+                    // Display summary
                     config.printSummary(duration, solved);
                     System.out.println();
 
-                    // Si résolu, on peut passer au suivant
+                    // If solved, we can move to the next
                     if (solved) {
-                        System.out.println("  → ✓ Puzzle résolu, passage au suivant...");
+                        System.out.println("  → ✓ Puzzle solved, moving to next...");
                         System.out.println();
                     } else {
-                        System.out.println("  → ⏱ Timeout de 10 minutes atteint, passage au puzzle suivant...");
+                        System.out.println("  → ⏱ 10 minute timeout reached, moving to next puzzle...");
                         System.out.println();
                     }
 
                 } catch (IOException e) {
-                    System.out.println("✗ Erreur lors du chargement de " + puzzleFile + ": " + e.getMessage());
+                    System.out.println("✗ Error loading " + puzzleFile + ": " + e.getMessage());
                     System.out.println();
                 }
             }
 
-            // Une fois tous les puzzles parcourus, recommencer depuis le début
+            // Once all puzzles have been processed, restart from the beginning
             System.out.println("\n═══════════════════════════════════════════════════════════════════");
-            System.out.println("  Cycle complet terminé, recommencement depuis le premier puzzle...");
+            System.out.println("  Complete cycle finished, restarting from first puzzle...");
             System.out.println("═══════════════════════════════════════════════════════════════════\n");
         }
 
-        // Note: Cette section n'est jamais atteinte car la boucle est infinie
-        // Le programme tourne en continu et change de puzzle toutes les 10 minutes
+        // Note: This section is never reached because the loop is infinite
+        // The program runs continuously and changes puzzles every 10 minutes
     }
 
     /**
-     * Résout un puzzle donné
-     * Charge la sauvegarde current si disponible, sinon démarre depuis le début
-     * Le backtracking se fait en mémoire par le solver
+     * Solves a given puzzle
+     * Loads the current save if available, otherwise starts from scratch
+     * Backtracking is done in memory by the solver
      */
     private static boolean solvePuzzle(PuzzleConfig config, String filepath) {
         try {
-            // Vérifier s'il existe une sauvegarde "current"
+            // Check if a "current" save exists
             File currentSave = SaveStateManager.findCurrentSave(config.getType());
 
             if (currentSave != null) {
-                System.out.println("  → 📂 Sauvegarde current trouvée");
-                System.out.println("  → Reprise de la résolution depuis l'état sauvegardé...");
+                System.out.println("  → 📂 Current save found");
+                System.out.println("  → Resuming solving from saved state...");
 
-                // Charger la sauvegarde
+                // Load the save
                 SaveStateManager.SaveState saveState = SaveStateManager.loadStateFromFile(currentSave, config.getType());
                 if (saveState == null) {
-                    System.out.println("  → ⚠️  Erreur de chargement, démarrage depuis le début...");
+                    System.out.println("  → ⚠️  Loading error, starting from scratch...");
                     return solvePuzzleFromScratch(config, filepath);
                 }
 
-                System.out.println("  → État sauvegardé: " + saveState.depth + " pièces placées");
+                System.out.println("  → Saved state: " + saveState.depth + " pieces placed");
 
-                // Vérifier si le puzzle est déjà complètement résolu
+                // Check if the puzzle is already completely solved
                 int totalPieces = config.getRows() * config.getCols();
                 if (saveState.depth == totalPieces) {
-                    System.out.println("  → ✅ Puzzle déjà résolu! (" + totalPieces + "/" + totalPieces + " pièces)");
+                    System.out.println("  → ✅ Puzzle already solved! (" + totalPieces + "/" + totalPieces + " pieces)");
 
-                    // Créer un board pour afficher la solution
+                    // Create a board to display the solution
                     Board board = new Board(config.getRows(), config.getCols());
                     Map<Integer, Piece> allPieces = new HashMap<>(config.getPieces());
 
@@ -134,10 +134,10 @@ public class MainSequential {
                     if (restored) {
                         System.out.println();
                         if (totalPieces <= 72) {
-                            // Affichage détaillé pour les petits puzzles
+                            // Detailed display for small puzzles
                             displayDetailedSolution(board, allPieces);
                         } else {
-                            // Affichage simple pour les grands puzzles
+                            // Simple display for large puzzles
                             displaySolution(board);
                         }
                     }
@@ -145,67 +145,67 @@ public class MainSequential {
                     return true;
                 }
 
-                // NOUVEAU: Backtracking complet avec historique
-                // On ne retire AUCUNE pièce, on passe l'historique complet au solver
-                // Le solver pourra backtracker à travers TOUTES les pièces pré-chargées
-                System.out.println("  → Reprise depuis: " + saveState.depth + " pièces (TOUTES les pièces peuvent être backtractées)");
+                // NEW: Complete backtracking with history
+                // We don't remove ANY piece, we pass the complete history to the solver
+                // The solver will be able to backtrack through ALL pre-loaded pieces
+                System.out.println("  → Resuming from: " + saveState.depth + " pieces (ALL pieces can be backtracked)");
 
-                // Créer un nouveau board et restaurer l'état complet
+                // Create a new board and restore the complete state
                 Board board = new Board(config.getRows(), config.getCols());
                 Map<Integer, Piece> allPieces = new HashMap<>(config.getPieces());
 
                 boolean restored = SaveStateManager.restoreState(saveState, board, allPieces);
                 if (!restored) {
-                    System.out.println("  → ⚠️  Erreur de restauration, démarrage depuis le début...");
+                    System.out.println("  → ⚠️  Restoration error, starting from scratch...");
                     return solvePuzzleFromScratch(config, filepath);
                 }
 
-                // Préparer les pièces non utilisées
+                // Prepare unused pieces
                 List<Integer> unusedIds = new ArrayList<>(saveState.unusedPieceIds);
 
-                // Trier selon l'ordre configuré (ascending/descending)
+                // Sort according to configured order (ascending/descending)
                 ConfigurationUtils.sortPiecesByOrder(unusedIds, config.getSortOrder());
 
-                System.out.println("  → " + unusedIds.size() + " pièces restantes à placer");
-                System.out.println("  → Ordre de tri: " + config.getSortOrder());
+                System.out.println("  → " + unusedIds.size() + " pieces remaining to place");
+                System.out.println("  → Sort order: " + config.getSortOrder());
 
-                // Vérifier les meilleurs scores disponibles
+                // Check available best scores
                 List<File> bestSaves = SaveStateManager.findAllSaves(config.getType());
                 if (!bestSaves.isEmpty()) {
-                    System.out.println("  → 📊 " + bestSaves.size() + " meilleur(s) score(s) sauvegardé(s)");
+                    System.out.println("  → 📊 " + bestSaves.size() + " best score(s) saved");
 
-                    // Afficher la meilleure solution trouvée jusqu'à présent
-                    File bestSave = bestSaves.get(0); // Le premier est le meilleur (tri par profondeur)
+                    // Display the best solution found so far
+                    File bestSave = bestSaves.get(0); // The first is the best (sorted by depth)
                     SaveStateManager.SaveState bestState = SaveStateManager.loadStateFromFile(bestSave, config.getType());
 
                     if (bestState != null) {
-                        System.out.println("  → 🏆 Meilleure solution atteinte: " + bestState.depth + " pièces");
+                        System.out.println("  → 🏆 Best solution reached: " + bestState.depth + " pieces");
                         System.out.println();
 
-                        // Créer un board pour afficher la meilleure solution
+                        // Create a board to display the best solution
                         Board bestBoard = new Board(config.getRows(), config.getCols());
                         Map<Integer, Piece> bestPieces = new HashMap<>(config.getPieces());
 
                         boolean bestRestored = SaveStateManager.restoreState(bestState, bestBoard, bestPieces);
                         if (bestRestored) {
                             System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-                            System.out.println("║              MEILLEURE SOLUTION ATTEINTE (RECORD)                ║");
+                            System.out.println("║              BEST SOLUTION REACHED (RECORD)                      ║");
                             System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
                             System.out.println();
-                            System.out.println("État avec le plus de pièces placées jusqu'à présent:");
+                            System.out.println("State with the most pieces placed so far:");
                             System.out.println();
-                            System.out.println("Légende des couleurs (comparaison RECORD vs CURRENT actuel):");
-                            System.out.println("  - \033[1;35mMagenta\033[0m: Case occupée dans RECORD mais vide dans CURRENT (régression)");
-                            System.out.println("  - \033[1;38;5;208mOrange\033[0m: Pièce différente entre RECORD et CURRENT (changement)");
-                            System.out.println("  - \033[1;33mJaune\033[0m: Case vide dans RECORD mais occupée dans CURRENT (progression)");
-                            System.out.println("  - \033[1;36mCyan\033[0m: Case identique dans RECORD et CURRENT (stabilité)");
+                            System.out.println("Color legend (RECORD vs current CURRENT comparison):");
+                            System.out.println("  - \033[1;35mMagenta\033[0m: Cell occupied in RECORD but empty in CURRENT (regression)");
+                            System.out.println("  - \033[1;38;5;208mOrange\033[0m: Different piece between RECORD and CURRENT (change)");
+                            System.out.println("  - \033[1;33mYellow\033[0m: Cell empty in RECORD but occupied in CURRENT (progression)");
+                            System.out.println("  - \033[1;36mCyan\033[0m: Identical cell in RECORD and CURRENT (stability)");
                             System.out.println();
 
-                            // Créer un solver temporaire pour l'affichage avec comparaison
+                            // Create a temporary solver for display with comparison
                             EternitySolver tempSolver = new EternitySolver();
                             List<Integer> bestUnusedIds = new ArrayList<>(bestState.unusedPieceIds);
 
-                            // Utiliser la comparaison pour montrer les différences avec le current
+                            // Use comparison to show differences with current
                             tempSolver.printBoardWithComparison(bestBoard, board, bestPieces, bestUnusedIds);
                             System.out.println();
 
@@ -217,7 +217,7 @@ public class MainSequential {
                     }
                 }
 
-                // Créer et configurer le solveur
+                // Create and configure the solver
                 EternitySolver.resetGlobalState();
                 EternitySolver solver = new EternitySolver();
                 solver.setDisplayConfig(config.isVerbose(), config.getMinDepthToShowRecords());
@@ -225,63 +225,63 @@ public class MainSequential {
                 solver.setPuzzleName(configId);
                 solver.setSortOrder(config.getSortOrder());
 
-                System.out.println("  → Le backtracking pourra remonter à travers TOUTES les " + saveState.depth + " pièces pré-chargées");
+                System.out.println("  → Backtracking will be able to go back through ALL " + saveState.depth + " pre-loaded pieces");
                 System.out.println();
 
-                // Afficher l'état complet du puzzle chargé pour validation
+                // Display the complete state of the loaded puzzle for validation
                 System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-                System.out.println("║              ÉTAT DU PUZZLE CHARGÉ (VALIDATION)                  ║");
+                System.out.println("║              LOADED PUZZLE STATE (VALIDATION)                    ║");
                 System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
                 System.out.println();
-                System.out.println("Légende:");
-                System.out.println("  - Pièces placées: ID de la pièce avec valeurs d'arêtes (N/E/S/W)");
-                System.out.println("  - Cases vides: (XXX) = nombre de pièces valides possibles");
-                System.out.println("  - \033[93mJaune\033[0m: cases critiques (≤20 possibilités)");
-                System.out.println("  - \033[1;91mRouge\033[0m: dead-end (0 possibilités)");
+                System.out.println("Legend:");
+                System.out.println("  - Placed pieces: Piece ID with edge values (N/E/S/W)");
+                System.out.println("  - Empty cells: (XXX) = number of valid pieces possible");
+                System.out.println("  - \033[93mYellow\033[0m: critical cells (≤20 possibilities)");
+                System.out.println("  - \033[1;91mRed\033[0m: dead-end (0 possibilities)");
                 System.out.println();
                 solver.printBoardWithLabels(board, allPieces, unusedIds);
                 System.out.println();
 
-                // Afficher le score actuel
+                // Display current score
                 board.printScore();
                 System.out.println();
                 System.out.println("═".repeat(70));
                 System.out.println();
 
-                // Résoudre avec backtracking complet (nouvelle méthode avec historique)
+                // Solve with complete backtracking (new method with history)
                 boolean solved = solver.solveWithHistory(board, allPieces, unusedIds,
                                                          new ArrayList<>(saveState.placementOrder));
 
                 if (solved) {
-                    System.out.println("\n  → ✅ Solution trouvée!");
+                    System.out.println("\n  → ✅ Solution found!");
                     System.out.println();
                     if (totalPieces <= 72) {
-                        // Affichage détaillé pour les petits puzzles
+                        // Detailed display for small puzzles
                         displayDetailedSolution(board, allPieces);
                     } else {
-                        // Affichage simple pour les grands puzzles
+                        // Simple display for large puzzles
                         displaySolution(board);
                     }
                 } else {
-                    System.out.println("  → ✗ Pas de solution trouvée");
+                    System.out.println("  → ✗ No solution found");
                 }
 
                 return solved;
             }
 
-            // Pas de sauvegarde current - démarrage classique
-            System.out.println("  → Aucune sauvegarde current trouvée");
+            // No current save - classic start
+            System.out.println("  → No current save found");
             return solvePuzzleFromScratch(config, filepath);
 
         } catch (Exception e) {
-            System.out.println("  → ✗ Erreur: " + e.getMessage());
+            System.out.println("  → ✗ Error: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
     /**
-     * Résout un puzzle avec un timeout (pour rotation automatique des puzzles)
+     * Solves a puzzle with a timeout (for automatic puzzle rotation)
      */
     private static boolean solvePuzzleWithTimeout(PuzzleConfig config, String filepath, long timeout) {
         final boolean[] solved = {false};
@@ -301,22 +301,22 @@ public class MainSequential {
             solverThread.join(timeout);
 
             if (solverThread.isAlive()) {
-                // Timeout atteint - interrompre le thread
-                System.out.println("\n  → ⏱ Timeout de 10 minutes atteint");
-                System.out.println("  → Interruption de la résolution et sauvegarde de l'état...");
+                // Timeout reached - interrupt the thread
+                System.out.println("\n  → ⏱ 10 minute timeout reached");
+                System.out.println("  → Interrupting solving and saving state...");
                 solverThread.interrupt();
-                solverThread.join(5000); // Attendre 5 secondes pour que le thread se termine proprement
+                solverThread.join(5000); // Wait 5 seconds for thread to terminate cleanly
 
                 if (solverThread.isAlive()) {
-                    // Force kill si le thread ne se termine pas
-                    System.out.println("  → Arrêt forcé du thread de résolution");
+                    // Force kill if thread doesn't terminate
+                    System.out.println("  → Forced stop of solving thread");
                 }
 
-                return false; // Pas résolu dans le temps imparti
+                return false; // Not solved within allotted time
             }
 
             if (exception[0] != null) {
-                System.out.println("  → ✗ Erreur: " + exception[0].getMessage());
+                System.out.println("  → ✗ Error: " + exception[0].getMessage());
                 exception[0].printStackTrace();
                 return false;
             }
@@ -324,33 +324,33 @@ public class MainSequential {
             return solved[0];
 
         } catch (InterruptedException e) {
-            System.out.println("  → Thread principal interrompu");
+            System.out.println("  → Main thread interrupted");
             solverThread.interrupt();
             return false;
         }
     }
 
     /**
-     * Résout un puzzle depuis le début (sans sauvegarde)
+     * Solves a puzzle from scratch (without save)
      */
     private static boolean solvePuzzleFromScratch(PuzzleConfig config, String filepath) {
         try {
-            System.out.println("  → Démarrage depuis le début...");
+            System.out.println("  → Starting from scratch...");
 
             Board board = new Board(config.getRows(), config.getCols());
             Map<Integer, Piece> allPieces = new HashMap<>(config.getPieces());
 
-            // Placer les pièces fixes
+            // Place fixed pieces
             for (PuzzleConfig.FixedPiece fp : config.getFixedPieces()) {
                 Piece piece = config.getPieces().get(fp.pieceId);
                 if (piece != null) {
                     board.place(fp.row, fp.col, piece, fp.rotation);
                     config.getPieces().remove(fp.pieceId);
-                    System.out.println("  → Pièce fixe " + fp.pieceId + " placée à [" + fp.row + "," + fp.col + "] rotation " + fp.rotation);
+                    System.out.println("  → Fixed piece " + fp.pieceId + " placed at [" + fp.row + "," + fp.col + "] rotation " + fp.rotation);
                 }
             }
 
-            // Résoudre
+            // Solve
             EternitySolver.resetGlobalState();
             EternitySolver solver = new EternitySolver();
             solver.setDisplayConfig(config.isVerbose(), config.getMinDepthToShowRecords());
@@ -358,44 +358,44 @@ public class MainSequential {
             solver.setPuzzleName(configId);
             solver.setSortOrder(config.getSortOrder());
 
-            System.out.println("  → Résolution en cours...");
-            System.out.println("  → Ordre de tri: " + config.getSortOrder());
-            System.out.println("  → Sauvegarde automatique toutes les 1 minute");
-            System.out.println("  → Changement de puzzle toutes les 10 minutes");
+            System.out.println("  → Solving in progress...");
+            System.out.println("  → Sort order: " + config.getSortOrder());
+            System.out.println("  → Automatic save every 1 minute");
+            System.out.println("  → Puzzle change every 10 minutes");
 
             boolean solved = solver.solve(board, allPieces);
 
             if (solved) {
-                System.out.println("  → ✓ Solution trouvée!");
+                System.out.println("  → ✓ Solution found!");
                 System.out.println();
                 int totalPieces = config.getRows() * config.getCols();
                 if (totalPieces <= 72) {
-                    // Affichage détaillé pour les petits puzzles
+                    // Detailed display for small puzzles
                     displayDetailedSolution(board, allPieces);
                 } else {
-                    // Affichage simple pour les grands puzzles
+                    // Simple display for large puzzles
                     displaySolution(board);
                 }
             } else {
-                System.out.println("  → ✗ Pas de solution trouvée");
+                System.out.println("  → ✗ No solution found");
             }
 
             return solved;
 
         } catch (Exception e) {
-            System.out.println("  → ✗ Erreur: " + e.getMessage());
+            System.out.println("  → ✗ Error: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
     /**
-     * Obtient le timeout en fonction de la difficulté
+     * Gets the timeout based on difficulty
      */
     private static long getTimeoutForDifficulty(String difficulty) {
         switch (difficulty.toLowerCase()) {
             case "facile":
-                return 30000;  // 30 secondes
+                return 30000;  // 30 seconds
             case "moyen":
                 return 120000; // 2 minutes
             case "difficile":
@@ -403,14 +403,14 @@ public class MainSequential {
             case "extreme":
                 return 1800000; // 30 minutes
             default:
-                return 60000;   // 1 minute par défaut
+                return 60000;   // 1 minute by default
         }
     }
 
     // Removed: sortPiecesByOrder() - now using ConfigurationUtils.sortPiecesByOrder()
 
     /**
-     * Affiche la solution d'un plateau (version simple, rétro-compatible)
+     * Displays the solution of a board (simple version, backward-compatible)
      */
     private static void displaySolution(Board board) {
         int rows = board.getRows();
@@ -436,20 +436,20 @@ public class MainSequential {
     }
 
     /**
-     * Affiche la solution d'un plateau (version détaillée avec arêtes)
+     * Displays the solution of a board (detailed version with edges)
      */
     private static void displayDetailedSolution(Board board, Map<Integer, Piece> allPieces) {
         System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-        System.out.println("║                        SOLUTION TROUVÉE                          ║");
+        System.out.println("║                        SOLUTION FOUND                            ║");
         System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
         System.out.println();
-        System.out.println("Légende:");
-        System.out.println("  - Chaque pièce affiche: ID de la pièce avec valeurs d'arêtes (N/E/S/W)");
-        System.out.println("  - \033[32mVert\033[0m: arêtes qui correspondent avec les voisins");
-        System.out.println("  - \033[91mRouge\033[0m: arêtes qui ne correspondent PAS (erreur!)");
+        System.out.println("Legend:");
+        System.out.println("  - Each piece displays: Piece ID with edge values (N/E/S/W)");
+        System.out.println("  - \033[32mGreen\033[0m: edges that match with neighbors");
+        System.out.println("  - \033[91mRed\033[0m: edges that do NOT match (error!)");
         System.out.println();
 
-        // Créer un solver temporaire pour utiliser sa méthode d'affichage
+        // Create a temporary solver to use its display method
         solver.EternitySolver tempSolver = new solver.EternitySolver();
         List<Integer> emptyList = new ArrayList<>();
         tempSolver.printBoardWithLabels(board, allPieces, emptyList);
@@ -461,12 +461,12 @@ public class MainSequential {
     }
 
     /**
-     * Affiche le rapport final
+     * Displays the final report
      */
     private static void printFinalReport(List<PuzzleResult> results, long totalDuration) {
         System.out.println();
         System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-        System.out.println("║                        RAPPORT FINAL                              ║");
+        System.out.println("║                        FINAL REPORT                               ║");
         System.out.println("╠═══════════════════════════════════════════════════════════════════╣");
 
         int solved = 0;
@@ -475,7 +475,7 @@ public class MainSequential {
         for (PuzzleResult result : results) {
             String status = result.solved ? "✓" : "✗";
             String name = String.format("%-35s", result.name);
-            String pieces = String.format("%3d pièces", result.pieceCount);
+            String pieces = String.format("%3d pieces", result.pieceCount);
             String time = String.format("%12s", FormattingUtils.formatDuration(result.duration));
 
             System.out.println("║ " + status + " " + name + " " + pieces + " " + time + " ║");
@@ -484,8 +484,8 @@ public class MainSequential {
         }
 
         System.out.println("╠═══════════════════════════════════════════════════════════════════╣");
-        System.out.println("║ Résolus: " + String.format("%-58s", solved + " / " + total) + " ║");
-        System.out.println("║ Temps total: " + String.format("%-52s", FormattingUtils.formatDuration(totalDuration)) + " ║");
+        System.out.println("║ Solved: " + String.format("%-59s", solved + " / " + total) + " ║");
+        System.out.println("║ Total time: " + String.format("%-54s", FormattingUtils.formatDuration(totalDuration)) + " ║");
         System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
         System.out.println();
     }
@@ -493,7 +493,7 @@ public class MainSequential {
     // Removed: formatDuration() - now using FormattingUtils.formatDuration()
 
     /**
-     * Classe interne pour stocker les résultats
+     * Inner class to store results
      */
     private static class PuzzleResult {
         String name;

@@ -3,12 +3,12 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Configuration d'un puzzle avec métadonnées
+ * Puzzle configuration with metadata
  */
 public class PuzzleConfig {
 
     /**
-     * Classe interne pour représenter une pièce fixe
+     * Inner class to represent a fixed piece
      */
     public static class FixedPiece {
         public final int pieceId;
@@ -29,16 +29,16 @@ public class PuzzleConfig {
     private int rows;
     private int cols;
     private String difficulty;
-    private Integer fixedPiece;  // Maintenu pour compatibilité
-    private Integer fixedPieceRow;  // Maintenu pour compatibilité
-    private Integer fixedPieceCol;  // Maintenu pour compatibilité
-    private Integer fixedPieceRotation;  // Maintenu pour compatibilité
-    private List<FixedPiece> fixedPieces = new ArrayList<>();  // Nouvelle approche
+    private Integer fixedPiece;  // Maintained for compatibility
+    private Integer fixedPieceRow;  // Maintained for compatibility
+    private Integer fixedPieceCol;  // Maintained for compatibility
+    private Integer fixedPieceRotation;  // Maintained for compatibility
+    private List<FixedPiece> fixedPieces = new ArrayList<>();  // New approach
     private Map<Integer, Piece> pieces;
-    private boolean verbose = false; // Affichage détaillé (par défaut: désactivé)
-    private int minDepthToShowRecords = Integer.MAX_VALUE; // Seuil pour afficher records (par défaut: jamais)
-    private String sortOrder = "ascending"; // Ordre de tri des pièces: "ascending" ou "descending"
-    private boolean prioritizeBorders = false; // Prioriser le remplissage des bords (par défaut: désactivé)
+    private boolean verbose = false; // Detailed display (default: disabled)
+    private int minDepthToShowRecords = Integer.MAX_VALUE; // Threshold to display records (default: never)
+    private String sortOrder = "ascending"; // Sort order for pieces: "ascending" or "descending"
+    private boolean prioritizeBorders = false; // Prioritize filling borders (default: disabled)
 
     public PuzzleConfig(String name, String type, int rows, int cols, String difficulty) {
         this.name = name;
@@ -74,7 +74,7 @@ public class PuzzleConfig {
     public void setPrioritizeBorders(boolean prioritizeBorders) { this.prioritizeBorders = prioritizeBorders; }
 
     /**
-     * Charge un puzzle depuis un fichier avec métadonnées
+     * Load a puzzle from a file with metadata
      */
     public static PuzzleConfig loadFromFile(String filename) throws IOException {
         PuzzleConfig config = null;
@@ -95,10 +95,10 @@ public class PuzzleConfig {
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
 
-                // Ignorer les lignes vides
+                // Ignore empty lines
                 if (line.isEmpty()) continue;
 
-                // Parser les métadonnées
+                // Parse metadata
                 if (line.startsWith("#")) {
                     String metadata = line.substring(1).trim();
 
@@ -109,10 +109,10 @@ public class PuzzleConfig {
                         String[] parts = dims.split("x");
                         rows = Integer.parseInt(parts[0]);
                         cols = Integer.parseInt(parts[1]);
-                    } else if (metadata.startsWith("Difficulté:")) {
+                    } else if (metadata.startsWith("Difficulty:") || metadata.startsWith("Difficulté:")) {
                         difficulty = metadata.substring(11).trim();
-                    } else if (metadata.startsWith("Pièce fixe:")) {
-                        fixedPiece = Integer.parseInt(metadata.substring(11).trim());
+                    } else if (metadata.startsWith("Fixed piece:") || metadata.startsWith("Pièce fixe:")) {
+                        fixedPiece = Integer.parseInt(metadata.substring(metadata.indexOf(":") + 1).trim());
                     } else if (metadata.startsWith("Verbose:")) {
                         String val = metadata.substring(8).trim().toLowerCase();
                         verbose = val.equals("true") || val.equals("oui") || val.equals("yes");
@@ -127,12 +127,12 @@ public class PuzzleConfig {
                         String pos = metadata.substring(18).trim();
                         String[] coords = pos.split("[,\\s]+");
                         if (coords.length >= 3) {
-                            // Pour compatibilité avec l'ancien système (pièce unique)
+                            // For compatibility with old system (single piece)
                             fixedPieceRow = Integer.parseInt(coords[0]);
                             fixedPieceCol = Integer.parseInt(coords[1]);
                             fixedPieceRotation = Integer.parseInt(coords[2]);
                         }
-                        // Nouvelle approche: supporter plusieurs pièces  "pieceId row col rotation"
+                        // New approach: support multiple pieces  "pieceId row col rotation"
                         if (coords.length >= 4) {
                             int pieceId = Integer.parseInt(coords[0]);
                             int row = Integer.parseInt(coords[1]);
@@ -142,7 +142,7 @@ public class PuzzleConfig {
                         }
                     } else if (!metadata.contains("=") && !metadata.startsWith("Format") &&
                                !metadata.startsWith("Total") && !metadata.startsWith("Mapping")) {
-                        // C'est probablement le nom
+                        // This is probably the name
                         if (name == null && metadata.length() > 0) {
                             name = metadata;
                         }
@@ -150,7 +150,7 @@ public class PuzzleConfig {
                     continue;
                 }
 
-                // Parser les pièces
+                // Parse pieces
                 String[] parts = line.split("\\s+");
                 if (parts.length >= 5) {
                     int id = Integer.parseInt(parts[0]);
@@ -164,7 +164,7 @@ public class PuzzleConfig {
                 }
             }
 
-            // Créer la configuration
+            // Create configuration
             if (name != null && type != null && rows > 0 && cols > 0) {
                 config = new PuzzleConfig(name, type, rows, cols, difficulty != null ? difficulty : "unknown");
                 config.pieces = pieces;
@@ -184,7 +184,7 @@ public class PuzzleConfig {
     }
 
     /**
-     * Affiche les informations du puzzle
+     * Display puzzle information
      */
     public void printInfo() {
         System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
@@ -192,23 +192,23 @@ public class PuzzleConfig {
         System.out.println("╠═══════════════════════════════════════════════════════════════════╣");
         System.out.println("║ Type: " + String.format("%-59s", type) + " ║");
         System.out.println("║ Dimensions: " + String.format("%-54s", rows + "×" + cols) + " ║");
-        System.out.println("║ Pièces: " + String.format("%-57s", pieces.size()) + " ║");
-        System.out.println("║ Difficulté: " + String.format("%-54s", difficulty) + " ║");
+        System.out.println("║ Pieces: " + String.format("%-58s", pieces.size()) + " ║");
+        System.out.println("║ Difficulty: " + String.format("%-54s", difficulty) + " ║");
         if (fixedPiece != null) {
-            System.out.println("║ Pièce fixe: " + String.format("%-54s", fixedPiece) + " ║");
+            System.out.println("║ Fixed piece: " + String.format("%-53s", fixedPiece) + " ║");
         }
         System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
     }
 
     /**
-     * Affiche un résumé des résultats
+     * Display a summary of results
      */
     public void printSummary(long duration, boolean solved) {
         System.out.println("\n┌───────────────────────────────────────────────────────────────────┐");
-        System.out.println("│ RÉSUMÉ: " + String.format("%-58s", name) + " │");
+        System.out.println("│ SUMMARY: " + String.format("%-57s", name) + " │");
         System.out.println("├───────────────────────────────────────────────────────────────────┤");
-        System.out.println("│ Résultat: " + String.format("%-56s", solved ? "✓ RÉSOLU" : "✗ NON RÉSOLU") + " │");
-        System.out.println("│ Temps: " + String.format("%-59s", formatDuration(duration)) + " │");
+        System.out.println("│ Result: " + String.format("%-58s", solved ? "✓ SOLVED" : "✗ NOT SOLVED") + " │");
+        System.out.println("│ Time: " + String.format("%-61s", formatDuration(duration)) + " │");
         System.out.println("└───────────────────────────────────────────────────────────────────┘");
     }
 

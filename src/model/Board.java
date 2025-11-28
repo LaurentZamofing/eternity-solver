@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * Représente la grille de jeu du puzzle.
- * Gère le placement et le retrait de pièces.
+ * Represents the puzzle game board.
+ * Manages piece placement and removal.
  */
 public class Board {
     private final int rows;
@@ -13,9 +13,9 @@ public class Board {
     private final Placement[][] grid;
 
     /**
-     * Constructeur
-     * @param rows nombre de lignes
-     * @param cols nombre de colonnes
+     * Constructor
+     * @param rows number of rows
+     * @param cols number of columns
      */
     public Board(int rows, int cols) {
         if (rows <= 0 || cols <= 0) {
@@ -27,24 +27,24 @@ public class Board {
     }
 
     /**
-     * Retourne le nombre de lignes.
+     * Returns the number of rows.
      */
     public int getRows() {
         return rows;
     }
 
     /**
-     * Retourne le nombre de colonnes.
+     * Returns the number of columns.
      */
     public int getCols() {
         return cols;
     }
 
     /**
-     * Vérifie si une case est vide.
-     * @param r ligne
-     * @param c colonne
-     * @return true si la case est vide
+     * Checks if a cell is empty.
+     * @param r row
+     * @param c column
+     * @return true if the cell is empty
      */
     public boolean isEmpty(int r, int c) {
         validateCoordinates(r, c);
@@ -52,10 +52,10 @@ public class Board {
     }
 
     /**
-     * Retourne le placement à la position (r, c).
-     * @param r ligne
-     * @param c colonne
-     * @return le placement ou null si vide
+     * Returns the placement at position (r, c).
+     * @param r row
+     * @param c column
+     * @return the placement or null if empty
      */
     public Placement getPlacement(int r, int c) {
         validateCoordinates(r, c);
@@ -63,11 +63,11 @@ public class Board {
     }
 
     /**
-     * Place une pièce à la position (r, c) avec une rotation donnée.
-     * @param r ligne
-     * @param c colonne
-     * @param piece pièce à placer
-     * @param rotation rotation à appliquer (0-3)
+     * Places a piece at position (r, c) with a given rotation.
+     * @param r row
+     * @param c column
+     * @param piece piece to place
+     * @param rotation rotation to apply (0-3)
      */
     public void place(int r, int c, Piece piece, int rotation) {
         validateCoordinates(r, c);
@@ -76,9 +76,9 @@ public class Board {
     }
 
     /**
-     * Retire la pièce à la position (r, c).
-     * @param r ligne
-     * @param c colonne
+     * Removes the piece at position (r, c).
+     * @param r row
+     * @param c column
      */
     public void remove(int r, int c) {
         validateCoordinates(r, c);
@@ -86,8 +86,8 @@ public class Board {
     }
 
     /**
-     * Affiche une représentation simple de la grille.
-     * @param piecesById map des pièces par ID (optionnel pour affichage détaillé)
+     * Displays a simple representation of the board.
+     * @param piecesById map of pieces by ID (optional for detailed display)
      */
     public void prettyPrint(Map<Integer, Piece> piecesById) {
         System.out.println("Board " + rows + "x" + cols + ":");
@@ -105,7 +105,7 @@ public class Board {
         System.out.println();
 
         if (piecesById != null) {
-            System.out.println("Détails (coord -> id,rot,edges après rotation):");
+            System.out.println("Details (coord -> id,rot,edges after rotation):");
             for (int r = 0; r < rows; r++) {
                 for (int c = 0; c < cols; c++) {
                     Placement p = grid[r][c];
@@ -120,28 +120,28 @@ public class Board {
     }
 
     /**
-     * Calcule le score du board basé sur le nombre d'arêtes internes correctes.
+     * Calculates the board score based on the number of correct internal edges.
      *
-     * Score = nombre d'arêtes internes matchées (bordures non comptées car obligatoires)
+     * Score = number of matched internal edges (borders not counted as mandatory)
      *
-     * Pour un board 16x16:
-     * - Arêtes internes horizontales: (cols-1) × rows = 15 × 16 = 240
-     * - Arêtes internes verticales: cols × (rows-1) = 16 × 15 = 240
-     * - Total max: 480 arêtes internes
+     * For a 16x16 board:
+     * - Internal horizontal edges: (cols-1) × rows = 15 × 16 = 240
+     * - Internal vertical edges: cols × (rows-1) = 16 × 15 = 240
+     * - Total max: 480 internal edges
      *
-     * Les arêtes de bordure (qui doivent être 0) ne sont pas comptées dans le score
-     * car elles sont des contraintes obligatoires, pas un objectif à maximiser.
+     * Border edges (which must be 0) are not counted in the score
+     * as they are mandatory constraints, not an objective to maximize.
      *
-     * @return [score actuel, score maximum possible]
+     * @return [current score, maximum possible score]
      */
     public int[] calculateScore() {
         int correctEdges = 0;
 
-        // Calculer le score maximum théorique (seulement les arêtes internes)
+        // Calculate the theoretical maximum score (only internal edges)
         int maxInternalEdges = (rows - 1) * cols + rows * (cols - 1);
         int maxScore = maxInternalEdges;
 
-        // Compter les pièces placées
+        // Count placed pieces
         int placedPieces = 0;
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
@@ -151,20 +151,20 @@ public class Board {
             }
         }
 
-        // Si aucune pièce placée, retourner 0
+        // If no pieces placed, return 0
         if (placedPieces == 0) {
             return new int[]{0, maxScore};
         }
 
-        // Vérifier les arêtes internes horizontales
+        // Check internal horizontal edges
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols - 1; c++) {
                 Placement left = grid[r][c];
                 Placement right = grid[r][c + 1];
 
-                // Si les deux pièces sont placées
+                // If both pieces are placed
                 if (left != null && right != null) {
-                    // L'arête Est de la pièce gauche doit matcher l'arête Ouest de la pièce droite
+                    // The East edge of the left piece must match the West edge of the right piece
                     if (left.edges[1] == right.edges[3]) {
                         correctEdges++;
                     }
@@ -172,15 +172,15 @@ public class Board {
             }
         }
 
-        // Vérifier les arêtes internes verticales
+        // Check internal vertical edges
         for (int r = 0; r < rows - 1; r++) {
             for (int c = 0; c < cols; c++) {
                 Placement top = grid[r][c];
                 Placement bottom = grid[r + 1][c];
 
-                // Si les deux pièces sont placées
+                // If both pieces are placed
                 if (top != null && bottom != null) {
-                    // L'arête Sud de la pièce haute doit matcher l'arête Nord de la pièce basse
+                    // The South edge of the top piece must match the North edge of the bottom piece
                     if (top.edges[2] == bottom.edges[0]) {
                         correctEdges++;
                     }
@@ -188,14 +188,14 @@ public class Board {
             }
         }
 
-        // Les arêtes de bordure ne sont pas comptées dans le score
-        // (ce sont des contraintes obligatoires, pas un objectif)
+        // Border edges are not counted in the score
+        // (they are mandatory constraints, not an objective)
 
         return new int[]{correctEdges, maxScore};
     }
 
     /**
-     * Calcule et affiche le score du board.
+     * Calculates and displays the board score.
      */
     public void printScore() {
         int[] score = calculateScore();
@@ -204,22 +204,22 @@ public class Board {
         double percentage = max > 0 ? (current * 100.0 / max) : 0.0;
 
         System.out.println("╔════════════════════════════════════════════════════════╗");
-        System.out.println("║                    SCORE DU BOARD                      ║");
+        System.out.println("║                    BOARD SCORE                         ║");
         System.out.println("╚════════════════════════════════════════════════════════╝");
-        System.out.printf("Arêtes internes correctes: %d / %d (%.1f%%)%n", current, max, percentage);
+        System.out.printf("Correct internal edges: %d / %d (%.1f%%)%n", current, max, percentage);
 
-        // Décomposition du score
+        // Score breakdown
         int internalH = (rows - 1) * cols;
         int internalV = rows * (cols - 1);
 
-        System.out.printf("  - Arêtes horizontales: %d max%n", internalH);
-        System.out.printf("  - Arêtes verticales: %d max%n", internalV);
-        System.out.println("  (Les bordures ne comptent pas dans le score)");
+        System.out.printf("  - Horizontal edges: %d max%n", internalH);
+        System.out.printf("  - Vertical edges: %d max%n", internalV);
+        System.out.println("  (Borders don't count in the score)");
         System.out.println();
     }
 
     /**
-     * Valide que les coordonnées sont dans les limites de la grille.
+     * Validates that coordinates are within board bounds.
      */
     private void validateCoordinates(int r, int c) {
         if (r < 0 || r >= rows || c < 0 || c >= cols) {

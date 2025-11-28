@@ -4,32 +4,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Wrapper centralisé pour le logging du solveur Eternity.
+ * Centralized wrapper for Eternity solver logging.
  *
- * <p>Cette classe fournit une interface simplifiée pour le logging,
- * facilitant la migration progressive depuis System.out.println vers SLF4J.</p>
+ * <p>This class provides a simplified interface for logging,
+ * facilitating progressive migration from System.out.println to SLF4J.</p>
  *
- * <h2>Niveaux de log:</h2>
+ * <h2>Log levels:</h2>
  * <ul>
- *   <li><b>ERROR</b>: Erreurs critiques nécessitant attention</li>
- *   <li><b>WARN</b>: Avertissements, situations anormales</li>
- *   <li><b>INFO</b>: Informations importantes sur le déroulement</li>
- *   <li><b>DEBUG</b>: Informations de débogage détaillées</li>
- *   <li><b>TRACE</b>: Informations très détaillées (performance)</li>
+ *   <li><b>ERROR</b>: Critical errors requiring attention</li>
+ *   <li><b>WARN</b>: Warnings, abnormal situations</li>
+ *   <li><b>INFO</b>: Important information about execution</li>
+ *   <li><b>DEBUG</b>: Detailed debugging information</li>
+ *   <li><b>TRACE</b>: Very detailed information (performance)</li>
  * </ul>
  *
  * <h2>Configuration:</h2>
- * <p>Le niveau de log est configuré via logback.xml dans src/main/resources/</p>
+ * <p>The log level is configured via logback.xml in src/main/resources/</p>
  *
- * <h2>Migration depuis System.out:</h2>
+ * <h2>Migration from System.out:</h2>
  * <pre>
- * // Avant:
- * System.out.println("Solution trouvée!");
- * System.err.println("Erreur: " + message);
+ * // Before:
+ * System.out.println("Solution found!");
+ * System.err.println("Error: " + message);
  *
- * // Après:
- * SolverLogger.info("Solution trouvée!");
- * SolverLogger.error("Erreur: {}", message);
+ * // After:
+ * SolverLogger.info("Solution found!");
+ * SolverLogger.error("Error: {}", message);
  * </pre>
  *
  * @author Eternity Solver Team
@@ -37,17 +37,17 @@ import org.slf4j.LoggerFactory;
  */
 public final class SolverLogger {
 
-    // Logger par défaut pour le solver
+    // Default logger for the solver
     private static final Logger logger = LoggerFactory.getLogger("EternitySolver");
 
-    // Loggers spécialisés par composant
+    // Specialized loggers by component
     private static final Logger solverLogger = LoggerFactory.getLogger("solver");
     private static final Logger searchLogger = LoggerFactory.getLogger("search");
     private static final Logger statsLogger = LoggerFactory.getLogger("stats");
     private static final Logger saveLogger = LoggerFactory.getLogger("save");
     private static final Logger utilLogger = LoggerFactory.getLogger("util");
 
-    // Empêche l'instanciation
+    // Prevent instantiation
     private SolverLogger() {
         throw new AssertionError("Cannot instantiate logger class");
     }
@@ -57,37 +57,37 @@ public final class SolverLogger {
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Log un message INFO.
+     * Logs an INFO message.
      *
-     * @param message Le message à logger
+     * @param message The message to log
      */
     public static void info(String message) {
         logger.info(message);
     }
 
     /**
-     * Log un message INFO avec paramètres.
+     * Logs an INFO message with parameters.
      *
-     * @param format Format du message (avec {} pour les paramètres)
-     * @param args Arguments à insérer dans le message
+     * @param format Message format (with {} for parameters)
+     * @param args Arguments to insert in the message
      */
     public static void info(String format, Object... args) {
         logger.info(format, args);
     }
 
     /**
-     * Log un message DEBUG.
+     * Logs a DEBUG message.
      *
-     * @param message Le message à logger
+     * @param message The message to log
      */
     public static void debug(String message) {
         logger.debug(message);
     }
 
     /**
-     * Log un message DEBUG avec paramètres.
+     * Logs a DEBUG message with parameters.
      *
-     * @param format Format du message
+     * @param format Message format
      * @param args Arguments
      */
     public static void debug(String format, Object... args) {
@@ -95,18 +95,18 @@ public final class SolverLogger {
     }
 
     /**
-     * Log un message WARN.
+     * Logs a WARN message.
      *
-     * @param message Le message à logger
+     * @param message The message to log
      */
     public static void warn(String message) {
         logger.warn(message);
     }
 
     /**
-     * Log un message WARN avec paramètres.
+     * Logs a WARN message with parameters.
      *
-     * @param format Format du message
+     * @param format Message format
      * @param args Arguments
      */
     public static void warn(String format, Object... args) {
@@ -114,28 +114,28 @@ public final class SolverLogger {
     }
 
     /**
-     * Log un message ERROR.
+     * Logs an ERROR message.
      *
-     * @param message Le message à logger
+     * @param message The message to log
      */
     public static void error(String message) {
         logger.error(message);
     }
 
     /**
-     * Log un message ERROR avec exception.
+     * Logs an ERROR message with exception.
      *
-     * @param message Le message
-     * @param throwable L'exception
+     * @param message The message
+     * @param throwable The exception
      */
     public static void error(String message, Throwable throwable) {
         logger.error(message, throwable);
     }
 
     /**
-     * Log un message ERROR avec paramètres.
+     * Logs an ERROR message with parameters.
      *
-     * @param format Format du message
+     * @param format Message format
      * @param args Arguments
      */
     public static void error(String format, Object... args) {
@@ -143,18 +143,18 @@ public final class SolverLogger {
     }
 
     /**
-     * Log un message TRACE (très détaillé).
+     * Logs a TRACE message (very detailed).
      *
-     * @param message Le message à logger
+     * @param message The message to log
      */
     public static void trace(String message) {
         logger.trace(message);
     }
 
     /**
-     * Log un message TRACE avec paramètres.
+     * Logs a TRACE message with parameters.
      *
-     * @param format Format du message
+     * @param format Message format
      * @param args Arguments
      */
     public static void trace(String format, Object... args) {
@@ -166,18 +166,18 @@ public final class SolverLogger {
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Log un message concernant l'algorithme de recherche.
+     * Logs a message about the search algorithm.
      *
-     * @param message Le message
+     * @param message The message
      */
     public static void search(String message) {
         searchLogger.info(message);
     }
 
     /**
-     * Log un message concernant l'algorithme de recherche avec paramètres.
+     * Logs a message about the search algorithm with parameters.
      *
-     * @param format Format du message
+     * @param format Message format
      * @param args Arguments
      */
     public static void search(String format, Object... args) {
@@ -185,18 +185,18 @@ public final class SolverLogger {
     }
 
     /**
-     * Log des statistiques.
+     * Logs statistics.
      *
-     * @param message Le message
+     * @param message The message
      */
     public static void stats(String message) {
         statsLogger.info(message);
     }
 
     /**
-     * Log des statistiques avec paramètres.
+     * Logs statistics with parameters.
      *
-     * @param format Format du message
+     * @param format Message format
      * @param args Arguments
      */
     public static void stats(String format, Object... args) {
@@ -204,18 +204,18 @@ public final class SolverLogger {
     }
 
     /**
-     * Log une opération de sauvegarde/chargement.
+     * Logs a save/load operation.
      *
-     * @param message Le message
+     * @param message The message
      */
     public static void save(String message) {
         saveLogger.info(message);
     }
 
     /**
-     * Log une opération de sauvegarde/chargement avec paramètres.
+     * Logs a save/load operation with parameters.
      *
-     * @param format Format du message
+     * @param format Message format
      * @param args Arguments
      */
     public static void save(String format, Object... args) {
@@ -227,14 +227,14 @@ public final class SolverLogger {
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Affiche un message directement sur la console (pour compatibilité).
+     * Displays a message directly on the console (for compatibility).
      *
-     * <p><b>Attention:</b> Cette méthode est fournie uniquement pour faciliter
-     * la migration progressive. Elle devrait être remplacée par les méthodes
-     * de logging appropriées (info, debug, etc.).</p>
+     * <p><b>Warning:</b> This method is provided only to facilitate
+     * progressive migration. It should be replaced by appropriate
+     * logging methods (info, debug, etc.).</p>
      *
-     * @param message Le message à afficher
-     * @deprecated Utiliser {@link #info(String)} ou {@link #debug(String)} à la place
+     * @param message The message to display
+     * @deprecated Use {@link #info(String)} or {@link #debug(String)} instead
      */
     @Deprecated
     public static void print(String message) {
@@ -243,13 +243,13 @@ public final class SolverLogger {
     }
 
     /**
-     * Affiche un message d'erreur directement sur la console (pour compatibilité).
+     * Displays an error message directly on the console (for compatibility).
      *
-     * <p><b>Attention:</b> Cette méthode est fournie uniquement pour faciliter
-     * la migration progressive. Elle devrait être remplacée par {@link #error(String)}.</p>
+     * <p><b>Warning:</b> This method is provided only to facilitate
+     * progressive migration. It should be replaced by {@link #error(String)}.</p>
      *
-     * @param message Le message d'erreur
-     * @deprecated Utiliser {@link #error(String)} à la place
+     * @param message The error message
+     * @deprecated Use {@link #error(String)} instead
      */
     @Deprecated
     public static void printError(String message) {
@@ -262,48 +262,48 @@ public final class SolverLogger {
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Vérifie si le niveau DEBUG est activé.
+     * Checks if DEBUG level is enabled.
      *
-     * <p>Utile pour éviter des calculs coûteux si le message ne sera pas logé.</p>
+     * <p>Useful to avoid expensive calculations if the message won't be logged.</p>
      *
-     * @return true si DEBUG est activé
+     * @return true if DEBUG is enabled
      */
     public static boolean isDebugEnabled() {
         return logger.isDebugEnabled();
     }
 
     /**
-     * Vérifie si le niveau TRACE est activé.
+     * Checks if TRACE level is enabled.
      *
-     * @return true si TRACE est activé
+     * @return true if TRACE is enabled
      */
     public static boolean isTraceEnabled() {
         return logger.isTraceEnabled();
     }
 
     /**
-     * Vérifie si le niveau INFO est activé.
+     * Checks if INFO level is enabled.
      *
-     * @return true si INFO est activé
+     * @return true if INFO is enabled
      */
     public static boolean isInfoEnabled() {
         return logger.isInfoEnabled();
     }
 
     /**
-     * Obtient le logger SLF4J sous-jacent pour usage avancé.
+     * Gets the underlying SLF4J logger for advanced usage.
      *
-     * @return Le logger SLF4J
+     * @return The SLF4J logger
      */
     public static Logger getLogger() {
         return logger;
     }
 
     /**
-     * Obtient un logger pour un composant spécifique.
+     * Gets a logger for a specific component.
      *
-     * @param name Nom du composant
-     * @return Logger pour ce composant
+     * @param name Component name
+     * @return Logger for this component
      */
     public static Logger getLogger(String name) {
         return LoggerFactory.getLogger(name);

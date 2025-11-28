@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Gestionnaire d'arrêt gracieux de l'application.
+ * Graceful shutdown manager for the application.
  *
- * Enregistre un hook JVM pour intercepter SIGINT (Ctrl+C) et SIGTERM,
- * permettant de sauvegarder l'état avant l'arrêt et d'afficher les statistiques.
+ * Registers a JVM hook to intercept SIGINT (Ctrl+C) and SIGTERM,
+ * allowing state saving before shutdown and displaying statistics.
  */
 public class ShutdownManager {
 
@@ -21,100 +21,100 @@ public class ShutdownManager {
     private static boolean hookRegistered = false;
 
     /**
-     * Interface pour les hooks d'arrêt personnalisés
+     * Interface for custom shutdown hooks
      */
     public interface ShutdownHook {
         /**
-         * Exécuté lors de l'arrêt de l'application
-         * @param signal le signal reçu (SIGINT, SIGTERM, etc.)
+         * Executed during application shutdown
+         * @param signal the signal received (SIGINT, SIGTERM, etc.)
          */
         void onShutdown(String signal);
 
         /**
-         * Nom du hook (pour logging)
+         * Hook name (for logging)
          */
         String getName();
     }
 
     /**
-     * Enregistre le hook d'arrêt JVM si ce n'est pas déjà fait
+     * Registers the JVM shutdown hook if not already done
      */
     public static synchronized void registerShutdownHook() {
         if (hookRegistered) {
-            logger.debug("Shutdown hook déjà enregistré");
+            logger.debug("Shutdown hook already registered");
             return;
         }
 
         Thread shutdownThread = new Thread(() -> {
             try {
                 logger.info("═══════════════════════════════════════════════════════");
-                logger.info("Arrêt gracieux en cours...");
+                logger.info("Graceful shutdown in progress...");
                 logger.info("═══════════════════════════════════════════════════════");
 
                 shutdownRequested.set(true);
 
-                // Exécuter tous les hooks enregistrés
+                // Execute all registered hooks
                 for (ShutdownHook hook : hooks) {
                     try {
-                        logger.info("Exécution hook: {}", hook.getName());
+                        logger.info("Executing hook: {}", hook.getName());
                         hook.onShutdown("JVM_SHUTDOWN");
                     } catch (Exception e) {
-                        logger.error("Erreur dans hook {}: {}", hook.getName(), e.getMessage(), e);
+                        logger.error("Error in hook {}: {}", hook.getName(), e.getMessage(), e);
                     }
                 }
 
-                logger.info("Arrêt gracieux terminé");
+                logger.info("Graceful shutdown completed");
                 logger.info("═══════════════════════════════════════════════════════");
 
             } catch (Exception e) {
-                logger.error("Erreur lors de l'arrêt gracieux", e);
+                logger.error("Error during graceful shutdown", e);
             }
         }, "ShutdownHook-Thread");
 
         Runtime.getRuntime().addShutdownHook(shutdownThread);
         hookRegistered = true;
-        logger.info("Shutdown hook JVM enregistré");
+        logger.info("JVM shutdown hook registered");
     }
 
     /**
-     * Ajoute un hook d'arrêt personnalisé
-     * @param hook le hook à ajouter
+     * Adds a custom shutdown hook
+     * @param hook the hook to add
      */
     public static synchronized void addShutdownHook(ShutdownHook hook) {
         if (hook == null) {
-            throw new IllegalArgumentException("Hook ne peut pas être null");
+            throw new IllegalArgumentException("Hook cannot be null");
         }
         hooks.add(hook);
-        logger.debug("Hook ajouté: {}", hook.getName());
+        logger.debug("Hook added: {}", hook.getName());
     }
 
     /**
-     * Supprime un hook d'arrêt
-     * @param hook le hook à supprimer
+     * Removes a shutdown hook
+     * @param hook the hook to remove
      */
     public static synchronized void removeShutdownHook(ShutdownHook hook) {
         hooks.remove(hook);
-        logger.debug("Hook supprimé: {}", hook.getName());
+        logger.debug("Hook removed: {}", hook.getName());
     }
 
     /**
-     * Vérifie si un arrêt a été demandé
-     * @return true si l'arrêt a été demandé
+     * Checks if a shutdown has been requested
+     * @return true if shutdown has been requested
      */
     public static boolean isShutdownRequested() {
         return shutdownRequested.get();
     }
 
     /**
-     * Demande un arrêt gracieux (depuis le code)
+     * Requests a graceful shutdown (from code)
      */
     public static void requestShutdown() {
-        logger.info("Arrêt gracieux demandé depuis le code");
+        logger.info("Graceful shutdown requested from code");
         shutdownRequested.set(true);
     }
 
     /**
-     * Réinitialise l'état (utile pour les tests)
+     * Resets state (useful for tests)
      */
     static synchronized void reset() {
         shutdownRequested.set(false);
@@ -123,12 +123,12 @@ public class ShutdownManager {
     }
 
     /**
-     * Affiche un message d'arrêt formaté
+     * Displays a formatted shutdown message
      */
     public static void printShutdownMessage(String message) {
         System.out.println();
         System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("⚠️  INTERRUPTION DÉTECTÉE");
+        System.out.println("⚠️  INTERRUPTION DETECTED");
         System.out.println("═══════════════════════════════════════════════════════");
         System.out.println(message);
         System.out.println("═══════════════════════════════════════════════════════");
@@ -136,12 +136,12 @@ public class ShutdownManager {
     }
 
     /**
-     * Affiche les statistiques finales lors de l'arrêt
+     * Displays final statistics during shutdown
      */
     public static void printFinalStatistics(Object stats) {
         System.out.println();
         System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("STATISTIQUES FINALES");
+        System.out.println("FINAL STATISTICS");
         System.out.println("═══════════════════════════════════════════════════════");
         System.out.println(stats.toString());
         System.out.println("═══════════════════════════════════════════════════════");
@@ -149,7 +149,7 @@ public class ShutdownManager {
     }
 
     /**
-     * Hook standard pour sauvegarder l'état du solveur
+     * Standard hook for saving solver state
      */
     public static class SolverShutdownHook implements ShutdownHook {
         private final Runnable saveAction;
@@ -163,9 +163,9 @@ public class ShutdownManager {
         @Override
         public void onShutdown(String signal) {
             if (saveAction != null) {
-                printShutdownMessage("Sauvegarde de l'état en cours...");
+                printShutdownMessage("Saving state in progress...");
                 saveAction.run();
-                System.out.println("✓ État sauvegardé avec succès");
+                System.out.println("✓ State saved successfully");
             }
         }
 
@@ -176,7 +176,7 @@ public class ShutdownManager {
     }
 
     /**
-     * Hook standard pour afficher les statistiques
+     * Standard hook for displaying statistics
      */
     public static class StatisticsShutdownHook implements ShutdownHook {
         private final Object statistics;
@@ -199,7 +199,7 @@ public class ShutdownManager {
     }
 
     /**
-     * Hook standard pour nettoyer les ressources
+     * Standard hook for cleaning up resources
      */
     public static class CleanupShutdownHook implements ShutdownHook {
         private final Runnable cleanupAction;
@@ -213,7 +213,7 @@ public class ShutdownManager {
         @Override
         public void onShutdown(String signal) {
             if (cleanupAction != null) {
-                logger.info("Nettoyage: {}", description);
+                logger.info("Cleanup: {}", description);
                 cleanupAction.run();
             }
         }

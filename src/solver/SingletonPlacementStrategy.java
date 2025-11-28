@@ -70,9 +70,9 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
         if (verbose) {
             int availableCount = context.countAvailablePieces();
             System.out.println("\n╔════════════════════════════════════════╗");
-            System.out.println("║  Étape " + (solver.getStepCount() + 1) + " - SINGLETON FORCÉ");
-            System.out.println("║  Pièce " + pid + " → Case (" + r + ", " + c + ")");
-            System.out.println("║  Pièces disponibles : " + availableCount);
+            System.out.println("║  Step " + (solver.getStepCount() + 1) + " - FORCED SINGLETON");
+            System.out.println("║  Piece " + pid + " → Cell (" + r + ", " + c + ")");
+            System.out.println("║  Available pieces: " + availableCount);
             System.out.println("╚════════════════════════════════════════╝");
             context.stats.printCompact();
         }
@@ -100,7 +100,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
                                                context.piecesById, context.pieceUsed, context.totalPieces)) {
             // Dead end detected by AC-3 for singleton
             if (verbose) {
-                System.out.println("✗ AC-3 dead-end détecté pour singleton : ID=" + pid + " à (" + r + ", " + c + ")");
+                System.out.println("✗ AC-3 dead-end detected for singleton: ID=" + pid + " at (" + r + ", " + c + ")");
             }
             // Backtrack immediately
             context.pieceUsed.clear(pid);
@@ -115,8 +115,8 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
         if (verbose) {
             solver.printBoardWithCounts(context.board, context.piecesById, context.pieceUsed,
                                        context.totalPieces, r, c);
-            System.out.println("✓ Singleton posé : ID=" + pid + ", Rotation=" + (rot * 90) +
-                             "°, Arêtes=" + java.util.Arrays.toString(candidate));
+            System.out.println("✓ Singleton placed: ID=" + pid + ", Rotation=" + (rot * 90) +
+                             "°, Edges=" + java.util.Arrays.toString(candidate));
         }
 
         // Recursive call
@@ -129,7 +129,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
         // Backtrack singleton
         context.stats.backtracks++;
         if (verbose) {
-            System.out.println("✗ BACKTRACK du singleton : Retrait de la pièce ID=" + pid + " à (" + r + ", " + c + ")");
+            System.out.println("✗ Singleton BACKTRACK: Removing piece ID=" + pid + " at (" + r + ", " + c + ")");
         }
 
         context.pieceUsed.clear(pid);

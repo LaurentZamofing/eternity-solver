@@ -7,22 +7,22 @@ import java.util.BitSet;
 import java.util.Map;
 
 /**
- * HeuristicStrategy définit l'interface pour les stratégies de sélection de cellule dans le solveur Eternity.
+ * HeuristicStrategy defines interface for cell selection strategies in Eternity solver.
  *
- * Différentes heuristiques peuvent être implémentées pour choisir quelle cellule vide remplir ensuite pendant
- * la recherche par retour sur trace. Le choix de la cellule peut affecter dramatiquement les performances de recherche.
+ * Different heuristics can be implemented to choose which empty cell to fill next during
+ * backtracking search. Cell choice can dramatically affect search performance.
  *
- * Les heuristiques courantes incluent :
- * - MRV (Minimum Remaining Values) : Choisir la cellule avec le moins de placements valides
- * - Heuristique de degré : Choisir la cellule avec le plus de voisins
- * - Ordre ligne-majeur : Remplir les cellules de haut-gauche à bas-droite
+ * Common heuristics include:
+ * - MRV (Minimum Remaining Values): Choose cell with fewest valid placements
+ * - Degree heuristic: Choose cell with most neighbors
+ * - Row-major order: Fill cells from top-left to bottom-right
  *
  * @author Eternity Solver Team
  */
 public interface HeuristicStrategy {
 
     /**
-     * Représente une position sur le plateau.
+     * Represents a position on the board.
      */
     class CellPosition {
         public final int row;
@@ -34,7 +34,7 @@ public interface HeuristicStrategy {
         }
 
         /**
-         * Convertit au format tableau [row, col] pour la compatibilité rétroactive.
+         * Converts to array format [row, col] for backward compatibility.
          */
         public int[] toArray() {
             return new int[]{row, col};
@@ -60,21 +60,21 @@ public interface HeuristicStrategy {
     }
 
     /**
-     * Sélectionne la prochaine cellule à remplir en fonction de la stratégie heuristique.
+     * Selects next cell to fill based on heuristic strategy.
      *
-     * @param board l'état actuel du plateau
-     * @param piecesById carte de toutes les pièces par ID
-     * @param pieceUsed bitset suivant quelles pièces sont déjà placées
-     * @param totalPieces nombre total de pièces dans le puzzle
-     * @return la position de la prochaine cellule à remplir, ou null si aucune cellule vide ne reste
+     * @param board current board state
+     * @param piecesById map of all pieces by ID
+     * @param pieceUsed bitset tracking which pieces are already placed
+     * @param totalPieces total number of pieces in puzzle
+     * @return position of next cell to fill, or null if no empty cells remain
      */
     CellPosition selectNextCell(Board board, Map<Integer, Piece> piecesById,
                                 BitSet pieceUsed, int totalPieces);
 
     /**
-     * Obtient le nom de cette stratégie heuristique.
+     * Gets name of this heuristic strategy.
      *
-     * @return un nom descriptif pour cette stratégie
+     * @return descriptive name for this strategy
      */
     default String getName() {
         return this.getClass().getSimpleName();

@@ -6,28 +6,14 @@ import util.SaveStateManager;
 
 import java.util.*;
 
-/**
- * Gère le retour arrière historique à travers les états pré-chargés, permettant
- * la reprise depuis des parties sauvegardées avec capacité complète de backtracking.
- *
- * Cette classe gère la logique complexe du retour arrière à travers les placements
- * de pièces qui ont été chargés depuis un état sauvegardé, incluant l'essai de
- * rotations alternatives avant un retour arrière plus profond.
- *
- * Extrait de EternitySolver pour isoler la complexité de reprise/backtracking.
- */
+/** Manages historical backtracking through pre-loaded states with full backtracking capability; tries alternative rotations before deeper backtracking when resuming from saved games. */
 public class BacktrackingHistoryManager {
 
     private final PlacementValidator validator;
     private final String threadLabel;
     private final EternitySolver.Statistics stats;
 
-    /**
-     * Constructeur avec dépendances
-     * @param validator validateur de placement pour vérifier l'ajustement
-     * @param threadLabel étiquette pour la journalisation
-     * @param stats gestionnaire de statistiques
-     */
+    /** Creates history manager with placement validator, thread label for logging, and statistics tracker. */
     public BacktrackingHistoryManager(PlacementValidator validator,
                                      String threadLabel,
                                      EternitySolver.Statistics stats) {
@@ -36,13 +22,7 @@ public class BacktrackingHistoryManager {
         this.stats = stats;
     }
 
-    /**
-     * Calcule le nombre de pièces fixes pour un puzzle
-     * Les pièces fixes sont celles qui ne doivent pas subir de retour arrière (coins, indices)
-     *
-     * @param puzzleName nom du puzzle
-     * @return nombre de pièces fixes
-     */
+    /** Calculates number of fixed pieces (corners, hints) that should not be backtracked based on puzzle name. */
     public int calculateFixedPieces(String puzzleName) {
         if (puzzleName.startsWith("eternity2")) {
             return 9; // 4 coins + 5 indices pour Eternity II
@@ -53,13 +33,7 @@ public class BacktrackingHistoryManager {
         }
     }
 
-    /**
-     * Construit la liste des pièces fixes initiales depuis l'historique de placement
-     *
-     * @param preloadedOrder historique complet de placement
-     * @param numFixedPieces nombre de pièces fixes
-     * @return liste des placements fixes
-     */
+    /** Builds initial fixed pieces list from first N entries of placement history. */
     public List<SaveStateManager.PlacementInfo> buildInitialFixedPieces(
             List<SaveStateManager.PlacementInfo> preloadedOrder,
             int numFixedPieces) {
@@ -70,17 +44,7 @@ public class BacktrackingHistoryManager {
         return fixedPieces;
     }
 
-    /**
-     * Effectue un retour arrière à travers les placements de pièces pré-chargés,
-     * en essayant des rotations alternatives avant un retour arrière plus profond.
-     *
-     * @param board état actuel du plateau
-     * @param allPieces toutes les pièces du puzzle
-     * @param pieceUsed bitset des pièces utilisées
-     * @param placementOrder historique des placements
-     * @param sequentialSolver callback vers le solveur séquentiel
-     * @return true si une solution est trouvée pendant le retour arrière
-     */
+    /** Backtracks through pre-loaded placements, trying alternative rotations before deeper backtracking; returns true if solution found. */
     public boolean backtrackThroughHistory(Board board,
                                           Map<Integer, Piece> allPieces,
                                           BitSet pieceUsed,
@@ -130,21 +94,7 @@ public class BacktrackingHistoryManager {
         return result;
     }
 
-    /**
-     * Essaie des rotations alternatives de la même pièce à la même position
-     * avant de continuer le retour arrière.
-     *
-     * @param board état actuel du plateau
-     * @param allPieces toutes les pièces du puzzle
-     * @param pieceUsed bitset des pièces utilisées
-     * @param placementOrder historique de placement
-     * @param row position de ligne
-     * @param col position de colonne
-     * @param pieceId ID de la pièce à essayer
-     * @param oldRotation rotation qui a échoué
-     * @param sequentialSolver callback vers le solveur séquentiel
-     * @return true si une solution est trouvée avec une rotation alternative
-     */
+    /** Tries alternative rotations of same piece at same position before continuing backtrack; returns true if solution found with alternative rotation. */
     public boolean tryAlternativeRotations(Board board,
                                           Map<Integer, Piece> allPieces,
                                           BitSet pieceUsed,
@@ -190,22 +140,12 @@ public class BacktrackingHistoryManager {
         return false;
     }
 
-    /**
-     * Interface pour le callback du solveur séquentiel
-     */
+    /** Callback interface for sequential solver. */
     public interface SequentialSolver {
         boolean solve(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces);
     }
 
-    /**
-     * Effectue le retour arrière d'une seule pièce pré-chargée et essaie de continuer
-     *
-     * @param board état actuel du plateau
-     * @param allPieces toutes les pièces
-     * @param pieceUsed bitset des pièces utilisées
-     * @param placementOrder historique de placement
-     * @return les informations de placement retirées
-     */
+    /** Backtracks single pre-loaded piece and returns removed placement info. */
     public SaveStateManager.PlacementInfo backtrackPreloadedPiece(
             Board board,
             Map<Integer, Piece> allPieces,
@@ -235,34 +175,17 @@ public class BacktrackingHistoryManager {
         return lastPlacement;
     }
 
-    /**
-     * Obtient les positions fixes qui ne doivent pas subir de retour arrière
-     * Retourne actuellement un ensemble vide (pas de positions vraiment fixes)
-     *
-     * @return ensemble de clés de positions fixes (format: "row,col")
-     */
+    /** Returns fixed positions that should not be backtracked (currently empty set). */
     public Set<String> getFixedPositions() {
         return new HashSet<>(); // Pas de positions fixes pour l'instant
     }
 
-    /**
-     * Vérifie si une position est fixe et ne doit pas subir de retour arrière
-     *
-     * @param row position de ligne
-     * @param col position de colonne
-     * @param fixedPositions ensemble des positions fixes
-     * @return true si la position est fixe
-     */
+    /** Returns true if position is fixed and should not be backtracked. */
     public boolean isFixedPosition(int row, int col, Set<String> fixedPositions) {
         return fixedPositions.contains(row + "," + col);
     }
 
-    /**
-     * Journalise la progression du retour arrière
-     *
-     * @param backtrackCount nombre de retours arrière effectués
-     * @param currentDepth profondeur actuelle après le retour arrière
-     */
+    /** Logs backtrack progress showing count and current depth. */
     public void logBacktrackProgress(int backtrackCount, int currentDepth) {
         System.out.println(threadLabel + "  → Total backtracks dans historique: " + backtrackCount);
         System.out.println(threadLabel + "  → Profondeur actuelle: " + currentDepth + " pièces");

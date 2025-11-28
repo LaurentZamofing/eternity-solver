@@ -7,39 +7,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Responsable de la visualisation et des opérations d'affichage du plateau.
- * Extrait de EternitySolver pour une meilleure organisation du code.
- */
+/** Handles board visualization and display operations with color-coded edge matching, valid piece counts, and comparison views. */
 public class BoardDisplayManager {
 
     private final Set<String> fixedPositions;
     private final PlacementValidator validator;
 
-    /**
-     * Constructeur pour BoardDisplayManager.
-     *
-     * @param fixedPositions ensemble des positions fixes (format: "ligne,col")
-     * @param validator validateur pour vérifier l'ajustement des pièces
-     */
+    /** Creates display manager with fixed positions set and placement validator for piece fitting checks. */
     public BoardDisplayManager(Set<String> fixedPositions, PlacementValidator validator) {
         this.fixedPositions = fixedPositions;
         this.validator = validator;
     }
 
-    /**
-     * Affiche le plateau avec des étiquettes, grille colorée, et compteurs de pièces valides.
-     * Code couleur :
-     * - Cyan brillant : pièces fixes
-     * - Vert : arêtes qui correspondent aux voisins
-     * - Rouge : arêtes qui ne correspondent pas
-     * - Rouge brillant + gras : cases vides sans pièces valides (impasse)
-     * - Jaune : cases avec peu de pièces valides (critique)
-     *
-     * @param board état actuel du plateau
-     * @param piecesById table de correspondance de toutes les pièces disponibles
-     * @param unusedIds liste des identifiants de pièces non utilisées
-     */
+    /** Displays board with labels, color-coded grid, and valid piece counts; colors: cyan (fixed), green (matching edges), red (mismatched), bright red (deadends), yellow (critical). */
     public void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds) {
         int rows = board.getRows();
         int cols = board.getCols();
@@ -191,19 +171,7 @@ public class BoardDisplayManager {
         System.out.println();
     }
 
-    /**
-     * Affiche le plateau en comparant avec un autre plateau (pour voir les différences)
-     * Code couleur :
-     * - Magenta : Case occupée dans referenceBoard mais vide dans currentBoard (régression)
-     * - Orange : Case occupée dans les deux mais pièce différente (changement)
-     * - Jaune : Case vide dans referenceBoard mais occupée dans currentBoard (progression)
-     * - Cyan : Case identique dans les deux plateaux (stabilité)
-     *
-     * @param currentBoard plateau actuel
-     * @param referenceBoard plateau de référence
-     * @param piecesById table de correspondance de toutes les pièces disponibles
-     * @param unusedIds liste des identifiants de pièces non utilisées
-     */
+    /** Displays board comparison showing differences; colors: magenta (regression), orange (change), yellow (progress), cyan (stable). */
     public void printBoardWithComparison(Board currentBoard, Board referenceBoard,
                                           Map<Integer, Piece> piecesById, List<Integer> unusedIds) {
         int rows = currentBoard.getRows();
@@ -322,16 +290,7 @@ public class BoardDisplayManager {
         System.out.println();
     }
 
-    /**
-     * Compte le nombre de pièces valides pour une position donnée.
-     *
-     * @param board état actuel du plateau
-     * @param r ligne
-     * @param c colonne
-     * @param piecesById table de correspondance de toutes les pièces disponibles
-     * @param unusedIds liste des identifiants de pièces non utilisées
-     * @return nombre de pièces valides (toutes rotations confondues)
-     */
+    /** Counts valid pieces for position (all rotations); returns number of unused pieces that fit at (r,c). */
     private int countValidPiecesForPosition(Board board, int r, int c,
                                            Map<Integer, Piece> piecesById,
                                            List<Integer> unusedIds) {
@@ -351,19 +310,7 @@ public class BoardDisplayManager {
         return count;
     }
 
-    /**
-     * Détermine la couleur d'une case en fonction de la comparaison entre deux plateaux
-     * - Magenta : occupée dans référence, vide dans current (régression)
-     * - Orange : occupée dans les deux mais pièce différente (changement)
-     * - Jaune : vide dans référence, occupée dans current (progression)
-     * - Cyan : identique (stabilité)
-     *
-     * @param current plateau actuel
-     * @param reference plateau de référence
-     * @param row ligne
-     * @param col colonne
-     * @return code couleur ANSI
-     */
+    /** Returns ANSI color code for cell comparison: magenta (regression), orange (change), yellow (progress), cyan (stable). */
     private String getCellComparisonColor(Board current, Board reference, int row, int col) {
         boolean currentEmpty = current.isEmpty(row, col);
         boolean refEmpty = reference.isEmpty(row, col);

@@ -5,18 +5,18 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * Interface pour itérer sur les identifiants de pièces dans différents ordres.
- * Élimine la duplication de code entre l'itération ascendante et descendante des pièces.
+ * Interface for iterating over piece identifiers in different orders.
+ * Eliminates code duplication between ascending and descending piece iteration.
  */
 public interface PieceIterator extends Iterable<Integer> {
 
     /**
-     * Crée un itérateur pour l'ordre spécifié.
+     * Creates an iterator for the specified order.
      *
-     * @param sortOrder "ascending" ou "descending"
-     * @param totalPieces nombre total de pièces
-     * @param pieceUsed BitSet indiquant quelles pièces sont déjà utilisées
-     * @return instance de PieceIterator
+     * @param sortOrder "ascending" or "descending"
+     * @param totalPieces total number of pieces
+     * @param pieceUsed BitSet indicating which pieces are already used
+     * @return PieceIterator instance
      */
     static PieceIterator create(String sortOrder, int totalPieces, BitSet pieceUsed) {
         if ("descending".equals(sortOrder)) {
@@ -27,7 +27,7 @@ public interface PieceIterator extends Iterable<Integer> {
     }
 
     /**
-     * Itérateur de pièces ascendant (de 1 à totalPieces).
+     * Ascending piece iterator (from 1 to totalPieces).
      */
     class AscendingPieceIterator implements PieceIterator {
         private final int totalPieces;
@@ -45,7 +45,7 @@ public interface PieceIterator extends Iterable<Integer> {
 
                 @Override
                 public boolean hasNext() {
-                    // Sauter les pièces utilisées
+                    // Skip used pieces
                     while (current <= totalPieces && pieceUsed.get(current)) {
                         current++;
                     }
@@ -64,7 +64,7 @@ public interface PieceIterator extends Iterable<Integer> {
     }
 
     /**
-     * Itérateur de pièces descendant (de totalPieces à 1).
+     * Descending piece iterator (from totalPieces to 1).
      */
     class DescendingPieceIterator implements PieceIterator {
         private final int totalPieces;
@@ -82,7 +82,7 @@ public interface PieceIterator extends Iterable<Integer> {
 
                 @Override
                 public boolean hasNext() {
-                    // Sauter les pièces utilisées
+                    // Skip used pieces
                     while (current >= 1 && pieceUsed.get(current)) {
                         current--;
                     }

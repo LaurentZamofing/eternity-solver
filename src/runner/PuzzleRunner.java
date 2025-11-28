@@ -12,8 +12,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Orchestrateur pour l'exécution d'un puzzle.
- * Sépare la logique métier de l'interface CLI.
+ * Orchestrator for puzzle execution.
+ * Separates business logic from CLI interface.
  */
 public class PuzzleRunner {
 
@@ -28,7 +28,7 @@ public class PuzzleRunner {
     private long endTime;
 
     /**
-     * Configuration pour l'exécution du puzzle
+     * Configuration for puzzle execution
      */
     public static class PuzzleRunnerConfig {
         private boolean verbose = false;
@@ -79,7 +79,7 @@ public class PuzzleRunner {
     }
 
     /**
-     * Résultat de l'exécution
+     * Execution result
      */
     public static class PuzzleResult {
         private final boolean solved;
@@ -102,12 +102,12 @@ public class PuzzleRunner {
     }
 
     /**
-     * Constructeur
+     * Constructor
      */
     public PuzzleRunner(Board board, Map<Integer, Piece> pieces, PuzzleRunnerConfig config) {
-        if (board == null) throw new IllegalArgumentException("Board ne peut pas être null");
-        if (pieces == null) throw new IllegalArgumentException("Pieces ne peut pas être null");
-        if (config == null) throw new IllegalArgumentException("Config ne peut pas être null");
+        if (board == null) throw new IllegalArgumentException("Board cannot be null");
+        if (pieces == null) throw new IllegalArgumentException("Pieces cannot be null");
+        if (config == null) throw new IllegalArgumentException("Config cannot be null");
 
         this.board = board;
         this.pieces = pieces;
@@ -115,58 +115,58 @@ public class PuzzleRunner {
     }
 
     /**
-     * Configure le solver selon la configuration
+     * Configures the solver according to configuration
      */
     private void configureSolver() {
         solver = new EternitySolver();
         solver.setDisplayConfig(config.isVerbose(), config.getMinDepth());
         solver.setUseSingletons(config.useSingletons());
 
-        logger.info("Solver configuré: verbose={}, singletons={}, minDepth={}",
+        logger.info("Solver configured: verbose={}, singletons={}, minDepth={}",
                    config.isVerbose(), config.useSingletons(), config.getMinDepth());
     }
 
     /**
-     * Enregistre les hooks d'arrêt
+     * Registers shutdown hooks
      */
     private void registerShutdownHooks() {
         ShutdownManager.registerShutdownHook();
 
-        // Hook pour afficher les statistiques
+        // Hook to display statistics
         ShutdownManager.addShutdownHook(
             new ShutdownManager.StatisticsShutdownHook(solver.getStatistics())
         );
 
-        // Hook pour sauvegarder l'état
+        // Hook to save state
         ShutdownManager.addShutdownHook(
             new ShutdownManager.SolverShutdownHook(
-                () -> logger.info("Sauvegarde demandée par shutdown hook"),
+                () -> logger.info("Save requested by shutdown hook"),
                 "Puzzle"
             )
         );
 
-        logger.debug("Shutdown hooks enregistrés");
+        logger.debug("Shutdown hooks registered");
     }
 
     /**
-     * Détermine le nombre de threads à utiliser
+     * Determines the number of threads to use
      */
     private int determineThreadCount() {
         if (config.getThreads() > 0) {
             return config.getThreads();
         }
-        // Auto: 75% des coeurs disponibles, minimum 4
+        // Auto: 75% of available cores, minimum 4
         int cores = Runtime.getRuntime().availableProcessors();
         int threads = Math.max(4, (int)(cores * 0.75));
-        logger.info("Threads auto-déterminés: {} (sur {} coeurs)", threads, cores);
+        logger.info("Threads auto-determined: {} (out of {} cores)", threads, cores);
         return threads;
     }
 
     /**
-     * Exécute la résolution du puzzle
+     * Executes the puzzle resolution
      */
     public PuzzleResult run() {
-        logger.info("Démarrage résolution puzzle {}x{} avec {} pièces",
+        logger.info("Starting puzzle resolution {}x{} with {} pieces",
                    board.getRows(), board.getCols(), pieces.size());
 
         configureSolver();
@@ -174,39 +174,39 @@ public class PuzzleRunner {
 
         startTime = System.currentTimeMillis();
 
-        // Lancer dans un thread séparé pour supporter l'interruption
+        // Launch in separate thread to support interruption
         Thread solverThread = new Thread(() -> {
             try {
                 if (config.isParallel()) {
                     int threads = determineThreadCount();
-                    logger.info("Mode parallèle avec {} threads", threads);
+                    logger.info("Parallel mode with {} threads", threads);
                     solved.set(solver.solveParallel(board, pieces, pieces, threads));
                 } else {
-                    logger.info("Mode séquentiel");
+                    logger.info("Sequential mode");
                     solved.set(solver.solve(board, pieces));
                 }
             } catch (Exception e) {
-                logger.error("Erreur lors de la résolution", e);
+                logger.error("Error during resolution", e);
                 solved.set(false);
             }
         }, "PuzzleRunner-Solver");
 
         solverThread.start();
 
-        // Attendre avec timeout optionnel
+        // Wait with optional timeout
         try {
             if (config.getTimeoutSeconds() != null) {
                 solverThread.join(config.getTimeoutSeconds() * 1000L);
                 if (solverThread.isAlive()) {
-                    logger.warn("Timeout atteint ({}s), interruption...", config.getTimeoutSeconds());
+                    logger.warn("Timeout reached ({}s), interrupting...", config.getTimeoutSeconds());
                     solverThread.interrupt();
-                    solverThread.join(5000); // Attendre 5s pour l'arrêt gracieux
+                    solverThread.join(5000); // Wait 5s for graceful shutdown
                 }
             } else {
                 solverThread.join();
             }
         } catch (InterruptedException e) {
-            logger.info("Thread principal interrompu");
+            logger.info("Main thread interrupted");
             solverThread.interrupt();
             ShutdownManager.requestShutdown();
         }
@@ -214,7 +214,7 @@ public class PuzzleRunner {
         endTime = System.currentTimeMillis();
         double duration = (endTime - startTime) / 1000.0;
 
-        logger.info("Résolution terminée: solved={}, durée={}s", solved.get(), duration);
+        logger.info("Resolution completed: solved={}, duration={}s", solved.get(), duration);
 
         return new PuzzleResult(
             solved.get(),
@@ -225,21 +225,21 @@ public class PuzzleRunner {
     }
 
     /**
-     * Obtient le solver (utile pour les tests)
+     * Gets the solver (useful for tests)
      */
     public EternitySolver getSolver() {
         return solver;
     }
 
     /**
-     * Vérifie si la résolution est terminée
+     * Checks if resolution is finished
      */
     public boolean isFinished() {
         return endTime > 0;
     }
 
     /**
-     * Obtient la durée d'exécution (en secondes)
+     * Gets the execution duration (in seconds)
      */
     public double getDuration() {
         if (endTime == 0) return 0;

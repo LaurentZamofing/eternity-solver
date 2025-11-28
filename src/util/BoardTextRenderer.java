@@ -134,7 +134,7 @@ public class BoardTextRenderer {
                     line.append("  .   ");
                 } else {
                     Placement p = board.getPlacement(r, c);
-                    // Format: "ID_r " où r est la rotation (ex: "25_0 ", "210_3 ")
+                    // Format: "ID_r " where r is the rotation (e.g.: "25_0 ", "210_3 ")
                     String pieceStr = String.format("%3d_%d", p.getPieceId(), p.getRotation());
                     line.append(pieceStr).append(" ");
                 }

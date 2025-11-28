@@ -527,7 +527,7 @@ public class Main {
             printBoardWithCoordinates(board, pieces);
             board.printScore();
         } else {
-            System.out.println("✗ Aucune solution trouvée");
+            System.out.println("✗ No solution found");
             System.out.println("Temps: " + String.format("%.2f", duration) + " secondes\n");
         }
     }
@@ -603,7 +603,7 @@ public class Main {
             printBoardWithCoordinates(board, pieces);
             board.printScore();
         } else {
-            System.out.println("✗ Aucune solution trouvée");
+            System.out.println("✗ No solution found");
             System.out.println("Temps: " + String.format("%.2f", duration) + " secondes\n");
         }
     }

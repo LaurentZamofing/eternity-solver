@@ -9,7 +9,7 @@ import java.util.Arrays;
 public class Placement {
     private final int pieceId;
     private final int rotation; // 0..3
-    public final int[] edges;  // edges après rotation (direct access for performance)
+    public final int[] edges;  // edges after rotation (direct access for performance)
 
     /**
      * Constructor

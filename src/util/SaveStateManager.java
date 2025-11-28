@@ -249,7 +249,7 @@ public class SaveStateManager {
     }
 
     /**
-     * Sauvegarde dans un fichier spécifique
+     * Save to a specific file
      * @deprecated Use SaveStateIO.writeToFile() instead
      */
     @Deprecated
@@ -490,10 +490,10 @@ public class SaveStateManager {
     }
 
     /**
-     * Charge une sauvegarde spécifique depuis un fichier
-     * @param saveFile fichier de sauvegarde
-     * @param puzzleName nom du puzzle
-     * @return l'état chargé ou null si échec
+     * Load a specific save from a file
+     * @param saveFile save file
+     * @param puzzleName puzzle name
+     * @return the loaded state or null if failure
      */
     public static SaveState loadStateFromFile(File saveFile, String puzzleName) {
         // Delegate to SaveStateIO (refactored for better code organization)

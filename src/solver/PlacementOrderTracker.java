@@ -6,14 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Suit l'ordre des placements de pièces pour permettre un retour arrière intelligent
- * et une restauration d'état.
+ * Tracks piece placement order to enable intelligent backtracking
+ * and state restoration.
  *
- * Cette classe maintient un historique de tous les placements effectués pendant la résolution,
- * permettant au solveur de revenir en arrière dans la séquence de placement et
- * d'essayer des options alternatives.
+ * This class maintains a history of all placements made during solving,
+ * allowing the solver to backtrack through the placement sequence and
+ * try alternative options.
  *
- * Extrait de EternitySolver pour améliorer la gestion de l'état de retour arrière.
+ * Extracted from EternitySolver to improve backtracking state management.
  */
 public class PlacementOrderTracker {
 
@@ -21,7 +21,7 @@ public class PlacementOrderTracker {
     private final List<SaveStateManager.PlacementInfo> initialFixedPieces;
 
     /**
-     * Constructeur sans pièces fixes initiales
+     * Constructor without initial fixed pieces
      */
     public PlacementOrderTracker() {
         this.placementHistory = new ArrayList<>();
@@ -29,8 +29,8 @@ public class PlacementOrderTracker {
     }
 
     /**
-     * Constructeur avec pièces fixes initiales
-     * @param initialFixedPieces pièces qui étaient fixées au démarrage du puzzle
+     * Constructor with initial fixed pieces
+     * @param initialFixedPieces pieces that were fixed at puzzle startup
      */
     public PlacementOrderTracker(List<SaveStateManager.PlacementInfo> initialFixedPieces) {
         this.placementHistory = new ArrayList<>();
@@ -38,7 +38,7 @@ public class PlacementOrderTracker {
     }
 
     /**
-     * Initialise l'historique de placement (appeler au début de la résolution)
+     * Initializes placement history (call at start of solving)
      */
     public void initialize() {
         if (placementHistory == null) {
@@ -47,8 +47,8 @@ public class PlacementOrderTracker {
     }
 
     /**
-     * Initialise l'historique de placement avec un ordre préchargé
-     * @param preloadedOrder ordre de placement préchargé depuis un fichier de sauvegarde
+     * Initializes placement history with preloaded order
+     * @param preloadedOrder placement order preloaded from save file
      */
     public void initializeWithHistory(List<SaveStateManager.PlacementInfo> preloadedOrder) {
         if (preloadedOrder != null) {
@@ -59,11 +59,11 @@ public class PlacementOrderTracker {
     }
 
     /**
-     * Enregistre un nouveau placement dans l'historique
-     * @param row position de ligne
-     * @param col position de colonne
-     * @param pieceId ID de la pièce placée
-     * @param rotation rotation de la pièce (0-3)
+     * Records a new placement in history
+     * @param row row position
+     * @param col column position
+     * @param pieceId ID of the placed piece
+     * @param rotation piece rotation (0-3)
      */
     public void recordPlacement(int row, int col, int pieceId, int rotation) {
         if (placementHistory != null) {
@@ -72,8 +72,8 @@ public class PlacementOrderTracker {
     }
 
     /**
-     * Retire le dernier placement de l'historique (pour retour arrière)
-     * @return les informations du placement retiré, ou null si l'historique est vide
+     * Removes the last placement from history (for backtracking)
+     * @return information about the removed placement, or null if history is empty
      */
     public SaveStateManager.PlacementInfo removeLastPlacement() {
         if (placementHistory != null && !placementHistory.isEmpty()) {
@@ -83,8 +83,8 @@ public class PlacementOrderTracker {
     }
 
     /**
-     * Obtient l'historique complet des placements
-     * @return liste de tous les placements effectués (vue en lecture seule)
+     * Gets the complete placement history
+     * @return list of all placements made (read-only view)
      */
     public List<SaveStateManager.PlacementInfo> getPlacementHistory() {
         if (placementHistory == null) {
@@ -94,15 +94,15 @@ public class PlacementOrderTracker {
     }
 
     /**
-     * Obtient les pièces fixes initiales
-     * @return liste des pièces qui étaient fixées au démarrage du puzzle
+     * Gets the initial fixed pieces
+     * @return list of pieces that were fixed at puzzle startup
      */
     public List<SaveStateManager.PlacementInfo> getInitialFixedPieces() {
         return new ArrayList<>(initialFixedPieces);
     }
 
     /**
-     * Efface entièrement l'historique de placement
+     * Clears the entire placement history
      */
     public void clearHistory() {
         if (placementHistory != null) {
@@ -111,24 +111,24 @@ public class PlacementOrderTracker {
     }
 
     /**
-     * Obtient la profondeur actuelle (nombre de placements effectués)
-     * @return nombre de placements dans l'historique
+     * Gets the current depth (number of placements made)
+     * @return number of placements in history
      */
     public int getCurrentDepth() {
         return placementHistory != null ? placementHistory.size() : 0;
     }
 
     /**
-     * Vérifie si l'historique de placement est en suivi
-     * @return true si le suivi est activé
+     * Checks if placement history tracking is enabled
+     * @return true if tracking is enabled
      */
     public boolean isTracking() {
         return placementHistory != null;
     }
 
     /**
-     * Définit les pièces fixes initiales (pour les puzzles avec pièces pré-placées)
-     * @param fixedPieces liste des placements fixes
+     * Sets the initial fixed pieces (for puzzles with pre-placed pieces)
+     * @param fixedPieces list of fixed placements
      */
     public void setInitialFixedPieces(List<SaveStateManager.PlacementInfo> fixedPieces) {
         if (fixedPieces != null) {
@@ -138,9 +138,9 @@ public class PlacementOrderTracker {
     }
 
     /**
-     * Obtient un placement spécifique de l'historique par index
-     * @param index index dans l'historique
-     * @return informations du placement à cet index, ou null si hors limites
+     * Gets a specific placement from history by index
+     * @param index index in history
+     * @return placement information at this index, or null if out of bounds
      */
     public SaveStateManager.PlacementInfo getPlacement(int index) {
         if (placementHistory != null && index >= 0 && index < placementHistory.size()) {

@@ -3,8 +3,8 @@ package model;
 import java.util.Arrays;
 
 /**
- * Représente le placement d'une pièce sur la grille avec sa rotation.
- * Stocke les arêtes pré-calculées après rotation pour des raisons de performance.
+ * Represents the placement of a piece on the grid with its rotation.
+ * Stores pre-calculated edges after rotation for performance reasons.
  */
 public class Placement {
     private final int pieceId;
@@ -12,10 +12,10 @@ public class Placement {
     public final int[] edges;  // edges après rotation (direct access for performance)
 
     /**
-     * Constructeur
-     * @param pieceId identifiant de la pièce placée
-     * @param rotation rotation appliquée (0-3, réduit modulo 4)
-     * @param edges arêtes après rotation [N, E, S, W]
+     * Constructor
+     * @param pieceId identifier of the placed piece
+     * @param rotation rotation applied (0-3, reduced modulo 4)
+     * @param edges edges after rotation [N, E, S, W]
      */
     public Placement(int pieceId, int rotation, int[] edges) {
         this.pieceId = pieceId;
@@ -24,14 +24,14 @@ public class Placement {
     }
 
     /**
-     * Retourne l'identifiant de la pièce.
+     * Returns the piece identifier.
      */
     public int getPieceId() {
         return pieceId;
     }
 
     /**
-     * Retourne la rotation appliquée (0-3).
+     * Returns the rotation applied (0-3).
      */
     public int getRotation() {
         return rotation;

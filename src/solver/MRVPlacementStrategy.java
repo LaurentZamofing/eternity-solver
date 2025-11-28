@@ -69,9 +69,9 @@ public class MRVPlacementStrategy implements PlacementStrategy {
             int availableCount = context.countAvailablePieces();
 
             System.out.println("\n╔════════════════════════════════════════╗");
-            System.out.println("║  Étape " + (solver.getStepCount() + 1) + " - Case (" + r + ", " + c + ")");
-            System.out.println("║  Pièces disponibles : " + availableCount);
-            System.out.println("║  Pièces possibles ici : " + uniquePieces);
+            System.out.println("║  Step " + (solver.getStepCount() + 1) + " - Cell (" + r + ", " + c + ")");
+            System.out.println("║  Available pieces: " + availableCount);
+            System.out.println("║  Possible pieces here: " + uniquePieces);
             System.out.println("╚════════════════════════════════════════╝");
 
             context.stats.printCompact();
@@ -130,7 +130,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
 
                 // Verbose output
                 if (verbose) {
-                    System.out.println("  → Essai pièce ID=" + pid + ", rotation=" + (rot * 90) +
+                    System.out.println("  → Trying piece ID=" + pid + ", rotation=" + (rot * 90) +
                                      "° (option " + (optionIndex + 1) + "/" + snapshot.size() + ")");
                 }
 
@@ -146,7 +146,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                                                       context.piecesById, context.pieceUsed, context.totalPieces)) {
                     // Dead end detected by AC-3
                     if (verbose) {
-                        System.out.println("✗ AC-3 dead-end détecté : ID=" + pid + " à (" + r + ", " + c + ")");
+                        System.out.println("✗ AC-3 dead-end detected: ID=" + pid + " at (" + r + ", " + c + ")");
                     }
                     context.stats.deadEndsDetected++;
 
@@ -163,8 +163,8 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 if (verbose) {
                     solver.printBoardWithCounts(context.board, context.piecesById, context.pieceUsed,
                                               context.totalPieces, r, c);
-                    System.out.println("✓ Pièce posée : ID=" + pid + ", Rotation=" + (rot * 90) +
-                                     "°, Arêtes=" + java.util.Arrays.toString(candidate));
+                    System.out.println("✓ Piece placed: ID=" + pid + ", Rotation=" + (rot * 90) +
+                                     "°, Edges=" + java.util.Arrays.toString(candidate));
                 }
 
                 // Recursive call
@@ -177,7 +177,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 // Backtrack
                 context.stats.backtracks++;
                 if (verbose) {
-                    System.out.println("✗ BACKTRACK : Retrait de la pièce ID=" + pid + " à (" + r + ", " + c + ")");
+                    System.out.println("✗ BACKTRACK: Removing piece ID=" + pid + " at (" + r + ", " + c + ")");
                 }
 
                 context.pieceUsed.clear(pid);

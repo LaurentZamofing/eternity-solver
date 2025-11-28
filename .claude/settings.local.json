@@ -44,7 +44,8 @@
       "Bash(git reset:*)",
       "Bash(cat:*)",
       "Bash(/dev/null)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(git -C /Users/laurentzamofing/dev/eternity log --oneline -20)"
     ],
     "deny": [],
     "ask": []

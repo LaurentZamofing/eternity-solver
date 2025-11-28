@@ -45,7 +45,16 @@
       "Bash(cat:*)",
       "Bash(/dev/null)",
       "Bash(git config:*)",
-      "Bash(git -C /Users/laurentzamofing/dev/eternity log --oneline -20)"
+      "Bash(git -C /Users/laurentzamofing/dev/eternity log --oneline -20)",
+      "Bash(git -C /Users/laurentzamofing/dev/eternity log --oneline --graph -20)",
+      "Bash(git mv:*)",
+      "Bash(for dir in test/*)",
+      "Bash(fi)",
+      "Bash(for file in test/*.java)",
+      "Bash(if [ -f test/README_VALIDATION.md ])",
+      "Bash(then git mv test/README_VALIDATION.md src/test/java/README_VALIDATION.md)",
+      "Bash(mvn:*)",
+      "Bash(./mvnw clean compile:*)"
     ],
     "deny": [],
     "ask": []

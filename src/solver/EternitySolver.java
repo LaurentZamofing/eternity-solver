@@ -13,15 +13,15 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Solveur de puzzle d'edge-matching (type "Eternity") utilisant le backtracking.
+ * Edge-matching puzzle solver (Eternity type) using backtracking.
  *
- * Limitations :
- * - Backtracking naïf (suffisant pour petites instances 3x3, 4x4)
- * - Pour de vraies instances 16x16, il faudrait ajouter :
+ * Limitations:
+ * - Naive backtracking (sufficient for small instances 3x3, 4x4)
+ * - For real 16x16 instances, would need to add:
  *   - MRV (Minimum Remaining Values) heuristic
  *   - Forward-checking
- *   - Propagation d'arcs (AC-3)
- *   - Méthodes méta-heuristiques
+ *   - Arc propagation (AC-3)
+ *   - Meta-heuristic methods
  */
 public class EternitySolver {
 
@@ -237,11 +237,11 @@ public class EternitySolver {
     }
 
     /**
-     * Résout le puzzle et retourne true si une solution est trouvée.
+     * Solves the puzzle and returns true if a solution is found.
      *
-     * @param board grille vide à remplir
-     * @param pieces map des pièces par ID
-     * @return true si le puzzle a été résolu
+     * @param board empty board to fill
+     * @param pieces map of pieces by ID
+     * @return true if the puzzle was solved
      */
     public boolean solve(Board board, Map<Integer, Piece> pieces) {
         stats.start();

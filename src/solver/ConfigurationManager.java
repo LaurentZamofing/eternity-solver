@@ -9,21 +9,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Gère tous les paramètres de configuration du solveur Eternity.
- *
- * Cette classe centralise:
- * - Tous les drapeaux de configuration du solveur (verbose, useSingletons, useAC3, etc.)
- * - Métadonnées du puzzle (nom, label du thread, ordre de tri)
- * - Détection et gestion des pièces fixes
- * - Initialisation des gestionnaires (AutoSaveManager, RecordManager, etc.)
- *
- * Extrait de EternitySolver dans le Sprint 5 pour:
- * - Éliminer le code d'initialisation dupliqué
- * - Consolider la logique de détection des pièces fixes
- * - Fournir une source unique de vérité pour la configuration
- * - Simplifier les tests et la maintenance
- */
+/** Manages all solver configuration: flags, puzzle metadata, fixed pieces detection, and manager initialization. */
 public class ConfigurationManager {
 
     // Drapeaux de configuration principaux
@@ -54,9 +40,6 @@ public class ConfigurationManager {
     private long randomSeed = 0;
     private static final long THREAD_SAVE_INTERVAL = 60000; // 1 minute
 
-    /**
-     * Constructeur par défaut avec paramètres par défaut
-     */
     public ConfigurationManager() {
     }
 
@@ -190,14 +173,7 @@ public class ConfigurationManager {
 
     // ============ Détection des Pièces Fixes ============
 
-    /**
-     * Détecte et initialise les pièces fixes depuis l'état du plateau.
-     * Utilisé lors du démarrage d'une résolution avec des pièces pré-placées.
-     *
-     * @param board le plateau avec potentiellement des pièces pré-placées
-     * @param pieceUsed bitset pour marquer les pièces utilisées
-     * @param placementOrder liste à remplir avec les placements fixes
-     */
+    /** Detects and initializes fixed pieces from board state; used when starting with pre-placed pieces. */
     public void detectFixedPiecesFromBoard(Board board, BitSet pieceUsed,
                                            List<SaveStateManager.PlacementInfo> placementOrder) {
         fixedPositions.clear();
@@ -227,13 +203,7 @@ public class ConfigurationManager {
         }
     }
 
-    /**
-     * Calcule le nombre de pièces fixes selon le nom du puzzle.
-     * Utilisé lors de la reprise depuis un état sauvegardé (solveWithHistory).
-     *
-     * @param puzzleName nom du puzzle
-     * @return nombre de pièces fixes (coins, indices)
-     */
+    /** Calculates number of fixed pieces based on puzzle name; used when resuming from saved state. */
     public int calculateNumFixedPieces(String puzzleName) {
         if (puzzleName.startsWith("eternity2")) {
             return 9; // 4 coins + 5 indices pour Eternity II
@@ -244,13 +214,7 @@ public class ConfigurationManager {
         }
     }
 
-    /**
-     * Construit la liste des pièces fixes initiales depuis l'ordre de placement préchargé.
-     * Utilisé lors de la reprise depuis un état sauvegardé.
-     *
-     * @param preloadedOrder historique complet des placements
-     * @param numFixedPieces nombre de pièces à traiter comme fixes
-     */
+    /** Builds initial fixed pieces list from preloaded placement order; used when resuming from saved state. */
     public void buildInitialFixedPieces(List<SaveStateManager.PlacementInfo> preloadedOrder,
                                        int numFixedPieces) {
         this.fixedPositions = new HashSet<>();
@@ -264,13 +228,7 @@ public class ConfigurationManager {
 
     // ============ Initialisation des Managers ============
 
-    /**
-     * Crée et initialise AutoSaveManager avec la configuration actuelle.
-     *
-     * @param placementOrder historique des placements
-     * @param allPieces map de toutes les pièces
-     * @return AutoSaveManager initialisé
-     */
+    /** Creates and initializes AutoSaveManager with current configuration. */
     public AutoSaveManager createAutoSaveManager(
             List<SaveStateManager.PlacementInfo> placementOrder,
             Map<Integer, Piece> allPieces) {
@@ -285,17 +243,7 @@ public class ConfigurationManager {
         return manager;
     }
 
-    /**
-     * Crée et initialise RecordManager avec la configuration actuelle.
-     *
-     * @param lockObject verrou de synchronisation
-     * @param globalMaxDepth profondeur maximale globale atomique
-     * @param globalBestScore meilleur score global atomique
-     * @param globalBestThreadId ID du meilleur thread global atomique
-     * @param globalBestBoard meilleur plateau global atomique
-     * @param globalBestPieces meilleures pièces globales atomiques
-     * @return RecordManager initialisé
-     */
+    /** Creates and initializes RecordManager with current configuration and global state references. */
     public RecordManager createRecordManager(
             Object lockObject,
             AtomicInteger globalMaxDepth,
@@ -317,9 +265,7 @@ public class ConfigurationManager {
         );
     }
 
-    /**
-     * Affiche les paramètres de configuration actuels.
-     */
+    /** Logs current configuration parameters if verbose enabled. */
     public void logConfiguration() {
         if (verbose) {
             System.out.println("\n═══════════════════════════════════════");

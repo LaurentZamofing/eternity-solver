@@ -148,6 +148,7 @@ public class EternitySolver {
             configManager.isVerbose(), valueOrderer, symmetryBreakingManager,
             constraintPropagator, domainManager
         );
+        this.mrvStrategy.setSortOrder(configManager.getSortOrder());
     }
 
     /** Initializes managers. Package-private for {@link HistoricalSolver}. */

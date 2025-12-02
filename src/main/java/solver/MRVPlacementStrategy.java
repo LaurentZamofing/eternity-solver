@@ -28,6 +28,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
     private final SymmetryBreakingManager symmetryBreakingManager;
     private final ConstraintPropagator constraintPropagator;
     private final DomainManager domainManager;
+    private String sortOrder = "ascending"; // Default sort order
 
     /**
      * Creates an MRV placement strategy.
@@ -46,6 +47,14 @@ public class MRVPlacementStrategy implements PlacementStrategy {
         this.symmetryBreakingManager = symmetryBreakingManager;
         this.constraintPropagator = constraintPropagator;
         this.domainManager = domainManager;
+    }
+
+    /**
+     * Sets the sort order for piece iteration.
+     * @param sortOrder "ascending" or "descending"
+     */
+    public void setSortOrder(String sortOrder) {
+        this.sortOrder = sortOrder != null ? sortOrder : "ascending";
     }
 
     @Override
@@ -87,12 +96,12 @@ public class MRVPlacementStrategy implements PlacementStrategy {
             }
         }
 
-        // Smart piece ordering: sort by difficulty (hardest first for fail-fast)
-        if (valueOrderer.getAllDifficultyScores() != null) {
-            snapshot.sort(Comparator.comparingInt(pid ->
-                valueOrderer.getAllDifficultyScores().getOrDefault(pid, Integer.MAX_VALUE)));
+        // Sort pieces according to sortOrder configuration
+        // Note: We use piece ID order (not difficulty) to ensure ascending/descending works correctly
+        if ("descending".equals(sortOrder)) {
+            snapshot.sort(Collections.reverseOrder());  // Descending: highest ID first
         } else {
-            Collections.sort(snapshot);  // Fallback to ID order for determinism
+            Collections.sort(snapshot);  // Ascending: lowest ID first (default)
         }
 
         // Register depth options for progress tracking (first 5 depths only)

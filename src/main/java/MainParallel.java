@@ -354,8 +354,8 @@ public class MainParallel {
         // Number of threads (default: number of available processors)
         int numThreads = Runtime.getRuntime().availableProcessors();
 
-        // Duration per configuration in minutes (default: 60 minutes = 1 hour)
-        double timePerConfigMinutes = 60.0;
+        // Duration per configuration in minutes (default: 1 minute for quick rotation)
+        double timePerConfigMinutes = 1.0;
 
         if (args.length > 0) {
             try {

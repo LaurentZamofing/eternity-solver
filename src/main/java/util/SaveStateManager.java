@@ -170,13 +170,18 @@ public class SaveStateManager {
                 String bestFile = puzzleDir + "best_" + state.depth + ".txt";
                 File best = new File(bestFile);
                 if (!best.exists()) {
+                    System.out.println("  💾 Saving new best file: " + bestFile + " (" + state.depth + " pieces) at " +
+                                     java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss.SSS")));
                     SaveStateIO.writeToFile(bestFile, puzzleName, board, state.depth,
                                            placementOrder, unusedIds, progressPercentage,
                                            elapsedTimeMs, numFixedPieces, initialFixedPieces);
 
                     if (isNewRecord(puzzleDir, state.depth)) {
-                        System.out.println("  🏆 New record: " + bestFile + " (" + state.depth + " pieces)");
+                        System.out.println("  🏆 New record confirmed: best_" + state.depth + ".txt written successfully");
                     }
+                } else {
+                    // File already exists - this depth was already reached before
+                    System.out.println("  ℹ️  Depth " + state.depth + " already has best file (skipping duplicate save)");
                 }
             }
 

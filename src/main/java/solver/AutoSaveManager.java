@@ -91,7 +91,12 @@ public class AutoSaveManager {
                           StatisticsManager stats, int currentDepth) {
         // Save from 10 pieces AND at each new depth record
         if (currentDepth >= 10 && allPiecesMap != null) {
+            System.out.println("  📝 AutoSaveManager: Triggering immediate save for depth " + currentDepth + " (new record detected)");
             performSave(board, pieceUsed, totalPieces, stats);
+        } else if (currentDepth < 10) {
+            System.out.println("  ⏭️  AutoSaveManager: Skipping save for depth " + currentDepth + " (< 10)");
+        } else if (allPiecesMap == null) {
+            System.err.println("  ⚠️  AutoSaveManager: Cannot save - piecesMap not initialized!");
         }
     }
 

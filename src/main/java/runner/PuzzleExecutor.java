@@ -3,7 +3,9 @@ package runner;
 import model.Board;
 import model.Piece;
 import runner.PuzzleDefinition.HintPlacement;
+import util.SaveManager;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,14 +37,45 @@ public class PuzzleExecutor {
 
         // Load pieces
         System.out.println("Loading " + puzzleDef.getTotalPieces() + " pieces...");
-        Map<Integer, Piece> pieces = puzzleDef.loadPieces();
-        System.out.println("✓ " + pieces.size() + " pieces loaded\n");
+        Map<Integer, Piece> allPieces = puzzleDef.loadPieces();
+        System.out.println("✓ " + allPieces.size() + " pieces loaded\n");
 
-        // Create board
-        Board board = new Board(puzzleDef.getRows(), puzzleDef.getCols());
+        Board board;
+        Map<Integer, Piece> piecesToPlace;
 
-        // Setup hints if any
-        Set<Integer> usedPieces = setupHints(board, pieces, puzzleDef.getHints());
+        // Handle save/load for supported puzzles
+        if (puzzleDef.supportsSaveLoad() && SaveManager.hasSavedState()) {
+            System.out.println("╔══════════════════════════════════════════════════════════╗");
+            System.out.println("║              SAVE DETECTED                         ║");
+            System.out.println("╚══════════════════════════════════════════════════════════╝\n");
+
+            Object[] savedState = SaveManager.loadBestState(allPieces);
+            if (savedState != null) {
+                board = (Board) savedState[0];
+                @SuppressWarnings("unchecked")
+                Set<Integer> usedPieceIds = (Set<Integer>) savedState[1];
+                int savedDepth = (int) savedState[2];
+
+                // Create map of remaining pieces
+                piecesToPlace = new HashMap<>(allPieces);
+                for (int usedId : usedPieceIds) {
+                    piecesToPlace.remove(usedId);
+                }
+
+                System.out.println("✓ State restored: " + savedDepth + " pieces placed");
+                System.out.println("  Remaining pieces: " + piecesToPlace.size() + "\n");
+            } else {
+                System.out.println("✗ Loading error - starting new\n");
+                board = new Board(puzzleDef.getRows(), puzzleDef.getCols());
+                piecesToPlace = new HashMap<>(allPieces);
+                setupHints(board, piecesToPlace, puzzleDef.getHints());
+            }
+        } else {
+            // Normal puzzle start
+            board = new Board(puzzleDef.getRows(), puzzleDef.getCols());
+            piecesToPlace = new HashMap<>(allPieces);
+            setupHints(board, piecesToPlace, puzzleDef.getHints());
+        }
 
         // Configure and run solver
         PuzzleRunner.PuzzleRunnerConfig config = new PuzzleRunner.PuzzleRunnerConfig()
@@ -50,7 +83,7 @@ public class PuzzleExecutor {
             .setParallel(puzzleDef.isParallelByDefault())
             .setUseSingletons(true);
 
-        PuzzleRunner runner = new PuzzleRunner(board, pieces, config);
+        PuzzleRunner runner = new PuzzleRunner(board, piecesToPlace, config);
 
         System.out.println("Starting solver for " + puzzleDef.getDisplayName() + "...");
         PuzzleRunner.PuzzleResult result = runner.run();

@@ -23,7 +23,7 @@ import java.util.Set;
  * 1. Extract all run* methods to ExamplePuzzles and LargePuzzleRunner utilities
  * 2. Use existing runner/PuzzleRunner.java for execution logic
  * 3. Simplify main() to simple dispatcher or delegation
- * 4. Remove deprecated printBoardWithCoordinates() and compareWithAndWithoutSingletons()
+ * 4. Remove deprecated BoardRenderer.printBoardWithCoordinates() and compareWithAndWithoutSingletons()
  *
  * Estimated effort: 4-6 hours
  * Priority: HIGH
@@ -47,20 +47,10 @@ public class Main {
         // runEternityII();
 
         // Other available examples:
-        // compareWithAndWithoutSingletons();  // 5x5
+        // ComparisonAnalyzer.compareWithAndWithoutSingletons();  // 5x5
         // runExample4x4();
         // runExample4x4Easy();
         // runExample4x4Ordered();
-    }
-
-    /**
-     * Compares performance with and without singleton optimization.
-     *
-     * @deprecated Use {@link ComparisonAnalyzer#compareWithAndWithoutSingletons()} instead.
-     */
-    @Deprecated
-    private static void compareWithAndWithoutSingletons() {
-        ComparisonAnalyzer.compareWithAndWithoutSingletons();
     }
 
     /**
@@ -293,7 +283,7 @@ public class Main {
         System.out.println("═══════════════════════════════════════════════════════");
         System.out.println("BOARD WITH HINTS (16×16)");
         System.out.println("═══════════════════════════════════════════════════════");
-        printBoardWithCoordinates(board, pieces);
+        BoardRenderer.printBoardWithCoordinates(board, pieces);
 
         // Display the maximum score
         int[] score = board.calculateScore();
@@ -333,7 +323,7 @@ public class Main {
             System.out.println("✓ PUZZLE SOLVED!");
             System.out.println("Time: " + String.format("%.2f", duration) + " seconds\n");
 
-            printBoardWithCoordinates(board, pieces);
+            BoardRenderer.printBoardWithCoordinates(board, pieces);
             board.printScore();
         } else {
             System.out.println("✗ No solution found");
@@ -343,164 +333,16 @@ public class Main {
 
     /**
      * Runs the 6x12 puzzle.
-     * Rows: A-F (0-5)
-     * Columns: 1-12 (0-11)
      */
     private static void runPuzzle6x12() {
-        System.out.println("╔════════════════════════════════════════════════════════╗");
-        System.out.println("║              PUZZLE 6×12 (72 pieces)                   ║");
-        System.out.println("║        Rows: A-F / Columns: 1-12                    ║");
-        System.out.println("╚════════════════════════════════════════════════════════╝\n");
-
-        // Load the pieces
-        Map<Integer, Piece> pieces = PuzzleFactory.createPuzzle6x12();
-        System.out.println("✓ " + pieces.size() + " pieces loaded\n");
-
-        // Display the pieces
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("PUZZLE PIECES");
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("ID  | N  E  S  W");
-        System.out.println("────┼────────────");
-        for (Map.Entry<Integer, Piece> entry : pieces.entrySet()) {
-            int id = entry.getKey();
-            int[] edges = entry.getValue().getEdges();
-            System.out.printf("%2d  | %2d %2d %2d %2d%n",
-                id, edges[0], edges[1], edges[2], edges[3]);
-        }
-        System.out.println();
-
-        // Create the board
-        Board board = new Board(6, 12);
-
-        // Display the empty board with coordinates A-F and 1-12
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("EMPTY BOARD (6×12)");
-        System.out.println("═══════════════════════════════════════════════════════");
-        printBoardWithCoordinates(board, pieces);
-
-        // Display the maximum score
-        int[] score = board.calculateScore();
-        System.out.println("Theoretical maximum score:");
-        System.out.println("  - Horizontal internal edges: " + ((6-1) * 12) + " (5 × 12)");
-        System.out.println("  - Vertical internal edges: " + (6 * (12-1)) + " (6 × 11)");
-        System.out.println("  - Total: " + score[1] + " internal edges");
-        System.out.println();
-
-        // Lancer le solver
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("LANCEMENT DU SOLVER");
-        System.out.println("═══════════════════════════════════════════════════════\n");
-
-        EternitySolver solver = new EternitySolver();
-        solver.setVerbose(false); // N'afficher que les records, pas chaque placement
-        long startTime = System.currentTimeMillis();
-
-        boolean solved = solver.solve(board, pieces);
-
-        long endTime = System.currentTimeMillis();
-        double duration = (endTime - startTime) / 1000.0;
-
-        System.out.println("\n═══════════════════════════════════════════════════════");
-        System.out.println("RÉSULTAT");
-        System.out.println("═══════════════════════════════════════════════════════");
-
-        if (solved) {
-            System.out.println("✓ PUZZLE RÉSOLU!");
-            System.out.println("Temps: " + String.format("%.2f", duration) + " secondes\n");
-
-            printBoardWithCoordinates(board, pieces);
-            board.printScore();
-        } else {
-            System.out.println("✗ No solution found");
-            System.out.println("Temps: " + String.format("%.2f", duration) + " secondes\n");
-        }
+        new runner.PuzzleExecutor().execute(runner.PuzzleDefinition.PUZZLE_6X12);
     }
 
     /**
      * Runs the validation puzzle 6x6.
-     * Rows: A-F (0-5)
-     * Columns: 1-6 (0-5)
      */
     private static void runValidation6x6() {
-        System.out.println("╔════════════════════════════════════════════════════════╗");
-        System.out.println("║        VALIDATION TEST - PUZZLE 6×6                 ║");
-        System.out.println("║        Rows: A-F / Columns: 1-6                     ║");
-        System.out.println("╚════════════════════════════════════════════════════════╝\n");
-
-        // Load the pieces
-        Map<Integer, Piece> pieces = PuzzleFactory.createValidation6x6();
-        System.out.println("✓ " + pieces.size() + " pieces loaded\n");
-
-        // Display the pieces
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("PUZZLE PIECES");
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("ID  | N  E  S  W");
-        System.out.println("────┼────────────");
-        for (Map.Entry<Integer, Piece> entry : pieces.entrySet()) {
-            int id = entry.getKey();
-            int[] edges = entry.getValue().getEdges();
-            System.out.printf("%2d  | %d  %d  %d  %d%n",
-                id, edges[0], edges[1], edges[2], edges[3]);
-        }
-        System.out.println();
-
-        // Create the board
-        Board board = new Board(6, 6);
-
-        // Display the empty board with coordinates A-F and 1-6
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("EMPTY BOARD (6×6)");
-        System.out.println("═══════════════════════════════════════════════════════");
-        printBoardWithCoordinates(board, pieces);
-
-        // Display the maximum score
-        int[] score = board.calculateScore();
-        System.out.println("Theoretical maximum score:");
-        System.out.println("  - Horizontal internal edges: " + ((6-1) * 6) + " (5 × 6)");
-        System.out.println("  - Vertical internal edges: " + (6 * (6-1)) + " (6 × 5)");
-        System.out.println("  - Total: " + score[1] + " internal edges");
-        System.out.println();
-
-        // Lancer le solver
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("LANCEMENT DU SOLVER");
-        System.out.println("═══════════════════════════════════════════════════════\n");
-
-        EternitySolver solver = new EternitySolver();
-        solver.setVerbose(false); // N'afficher que les records, pas chaque placement
-        long startTime = System.currentTimeMillis();
-
-        boolean solved = solver.solve(board, pieces);
-
-        long endTime = System.currentTimeMillis();
-        double duration = (endTime - startTime) / 1000.0;
-
-        System.out.println("\n═══════════════════════════════════════════════════════");
-        System.out.println("RÉSULTAT");
-        System.out.println("═══════════════════════════════════════════════════════");
-
-        if (solved) {
-            System.out.println("✓ PUZZLE RÉSOLU!");
-            System.out.println("Temps: " + String.format("%.2f", duration) + " secondes\n");
-
-            printBoardWithCoordinates(board, pieces);
-            board.printScore();
-        } else {
-            System.out.println("✗ No solution found");
-            System.out.println("Temps: " + String.format("%.2f", duration) + " secondes\n");
-        }
+        new runner.PuzzleExecutor().execute(runner.PuzzleDefinition.VALIDATION_6X6);
     }
 
-    /**
-     * Displays the board with coordinates A-F (rows) and 1-12 (columns).
-     * Each cell displays the piece number in the center with edge values around it.
-     *
-     * @deprecated Use {@link BoardRenderer#printBoardWithCoordinates(Board, Map)} instead.
-     */
-    @Deprecated
-    private static void printBoardWithCoordinates(Board board, Map<Integer, Piece> pieces) {
-        BoardRenderer.printBoardWithCoordinates(board, pieces);
-    }
 }

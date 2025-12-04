@@ -3,6 +3,7 @@ import model.Piece;
 import solver.EternitySolver;
 import util.ConfigurationUtils;
 import util.SaveStateManager;
+import util.TimeConstants;
 
 import java.io.*;
 import java.util.*;
@@ -200,6 +201,7 @@ public class MainParallel {
                             solver.setPrioritizeBorders(config.isPrioritizeBorders());
                             solver.setNumFixedPieces(config.getFixedPieces().size());
                             solver.setThreadLabel(ConfigurationUtils.createThreadLabel(threadId, configId));
+                            solver.setMaxExecutionTime(timeoutMs); // Configure timeout for rotation
 
                             System.out.println("   [Thread " + threadId + "] Resume: " + saveState.depth + " pieces placed");
 
@@ -340,7 +342,7 @@ public class MainParallel {
             }
 
             // Small pause before next iteration
-            Thread.sleep(1000);
+            Thread.sleep(TimeConstants.DEFAULT_THREAD_SLEEP_MS);
         }
     }
 

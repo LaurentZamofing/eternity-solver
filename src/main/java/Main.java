@@ -1,6 +1,9 @@
 import model.Board;
 import model.Piece;
 import solver.EternitySolver;
+import util.BoardRenderer;
+import util.ComparisonAnalyzer;
+import util.ParallelConstants;
 import util.PuzzleFactory;
 import util.SaveManager;
 
@@ -39,98 +42,12 @@ public class Main {
 
     /**
      * Compares performance with and without singleton optimization.
+     *
+     * @deprecated Use {@link ComparisonAnalyzer#compareWithAndWithoutSingletons()} instead.
      */
+    @Deprecated
     private static void compareWithAndWithoutSingletons() {
-        int rows = 5, cols = 5;
-        Map<Integer, Piece> pieces = PuzzleFactory.createExample5x5();
-
-        System.out.println("╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║   COMPARISON 5x5 : WITH vs WITHOUT SINGLETON optimization ║");
-        System.out.println("╚══════════════════════════════════════════════════════════╝\n");
-
-        // ===== WITH SINGLETONS =====
-        System.out.println("\n█████████████████████████████████████████████████████████");
-        System.out.println("█  TEST 1 : WITH SINGLETON optimization                 █");
-        System.out.println("█████████████████████████████████████████████████████████\n");
-
-        Board board1 = new Board(rows, cols);
-        EternitySolver solver1 = new EternitySolver();
-        solver1.setUseSingletons(true);
-
-        boolean solved1 = solver1.solve(board1, pieces);
-        EternitySolver.Statistics stats1 = solver1.getStatistics();
-
-        if (!solved1) {
-            System.out.println("⚠ No solution found (with singletons)");
-        }
-
-        // ===== WITHOUT SINGLETONS =====
-        System.out.println("\n\n█████████████████████████████████████████████████████████");
-        System.out.println("█  TEST 2 : WITHOUT SINGLETON optimization (MRV only)      █");
-        System.out.println("█████████████████████████████████████████████████████████\n");
-
-        Board board2 = new Board(rows, cols);
-        EternitySolver solver2 = new EternitySolver();
-        solver2.setUseSingletons(false);
-
-        boolean solved2 = solver2.solve(board2, pieces);
-        EternitySolver.Statistics stats2 = solver2.getStatistics();
-
-        if (!solved2) {
-            System.out.println("⚠ No solution found (without singletons)");
-        }
-
-        // ===== COMPARISON =====
-        System.out.println("\n\n╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║                   COMPARATIVE SUMMARY                      ║");
-        System.out.println("╚══════════════════════════════════════════════════════════╝\n");
-
-        System.out.println("┌──────────────────────────┬─────────────────┬─────────────────┬─────────────┐");
-        System.out.println("│ Metric                   │ WITH Singleton  │ WITHOUT Singleton  │ Gain        │");
-        System.out.println("├──────────────────────────┼─────────────────┼─────────────────┼─────────────┤");
-
-        printComparisonRow("Time (seconds)",
-            stats1.getElapsedTimeSec(), stats2.getElapsedTimeSec());
-        printComparisonRow("Recursive calls",
-            stats1.recursiveCalls, stats2.recursiveCalls);
-        printComparisonRow("Placements tested",
-            stats1.placements, stats2.placements);
-        printComparisonRow("Backtracks",
-            stats1.backtracks, stats2.backtracks);
-        printComparisonRow("fit() checks",
-            stats1.fitChecks, stats2.fitChecks);
-
-        System.out.println("└──────────────────────────┴─────────────────┴─────────────────┴─────────────┘\n");
-
-        System.out.println("Singletons detected (test 1) : " + stats1.singletonsFound);
-        System.out.println("Singletons placed (test 1)    : " + stats1.singletonsPlaced);
-        System.out.println("\nDead-ends (test 1) : " + stats1.deadEndsDetected);
-        System.out.println("Dead-ends (test 2) : " + stats2.deadEndsDetected);
-    }
-
-    /**
-     * Displays a comparison row in the table.
-     */
-    private static void printComparisonRow(String label, double val1, double val2) {
-        double gain = val2 > 0 ? ((val2 - val1) / val2) * 100 : 0;
-        String gainStr = String.format("%.1f%%", gain);
-        if (gain > 0) {
-            gainStr = "↓ " + gainStr;
-        } else if (gain < 0) {
-            gainStr = "↑ " + String.format("%.1f%%", Math.abs(gain));
-        } else {
-            gainStr = "=";
-        }
-
-        System.out.printf("│ %-24s │ %15.2f │ %15.2f │ %11s │%n",
-            label, val1, val2, gainStr);
-    }
-
-    /**
-     * Displays a comparison row in the table (int version).
-     */
-    private static void printComparisonRow(String label, int val1, int val2) {
-        printComparisonRow(label, (double)val1, (double)val2);
+        ComparisonAnalyzer.compareWithAndWithoutSingletons();
     }
 
     /**
@@ -304,9 +221,9 @@ public class Main {
         solver.setUseSingletons(true);
         solver.setVerbose(false); // Disable detailed display
 
-        // Determine the number of threads (use 75% of available cores)
+        // Determine the number of threads (use optimal thread count based on available cores)
         int numCores = Runtime.getRuntime().availableProcessors();
-        int numThreads = Math.max(4, (int)(numCores * 0.75));
+        int numThreads = ParallelConstants.getOptimalThreadCount();
 
         System.out.println("Starting solver with optimizations...");
         System.out.println("- MRV heuristic (Minimum Remaining Values)");
@@ -611,87 +528,11 @@ public class Main {
     /**
      * Displays the board with coordinates A-F (rows) and 1-12 (columns).
      * Each cell displays the piece number in the center with edge values around it.
+     *
+     * @deprecated Use {@link BoardRenderer#printBoardWithCoordinates(Board, Map)} instead.
      */
+    @Deprecated
     private static void printBoardWithCoordinates(Board board, Map<Integer, Piece> pieces) {
-        int rows = board.getRows();
-        int cols = board.getCols();
-
-        // Header with column numbers (right-aligned on 2 characters)
-        System.out.print("     ");
-        for (int c = 0; c < cols; c++) {
-            System.out.printf("  %2d    ", (c + 1));
-            if (c < cols - 1) System.out.print(" ");
-        }
-        System.out.println();
-
-        // Top line
-        System.out.print("   ─");
-        for (int c = 0; c < cols; c++) {
-            System.out.print("────────");
-            if (c < cols - 1) System.out.print("─");
-        }
-        System.out.println();
-
-        for (int r = 0; r < rows; r++) {
-            char rowLabel = (char) ('A' + r);
-
-            // Line 1: North Edge
-            System.out.print("   │");
-            for (int c = 0; c < cols; c++) {
-                if (board.isEmpty(r, c)) {
-                    System.out.print("        ");
-                } else {
-                    int[] edges = board.getPlacement(r, c).edges;
-                    System.out.printf("   %2d   ", edges[0]); // North
-                }
-                System.out.print("│");
-            }
-            System.out.println();
-
-            // Line 2: West + Piece ID + East
-            System.out.print(" " + rowLabel + " │");
-            for (int c = 0; c < cols; c++) {
-                if (board.isEmpty(r, c)) {
-                    System.out.print("   --   ");
-                } else {
-                    int pieceId = board.getPlacement(r, c).getPieceId();
-                    int[] edges = board.getPlacement(r, c).edges;
-                    System.out.printf("%2d %2d %2d", edges[3], pieceId, edges[1]); // West, ID, East
-                }
-                System.out.print("│");
-            }
-            System.out.println();
-
-            // Line 3: South Edge
-            System.out.print("   │");
-            for (int c = 0; c < cols; c++) {
-                if (board.isEmpty(r, c)) {
-                    System.out.print("        ");
-                } else {
-                    int[] edges = board.getPlacement(r, c).edges;
-                    System.out.printf("   %2d   ", edges[2]); // South
-                }
-                System.out.print("│");
-            }
-            System.out.println();
-
-            // Separator between rows
-            if (r < rows - 1) {
-                System.out.print("   ─");
-                for (int c = 0; c < cols; c++) {
-                    System.out.print("────────");
-                    if (c < cols - 1) System.out.print("┼");
-                }
-                System.out.println();
-            }
-        }
-
-        // Bottom line
-        System.out.print("   ─");
-        for (int c = 0; c < cols; c++) {
-            System.out.print("────────");
-            if (c < cols - 1) System.out.print("─");
-        }
-        System.out.println("\n");
+        BoardRenderer.printBoardWithCoordinates(board, pieces);
     }
 }

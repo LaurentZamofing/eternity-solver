@@ -5,6 +5,7 @@ import solver.EternitySolver;
 import util.ConfigurationUtils;
 import util.FormattingUtils;
 import util.SaveStateManager;
+import util.TimeConstants;
 import java.io.*;
 import java.util.*;
 
@@ -29,7 +30,7 @@ public class MainSequential {
     };
 
     // Timeout for each puzzle (10 minutes)
-    private static final long PUZZLE_TIMEOUT = 600000; // 10 minutes in milliseconds
+    private static final long PUZZLE_TIMEOUT = TimeConstants.DEFAULT_PUZZLE_TIMEOUT_MS;
 
     public static void main(String[] args) {
         System.out.println("\n");
@@ -305,7 +306,7 @@ public class MainSequential {
                 System.out.println("\n  → ⏱ 10 minute timeout reached");
                 System.out.println("  → Interrupting solving and saving state...");
                 solverThread.interrupt();
-                solverThread.join(5000); // Wait 5 seconds for thread to terminate cleanly
+                solverThread.join(TimeConstants.DEFAULT_THREAD_JOIN_TIMEOUT_MS); // Wait 5 seconds for thread to terminate cleanly
 
                 if (solverThread.isAlive()) {
                     // Force kill if thread doesn't terminate
@@ -395,15 +396,15 @@ public class MainSequential {
     private static long getTimeoutForDifficulty(String difficulty) {
         switch (difficulty.toLowerCase()) {
             case "facile":
-                return 30000;  // 30 seconds
+                return TimeConstants.LONG_TIMEOUT_MS;  // 30 seconds
             case "moyen":
-                return 120000; // 2 minutes
+                return 2 * TimeConstants.MILLIS_PER_MINUTE; // 2 minutes
             case "difficile":
-                return 300000; // 5 minutes
+                return 5 * TimeConstants.MILLIS_PER_MINUTE; // 5 minutes
             case "extreme":
-                return 1800000; // 30 minutes
+                return 30 * TimeConstants.MILLIS_PER_MINUTE; // 30 minutes
             default:
-                return 60000;   // 1 minute by default
+                return TimeConstants.MILLIS_PER_MINUTE;   // 1 minute by default
         }
     }
 

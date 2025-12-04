@@ -144,6 +144,9 @@ public class BoardVisualizer {
 
         // Codes ANSI pour le formatage
         final String BOLD = "\033[1m";
+        final String RED = "\033[31m";      // Dead ends
+        final String GREEN = "\033[32m";    // Last placed
+        final String CYAN = "\033[36m";     // Min count (MRV)
         final String RESET = "\033[0m";
 
         // Display grid graphically
@@ -171,9 +174,9 @@ public class BoardVisualizer {
                 }
 
                 if (p == null) {
-                    System.out.print("|        |");
+                    System.out.print("|         |");  // 9 spaces
                 } else {
-                    System.out.printf("|   %d    |", p.edges[0]);
+                    System.out.printf("|   %2d    |", p.edges[0]);  // 3 + 2 + 4 = 9
                 }
 
                 if (isLastPlaced || isMinCount) {
@@ -188,17 +191,28 @@ public class BoardVisualizer {
                 boolean isMinCount = (r == minRow && c == minCol);
                 Placement p = board.getPlacement(r, c);
 
-                if (isLastPlaced || isMinCount) {
-                    System.out.print(BOLD);
+                String color = "";
+                if (isLastPlaced) {
+                    color = GREEN;  // Last placed piece
+                } else if (isMinCount) {
+                    color = CYAN;   // MRV (min remaining values)
+                } else if (p == null && counts[r][c] == 0) {
+                    color = RED;    // Dead end
+                }
+
+                if (!color.isEmpty()) {
+                    System.out.print(color);
                 }
 
                 if (p == null) {
-                    System.out.printf("|   %2d   |", counts[r][c]);
+                    // Empty cell - show count with 3 digits (3+3+3=9 chars)
+                    System.out.printf("|   %3d   |", counts[r][c]);
                 } else {
-                    System.out.printf("|%d  %2d  %d|", p.edges[3], p.getPieceId(), p.edges[1]);
+                    // Placed piece - edges(2) ID(3) edges(2) with spaces (2+1+3+1+2=9)
+                    System.out.printf("|%2d %3d %2d|", p.edges[3], p.getPieceId(), p.edges[1]);
                 }
 
-                if (isLastPlaced || isMinCount) {
+                if (!color.isEmpty()) {
                     System.out.print(RESET);
                 }
             }
@@ -215,9 +229,9 @@ public class BoardVisualizer {
                 }
 
                 if (p == null) {
-                    System.out.print("|        |");
+                    System.out.print("|         |");  // 9 spaces
                 } else {
-                    System.out.printf("|   %d    |", p.edges[2]);
+                    System.out.printf("|   %2d    |", p.edges[2]);  // 3 + 2 + 4 = 9
                 }
 
                 if (isLastPlaced || isMinCount) {

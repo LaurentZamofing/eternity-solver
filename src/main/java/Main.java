@@ -67,80 +67,28 @@ public class Main {
      * Runs the solver on the predefined 4x4 example (hard version).
      */
     private static void runExample4x4() {
-        int rows = 4, cols = 4;
-        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4();
-        Board board = new Board(rows, cols);
-        EternitySolver solver = new EternitySolver();
-
-        System.out.println("Starting solver for 4x4 example (HARD)...");
-        boolean solved = solver.solve(board, pieces);
-
-        if (!solved) {
-            System.out.println("No solution found for 4x4 example.");
-        } else {
-            System.out.println("Solution found:\n");
-            board.prettyPrint(pieces);
-        }
+        new runner.PuzzleExecutor().execute(runner.PuzzleDefinition.EXAMPLE_4X4_HARD);
     }
 
     /**
      * Runs the solver on the 4x4 example (easy version).
      */
     private static void runExample4x4Easy() {
-        int rows = 4, cols = 4;
-        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4Easy();
-        Board board = new Board(rows, cols);
-        EternitySolver solver = new EternitySolver();
-
-        System.out.println("Starting solver for 4x4 example (EASY)...");
-        boolean solved = solver.solve(board, pieces);
-
-        if (!solved) {
-            System.out.println("No solution found for 4x4 example.");
-        } else {
-            System.out.println("Solution found:\n");
-            board.prettyPrint(pieces);
-        }
+        new runner.PuzzleExecutor().execute(runner.PuzzleDefinition.EXAMPLE_4X4_EASY);
     }
 
     /**
      * Runs the solver on the 4x4 example (ordered/trivial version).
      */
     private static void runExample4x4Ordered() {
-        int rows = 4, cols = 4;
-        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4Ordered();
-        Board board = new Board(rows, cols);
-        EternitySolver solver = new EternitySolver();
-
-        System.out.println("Starting solver for 4x4 example (TRIVIAL - ordered)...");
-        boolean solved = solver.solve(board, pieces);
-
-        if (!solved) {
-            System.out.println("No solution found for 4x4 example.");
-        } else {
-            System.out.println("Solution found:\n");
-            board.prettyPrint(pieces);
-        }
+        new runner.PuzzleExecutor().execute(runner.PuzzleDefinition.EXAMPLE_4X4_ORDERED);
     }
 
     /**
      * Runs the solver on the predefined 3x3 example.
      */
     private static void runExample3x3() {
-        int rows = 3, cols = 3;
-        Map<Integer, Piece> pieces = PuzzleFactory.createExample3x3();
-        Board board = new Board(rows, cols);
-        EternitySolver solver = new EternitySolver();
-
-        System.out.println("Starting solver for 3x3 example...");
-        boolean solved = solver.solve(board, pieces);
-
-        if (!solved) {
-            System.out.println("No solution found for 3x3 example.");
-        } else {
-            System.out.println("Solution found:\n");
-            board.prettyPrint(pieces);
-        }
+        new runner.PuzzleExecutor().execute(runner.PuzzleDefinition.EXAMPLE_3X3);
     }
 
     /**
@@ -269,10 +217,17 @@ public class Main {
 
     /**
      * Runs the 16x16 puzzle.
-     * Rows: A-P (0-15)
-     * Columns: 1-16 (0-15)
      */
     private static void runPuzzle16x16() {
+        new runner.PuzzleExecutor().execute(runner.PuzzleDefinition.PUZZLE_16X16);
+    }
+
+    /**
+     * Runs the 16x16 puzzle (old implementation - to be removed).
+     * @deprecated Use runPuzzle16x16() which now uses PuzzleExecutor
+     */
+    @Deprecated
+    private static void runPuzzle16x16Old() {
         System.out.println("╔════════════════════════════════════════════════════════╗");
         System.out.println("║             PUZZLE 16×16 (256 pieces)                  ║");
         System.out.println("║        Rows: A-P / Columns: 1-16                    ║");

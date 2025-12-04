@@ -6,7 +6,29 @@ import model.Placement;
 
 import java.util.*;
 
-/** Utility class for visualizing puzzle boards in ASCII art formats; all methods static and solver-independent. */
+/**
+ * Utility class for visualizing puzzle boards in ASCII art formats; all methods static and solver-independent.
+ *
+ * TODO: REFACTORING NEEDED (Current: 569 lines, Target: ~150 lines per class)
+ * See REFACTORING_ROADMAP.md for detailed plan.
+ *
+ * God Class Issues:
+ * - 4 large visualization methods with overlapping logic
+ * - Heavy ANSI color code duplication
+ * - Complex parameter lists (6-7 params)
+ * - Currently 0% test coverage
+ *
+ * Refactoring Plan:
+ * 1. Create solver/visualization/BoardFormatter interface
+ * 2. Implementations: CompactFormatter, DetailedFormatter, LabeledFormatter, ComparisonFormatter
+ * 3. Extract AnsiColorHelper utility (ANSI codes)
+ * 4. Extract GridDrawingHelper utility (box drawing)
+ * 5. Add comprehensive tests for each formatter
+ *
+ * Estimated effort: 6-8 hours
+ * Priority: HIGH
+ * See: REFACTORING_ROADMAP.md Section 2
+ */
 public class BoardVisualizer {
 
     /** Helper class storing valid placement information (piece ID and rotation). */

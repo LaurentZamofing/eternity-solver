@@ -15,6 +15,19 @@ import java.util.Set;
 /**
  * Main entry point of the application.
  * Runs the solver on the predefined 3x3 example.
+ *
+ * TODO: REFACTORING NEEDED (Current: 538 lines, Target: ~100 lines)
+ * See REFACTORING_ROADMAP.md for detailed plan.
+ *
+ * Remaining work:
+ * 1. Extract all run* methods to ExamplePuzzles and LargePuzzleRunner utilities
+ * 2. Use existing runner/PuzzleRunner.java for execution logic
+ * 3. Simplify main() to simple dispatcher or delegation
+ * 4. Remove deprecated printBoardWithCoordinates() and compareWithAndWithoutSingletons()
+ *
+ * Estimated effort: 4-6 hours
+ * Priority: HIGH
+ * See: REFACTORING_ROADMAP.md Section 1
  */
 public class Main {
 

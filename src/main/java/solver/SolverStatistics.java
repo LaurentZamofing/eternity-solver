@@ -1,6 +1,7 @@
 package solver;
 
 import util.SolverLogger;
+import util.TimeConstants;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -58,7 +59,7 @@ public class SolverStatistics {
     }
 
     public double getElapsedTimeSec() {
-        return getElapsedTimeMs() / 1000.0;
+        return TimeConstants.toSeconds(getElapsedTimeMs());
     }
 
     /**

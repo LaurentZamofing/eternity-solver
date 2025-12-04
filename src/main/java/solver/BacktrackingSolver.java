@@ -3,6 +3,7 @@ package solver;
 import model.Board;
 import model.Piece;
 import util.SaveManager;
+import util.TimeConstants;
 
 import java.util.BitSet;
 import java.util.Map;
@@ -196,14 +197,20 @@ public class BacktrackingSolver {
             }
         }
 
-        // Periodic auto-save (every 10 minutes)
+        // Periodic auto-save (every 60 seconds)
         if (autoSaveManager != null) {
             autoSaveManager.checkAndSave(board, pieceUsed, totalPieces, stats);
         }
 
+        // Periodic stats logging (every 10 seconds)
+        if (autoSaveManager != null) {
+            autoSaveManager.checkAndLogStats(pieceUsed, totalPieces, stats);
+        }
+
         // Check timeout
         if (currentTime - startTimeMs > configManager.getMaxExecutionTimeMs()) {
-            System.out.println("⏱️  " + configManager.getThreadLabel() + " Timeout reached (" + (configManager.getMaxExecutionTimeMs() / 1000) + "s) - stopping search");
+            long timeoutSeconds = (long) TimeConstants.toSeconds(configManager.getMaxExecutionTimeMs());
+            System.out.println("⏱️  " + configManager.getThreadLabel() + " Timeout reached (" + timeoutSeconds + "s) - stopping search");
             return false; // Timeout reached
         }
 

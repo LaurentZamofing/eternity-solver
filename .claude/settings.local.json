@@ -54,7 +54,22 @@
       "Bash(if [ -f test/README_VALIDATION.md ])",
       "Bash(then git mv test/README_VALIDATION.md src/test/java/README_VALIDATION.md)",
       "Bash(mvn:*)",
-      "Bash(./mvnw clean compile:*)"
+      "Bash(./mvnw clean compile:*)",
+      "Bash(/dev/null echo 'Test saves cleaned up' ls -la saves/eternity2/)",
+      "Bash(for config in saves/eternity2/eternity2_p01_ascending saves/eternity2/eternity2_p01_descending)",
+      "Bash(then echo \"\")",
+      "Bash(kill:*)",
+      "Bash(./start-monitoring.sh:*)",
+      "Bash(python3:*)",
+      "Bash(./stop-monitoring.sh:*)",
+      "Bash(while read pos)",
+      "Bash(pkill:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(comm:*)",
+      "Bash(for file in src/test/java/monitoring/controller/MetricsWebSocketControllerTest.java src/test/java/monitoring/controller/DashboardControllerTest.java)",
+      "Bash(while read class)",
+      "Bash(echo:*)",
+      "Bash(perl -i -pe:*)"
     ],
     "deny": [],
     "ask": []

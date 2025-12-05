@@ -101,6 +101,23 @@
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-launcher</artifactId>
+            <version>1.10.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- JUnit Platform Commons -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-commons</artifactId>
+            <version>1.10.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- JUnit Platform Engine -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
+            <version>1.10.1</version>
             <scope>test</scope>
         </dependency>
 

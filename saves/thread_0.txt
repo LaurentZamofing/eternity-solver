@@ -1,12 +1,12 @@
 # Eternity II Thread State
 # Thread: 0
 # Depth: 0
-# RandomSeed: 1764238225345
-# Timestamp: 1764281349100
-# Date: Thu Nov 27 23:09:09 CET 2025
+# RandomSeed: 0
+# Timestamp: 1764929181796
+# Date: Fri Dec 05 11:06:21 CET 2025
 
 BOARD_SIZE
-3 3
+2 2
 
 PLACEMENTS
 END_PLACEMENTS

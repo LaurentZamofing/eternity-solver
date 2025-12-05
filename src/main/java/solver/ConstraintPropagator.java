@@ -2,13 +2,18 @@ package solver;
 
 import model.Board;
 import model.Piece;
+import model.Placement;
 import solver.DomainManager.ValidPlacement;
 
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 
 /** Implements AC-3 constraint propagation for puzzle solving with incremental neighbor domain filtering, dead-end detection, and forward checking. */
 public class ConstraintPropagator {
@@ -46,48 +51,122 @@ public class ConstraintPropagator {
                                 Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (!useAC3 || !domainManager.isAC3Initialized()) return true;
 
-        Piece placedPiece = piecesById.get(placedPieceId);
-        int[] placedEdges = placedPiece.edgesRotated(rotation);
+        // AC-3 with cascading propagation
+        // Queue of cells whose domains need to be updated
+        Queue<int[]> queue = new java.util.LinkedList<>();
+        Set<String> inQueue = new java.util.HashSet<>();
 
-        // Check and update domain of each neighbor
-        // Format: {neighborRow, neighborCol, placedSide, neighborSide}
-        int[][] neighbors = {{r-1, c, 0, 2}, {r+1, c, 2, 0}, {r, c-1, 3, 1}, {r, c+1, 1, 3}};
+        // Format: {rowOffset, colOffset, placedSide, neighborSide}
+        int[][] neighborOffsets = {{-1, 0, 0, 2}, {1, 0, 2, 0}, {0, -1, 3, 1}, {0, 1, 1, 3}};
 
-        for (int[] nbr : neighbors) {
-            int nr = nbr[0], nc = nbr[1];
-            int placedSide = nbr[2];  // Which side of placed piece faces neighbor
-            int nbrSide = nbr[3];      // Which side of neighbor faces placed piece
-
-            if (nr < 0 || nr >= board.getRows() || nc < 0 || nc >= board.getCols()) continue;
-            if (!board.isEmpty(nr, nc)) continue;
-
-            Map<Integer, List<ValidPlacement>> currentDomain = domainManager.getDomain(nr, nc);
-            if (currentDomain == null) continue;
-
-            int requiredEdge = placedEdges[placedSide];
-
-            // Remove incompatible placements from neighbor's domain
-            Map<Integer, List<ValidPlacement>> newDomain = new HashMap<>();
-            for (Map.Entry<Integer, List<ValidPlacement>> entry : currentDomain.entrySet()) {
-                List<ValidPlacement> validRotations = new ArrayList<>();
-                for (ValidPlacement vp : entry.getValue()) {
-                    int[] edges = piecesById.get(vp.pieceId).edgesRotated(vp.rotation);
-                    if (edges[nbrSide] == requiredEdge) {
-                        validRotations.add(vp);
+        // Add ALL empty cells to the queue to propagate both:
+        // 1. Edge constraints from adjacent placed pieces
+        // 2. Piece availability (the placed piece is no longer available)
+        for (int row = 0; row < board.getRows(); row++) {
+            for (int col = 0; col < board.getCols(); col++) {
+                if (board.isEmpty(row, col)) {
+                    String key = row + "," + col;
+                    if (!inQueue.contains(key)) {
+                        queue.offer(new int[]{row, col});
+                        inQueue.add(key);
                     }
                 }
-                if (!validRotations.isEmpty()) {
-                    newDomain.put(entry.getKey(), validRotations);
+            }
+        }
+
+        // Propagate constraints in cascade
+        while (!queue.isEmpty()) {
+            int[] cell = queue.poll();
+            int cellRow = cell[0];
+            int cellCol = cell[1];
+            inQueue.remove(cellRow + "," + cellCol);
+
+            // Get current domain
+            Map<Integer, List<ValidPlacement>> currentDomain = domainManager.getDomain(cellRow, cellCol);
+            if (currentDomain == null || currentDomain.isEmpty()) {
+                stats.incrementDeadEnds();
+                return false;
+            }
+
+            // Compute new domain by checking all placed neighbors
+            Map<Integer, List<ValidPlacement>> newDomain = new HashMap<>(currentDomain);
+            boolean domainChanged = false;
+
+            // Check each neighbor of this cell
+            for (int[] offset : neighborOffsets) {
+                int nbrRow = cellRow + offset[0];
+                int nbrCol = cellCol + offset[1];
+                int cellSide = offset[2];  // Which side of cell faces neighbor
+                int nbrSide = offset[3];   // Which side of neighbor faces cell
+
+                if (nbrRow < 0 || nbrRow >= board.getRows() || nbrCol < 0 || nbrCol >= board.getCols()) continue;
+                if (board.isEmpty(nbrRow, nbrCol)) continue; // Empty neighbor, no constraint
+
+                // Neighbor is occupied, get its edges
+                Placement nbrPlacement = board.getPlacement(nbrRow, nbrCol);
+                if (nbrPlacement == null) continue;
+
+                int requiredEdge = nbrPlacement.edges[nbrSide];
+
+                // Filter domain: keep only compatible placements
+                Map<Integer, List<ValidPlacement>> filteredDomain = new HashMap<>();
+                for (Map.Entry<Integer, List<ValidPlacement>> entry : newDomain.entrySet()) {
+                    List<ValidPlacement> validRotations = new ArrayList<>();
+                    for (ValidPlacement vp : entry.getValue()) {
+                        int[] edges = piecesById.get(vp.pieceId).edgesRotated(vp.rotation);
+                        if (edges[cellSide] == requiredEdge) {
+                            validRotations.add(vp);
+                        }
+                    }
+                    if (!validRotations.isEmpty()) {
+                        filteredDomain.put(entry.getKey(), validRotations);
+                    }
+                }
+
+                if (filteredDomain.size() < newDomain.size() ||
+                    !filteredDomain.keySet().equals(newDomain.keySet())) {
+                    domainChanged = true;
+                }
+                newDomain = filteredDomain;
+
+                if (newDomain.isEmpty()) {
+                    stats.incrementDeadEnds();
+                    return false;
                 }
             }
 
-            // Update domain
-            domainManager.setDomain(nr, nc, newDomain);
+            // Check if pieces are still available
+            Map<Integer, List<ValidPlacement>> availableDomain = new HashMap<>();
+            for (Map.Entry<Integer, List<ValidPlacement>> entry : newDomain.entrySet()) {
+                if (!pieceUsed.get(entry.getKey())) {
+                    availableDomain.put(entry.getKey(), entry.getValue());
+                }
+            }
 
-            // Dead end if domain is empty
-            if (newDomain.isEmpty()) {
+            if (availableDomain.isEmpty()) {
                 stats.incrementDeadEnds();
                 return false;
+            }
+
+            // If domain changed, update and add neighbors to queue for propagation
+            if (domainChanged || availableDomain.size() < newDomain.size()) {
+                domainManager.setDomain(cellRow, cellCol, availableDomain);
+
+                // Add all empty neighbors to queue to propagate changes
+                for (int[] offset : neighborOffsets) {
+                    int nbrRow = cellRow + offset[0];
+                    int nbrCol = cellCol + offset[1];
+
+                    if (nbrRow >= 0 && nbrRow < board.getRows() &&
+                        nbrCol >= 0 && nbrCol < board.getCols() &&
+                        board.isEmpty(nbrRow, nbrCol)) {
+                        String key = nbrRow + "," + nbrCol;
+                        if (!inQueue.contains(key)) {
+                            queue.offer(new int[]{nbrRow, nbrCol});
+                            inQueue.add(key);
+                        }
+                    }
+                }
             }
         }
 

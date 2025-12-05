@@ -36,7 +36,7 @@ public class SolverWithTimeout extends EternitySolver {
             if (solverThread.isAlive()) {
                 timedOut[0] = true;
                 solverThread.interrupt();
-                solverThread.join(1000); // Wait 1 sec for interruption
+                solverThread.join(SolverConstants.THREAD_JOIN_TIMEOUT_MS); // Wait for interruption
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

@@ -34,7 +34,9 @@ public class PlacementOrderTracker {
      */
     public PlacementOrderTracker(List<SaveStateManager.PlacementInfo> initialFixedPieces) {
         this.placementHistory = new ArrayList<>();
-        this.initialFixedPieces = new ArrayList<>(initialFixedPieces);
+        this.initialFixedPieces = (initialFixedPieces != null)
+            ? new ArrayList<>(initialFixedPieces)
+            : new ArrayList<>();
     }
 
     /**
@@ -43,6 +45,19 @@ public class PlacementOrderTracker {
     public void initialize() {
         if (placementHistory == null) {
             placementHistory = new ArrayList<>();
+        }
+    }
+
+    /**
+     * Initializes placement history with fixed pieces
+     * @param fixedPieces list of fixed pieces to add to placement history
+     */
+    public void initializeWithFixedPieces(List<SaveStateManager.PlacementInfo> fixedPieces) {
+        if (placementHistory == null) {
+            placementHistory = new ArrayList<>();
+        }
+        if (fixedPieces != null) {
+            placementHistory.addAll(fixedPieces);
         }
     }
 

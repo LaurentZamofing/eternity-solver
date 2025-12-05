@@ -3,6 +3,8 @@ package solver;
 import model.Board;
 import model.Piece;
 
+import java.util.Scanner;
+
 /**
  * Placement strategy that detects and places singleton pieces.
  *
@@ -43,6 +45,31 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
         this.domainManager = domainManager;
     }
 
+    /**
+     * Waits for user to press Enter in verbose mode.
+     * Skips waiting in test environments to prevent test hangs.
+     */
+    private void waitForEnter() {
+        // Skip waiting if:
+        // 1. System console is null (tests, background execution, redirected stdin)
+        // 2. stdin is not ready (tests with System.in redirection)
+        if (System.console() == null) {
+            return; // Non-interactive mode
+        }
+
+        try {
+            // Check if stdin is actually available
+            if (System.in.available() == 0) {
+                // Only wait if there's a real terminal
+                System.out.println("\n[Press Enter to continue...]");
+                Scanner scanner = new Scanner(System.in);
+                scanner.nextLine();
+            }
+        } catch (Exception e) {
+            // If stdin check fails, skip waiting (test environment)
+        }
+    }
+
     @Override
     public boolean tryPlacement(BacktrackingContext context, EternitySolver solver) {
         // Check if singleton optimization is disabled
@@ -75,6 +102,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
             System.out.println("║  Available pieces: " + availableCount);
             System.out.println("╚════════════════════════════════════════╝");
             context.stats.printCompact();
+            waitForEnter();
         }
 
         // Symmetry breaking check
@@ -117,6 +145,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
                                        context.totalPieces, r, c);
             System.out.println("✓ Singleton placed: ID=" + pid + ", Rotation=" + (rot * 90) +
                              "°, Edges=" + java.util.Arrays.toString(candidate));
+            waitForEnter();
         }
 
         // Recursive call
@@ -130,6 +159,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
         context.stats.backtracks++;
         if (verbose) {
             System.out.println("✗ Singleton BACKTRACK: Removing piece ID=" + pid + " at (" + r + ", " + c + ")");
+            waitForEnter();
         }
 
         context.pieceUsed.clear(pid);

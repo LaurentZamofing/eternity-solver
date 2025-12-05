@@ -14,36 +14,68 @@ import java.util.concurrent.atomic.AtomicReference;
 /** Manages parallel search execution with work-stealing, thread coordination, and diversification strategies. */
 public class ParallelSearchManager {
 
-    // Global state for parallel solving
+    // Static state for backward compatibility (deprecated - use SharedSearchState instead)
+    @Deprecated
     private static AtomicBoolean solutionFound = new AtomicBoolean(false);
+    @Deprecated
     private static AtomicInteger globalMaxDepth = new AtomicInteger(0);
+    @Deprecated
     private static AtomicInteger globalBestScore = new AtomicInteger(0);
+    @Deprecated
     private static AtomicInteger globalBestThreadId = new AtomicInteger(-1);
+    @Deprecated
     private static AtomicReference<Board> globalBestBoard = new AtomicReference<>(null);
+    @Deprecated
     private static AtomicReference<Map<Integer, Piece>> globalBestPieces = new AtomicReference<>(null);
+    @Deprecated
     private static final Object lockObject = new Object();
 
     // Work-stealing parallelism
+    @Deprecated
     private static ForkJoinPool workStealingPool = null;
-    public static final int WORK_STEALING_DEPTH_THRESHOLD = 5;
-    private static final long THREAD_SAVE_INTERVAL = 60000; // 1 minute
+    public static final int WORK_STEALING_DEPTH_THRESHOLD = SolverConstants.WORK_STEALING_DEPTH_THRESHOLD;
+    private static final long THREAD_SAVE_INTERVAL = SolverConstants.THREAD_SAVE_INTERVAL_MS;
 
-    // Dependencies
+    // Instance state (preferred approach)
+    private final SharedSearchState sharedState;
     private final DomainManager domainManager;
 
-    /** Creates ParallelSearchManager with required domain manager. */
+    /** Creates ParallelSearchManager with required domain manager and shared state. */
+    public ParallelSearchManager(DomainManager domainManager, SharedSearchState sharedState) {
+        this.domainManager = domainManager;
+        this.sharedState = sharedState;
+    }
+
+    /** Creates ParallelSearchManager with required domain manager (uses static state - deprecated). */
+    @Deprecated
     public ParallelSearchManager(DomainManager domainManager) {
         this.domainManager = domainManager;
+        this.sharedState = null; // Use static state for backward compatibility
     }
 
     /** Enables work-stealing parallelism with specified thread count. */
     public void enableWorkStealing(int numThreads) {
-        if (workStealingPool == null || workStealingPool.isShutdown()) {
-            workStealingPool = new ForkJoinPool(numThreads);
+        if (sharedState != null) {
+            sharedState.enableWorkStealing(numThreads);
+        } else {
+            // Backward compatibility - use static state
+            if (workStealingPool == null || workStealingPool.isShutdown()) {
+                workStealingPool = new ForkJoinPool(numThreads);
+            }
+        }
+    }
+
+    /** Resets global state; delegates to instance state if available, otherwise resets static state. */
+    public void resetState() {
+        if (sharedState != null) {
+            sharedState.reset();
+        } else {
+            resetGlobalState();
         }
     }
 
     /** Resets all static global state variables; call between puzzles in sequential runs. */
+    @Deprecated
     public static void resetGlobalState() {
         solutionFound.set(false);
         globalMaxDepth.set(0);
@@ -146,14 +178,16 @@ public class ParallelSearchManager {
     public boolean solveWithWorkStealing(Board board, Map<Integer, Piece> pieces,
                                          BitSet pieceUsed, int totalPieces,
                                          SequentialSolver sequentialSolver) {
-        if (workStealingPool == null) {
+        ForkJoinPool pool = (sharedState != null) ? sharedState.getWorkStealingPool() : workStealingPool;
+
+        if (pool == null) {
             throw new IllegalStateException("Work-stealing pool not enabled. Call enableWorkStealing() first.");
         }
 
         ParallelSearchTask task = new ParallelSearchTask(
-            board, pieces, pieceUsed, totalPieces, 0, domainManager, sequentialSolver
+            board, pieces, pieceUsed, totalPieces, 0, domainManager, sequentialSolver, sharedState
         );
-        return workStealingPool.invoke(task);
+        return pool.invoke(task);
     }
 
     /** Callback interface for sequential solver. */
@@ -170,10 +204,11 @@ public class ParallelSearchManager {
         private final int currentDepth;
         private final DomainManager domainManager;
         private final SequentialSolver sequentialSolver;
+        private final SharedSearchState sharedState; // null means use static state for backward compatibility
 
         ParallelSearchTask(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed,
                            int totalPieces, int currentDepth, DomainManager domainManager,
-                           SequentialSolver sequentialSolver) {
+                           SequentialSolver sequentialSolver, SharedSearchState sharedState) {
             this.board = board;
             this.piecesById = piecesById;
             this.pieceUsed = (BitSet) pieceUsed.clone();
@@ -181,17 +216,22 @@ public class ParallelSearchManager {
             this.currentDepth = currentDepth;
             this.domainManager = domainManager;
             this.sequentialSolver = sequentialSolver;
+            this.sharedState = sharedState;
         }
 
         @Override
         protected Boolean compute() {
             // Check if solution already found
-            if (solutionFound.get()) {
+            boolean foundSolution = (sharedState != null) ? sharedState.isSolutionFound() : solutionFound.get();
+            if (foundSolution) {
                 return false;
             }
 
+            // Get work-stealing pool reference
+            ForkJoinPool pool = (sharedState != null) ? sharedState.getWorkStealingPool() : workStealingPool;
+
             // If depth is low enough, fork tasks
-            if (currentDepth < WORK_STEALING_DEPTH_THRESHOLD && workStealingPool != null) {
+            if (currentDepth < WORK_STEALING_DEPTH_THRESHOLD && pool != null) {
                 // Find next empty cell with MRV heuristic (simplified version)
                 int[] cell = findNextEmptyCell(board);
 
@@ -220,7 +260,7 @@ public class ParallelSearchManager {
 
                             ParallelSearchTask task = new ParallelSearchTask(
                                 boardCopy, piecesById, usedCopy, totalPieces,
-                                currentDepth + 1, domainManager, sequentialSolver
+                                currentDepth + 1, domainManager, sequentialSolver, sharedState
                             );
                             tasks.add(task);
                             task.fork(); // Submit to work-stealing pool
@@ -233,8 +273,15 @@ public class ParallelSearchManager {
                 // Wait for task to find solution
                 for (ParallelSearchTask task : tasks) {
                     try {
-                        if (task.join() && !solutionFound.get()) {
-                            solutionFound.set(true);
+                        boolean taskFoundSolution = task.join();
+                        boolean alreadyFound = (sharedState != null) ? sharedState.isSolutionFound() : solutionFound.get();
+
+                        if (taskFoundSolution && !alreadyFound) {
+                            if (sharedState != null) {
+                                sharedState.markSolutionFound();
+                            } else {
+                                solutionFound.set(true);
+                            }
                             return true;
                         }
                     } catch (Exception e) {
@@ -286,9 +333,14 @@ public class ParallelSearchManager {
         System.out.println("║           PARALLEL SEARCH WITH " + numThreads + " THREADS            ║");
         System.out.println("╚══════════════════════════════════════════════════════════╝\n");
 
-        // Reset global flags
-        solutionFound.set(false);
-        globalMaxDepth.set(0);
+        // Reset flags
+        if (sharedState != null) {
+            sharedState.getSolutionFound().set(false);
+            sharedState.getGlobalMaxDepth().set(0);
+        } else {
+            solutionFound.set(false);
+            globalMaxDepth.set(0);
+        }
 
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         List<Future<Boolean>> futures = new ArrayList<>();
@@ -302,7 +354,7 @@ public class ParallelSearchManager {
                     Board localBoard;
                     Map<Integer, Piece> localPieces;
                     List<Integer> unusedIds;
-                    long seed = System.currentTimeMillis() + threadId * 1000;
+                    long seed = System.currentTimeMillis() + threadId * SolverConstants.THREAD_SEED_OFFSET_MS;
                     boolean loadedFromSave = false;
 
                     // Check if this thread has saved state

@@ -64,73 +64,113 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
       onClick={onClick}
       title={pieceId ? `Piece ${pieceId}: N=${north} E=${east} S=${south} W=${west}` : undefined}
     >
-      {/* North triangle - top half */}
+      {/* North triangle */}
       <div
-        className="piece-triangle"
         style={{
           width: `${size}px`,
           height: `${size}px`,
           position: 'absolute',
           top: 0,
           left: 0,
-          backgroundImage: getPatternUrl(vN) ? `url(${getPatternUrl(vN)})` : 'none',
-          backgroundColor: getPatternUrl(vN) ? 'transparent' : '#999',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          clipPath: `polygon(50% 50%, 0% 0%, 100% 0%)`
+          clipPath: `polygon(50% 50%, 0% 0%, 100% 0%)`,
+          overflow: 'hidden'
         }}
-      />
+      >
+        <div
+          className="piece-triangle"
+          style={{
+            width: `${size}px`,
+            height: `${size}px`,
+            backgroundImage: getPatternUrl(vN) ? `url(${getPatternUrl(vN)})` : 'none',
+            backgroundColor: getPatternUrl(vN) ? 'transparent' : '#999',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            transform: 'scaleY(-1)',
+            transformOrigin: '50% 50%'
+          }}
+        />
+      </div>
 
-      {/* East triangle - right half */}
+      {/* East triangle */}
       <div
-        className="piece-triangle"
         style={{
           width: `${size}px`,
           height: `${size}px`,
           position: 'absolute',
           top: 0,
           left: 0,
-          backgroundImage: getPatternUrl(vE) ? `url(${getPatternUrl(vE)})` : 'none',
-          backgroundColor: getPatternUrl(vE) ? 'transparent' : '#999',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          clipPath: `polygon(50% 50%, 100% 0%, 100% 100%)`
+          clipPath: `polygon(50% 50%, 100% 0%, 100% 100%)`,
+          overflow: 'hidden'
         }}
-      />
+      >
+        <div
+          className="piece-triangle"
+          style={{
+            width: `${size}px`,
+            height: `${size}px`,
+            backgroundImage: getPatternUrl(vE) ? `url(${getPatternUrl(vE)})` : 'none',
+            backgroundColor: getPatternUrl(vE) ? 'transparent' : '#999',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            transform: 'scaleX(-1)',
+            transformOrigin: '50% 50%'
+          }}
+        />
+      </div>
 
-      {/* South triangle - bottom half */}
+      {/* South triangle */}
       <div
-        className="piece-triangle"
         style={{
           width: `${size}px`,
           height: `${size}px`,
           position: 'absolute',
           top: 0,
           left: 0,
-          backgroundImage: getPatternUrl(vS) ? `url(${getPatternUrl(vS)})` : 'none',
-          backgroundColor: getPatternUrl(vS) ? 'transparent' : '#999',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          clipPath: `polygon(50% 50%, 100% 100%, 0% 100%)`
+          clipPath: `polygon(50% 50%, 100% 100%, 0% 100%)`,
+          overflow: 'hidden'
         }}
-      />
+      >
+        <div
+          className="piece-triangle"
+          style={{
+            width: `${size}px`,
+            height: `${size}px`,
+            backgroundImage: getPatternUrl(vS) ? `url(${getPatternUrl(vS)})` : 'none',
+            backgroundColor: getPatternUrl(vS) ? 'transparent' : '#999',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            transform: 'scaleY(-1)',
+            transformOrigin: '50% 50%'
+          }}
+        />
+      </div>
 
-      {/* West triangle - left half */}
+      {/* West triangle */}
       <div
-        className="piece-triangle"
         style={{
           width: `${size}px`,
           height: `${size}px`,
           position: 'absolute',
           top: 0,
           left: 0,
-          backgroundImage: getPatternUrl(vW) ? `url(${getPatternUrl(vW)})` : 'none',
-          backgroundColor: getPatternUrl(vW) ? 'transparent' : '#999',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          clipPath: `polygon(50% 50%, 0% 100%, 0% 0%)`
+          clipPath: `polygon(50% 50%, 0% 100%, 0% 0%)`,
+          overflow: 'hidden'
         }}
-      />
+      >
+        <div
+          className="piece-triangle"
+          style={{
+            width: `${size}px`,
+            height: `${size}px`,
+            backgroundImage: getPatternUrl(vW) ? `url(${getPatternUrl(vW)})` : 'none',
+            backgroundColor: getPatternUrl(vW) ? 'transparent' : '#999',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            transform: 'scaleX(-1)',
+            transformOrigin: '50% 50%'
+          }}
+        />
+      </div>
       {showLabel && pieceId !== undefined && (
         <div
           className="piece-label"

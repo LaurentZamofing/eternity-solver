@@ -85,7 +85,7 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
             backgroundColor: getPatternUrl(vN) ? 'transparent' : '#999',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            transform: 'scaleY(-1)',
+            transform: 'rotate(0deg)',
             transformOrigin: '50% 50%'
           }}
         />
@@ -112,7 +112,7 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
             backgroundColor: getPatternUrl(vE) ? 'transparent' : '#999',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            transform: 'scaleX(-1)',
+            transform: 'rotate(270deg)',
             transformOrigin: '50% 50%'
           }}
         />
@@ -139,7 +139,7 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
             backgroundColor: getPatternUrl(vS) ? 'transparent' : '#999',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            transform: 'scaleY(-1)',
+            transform: 'rotate(90deg)',
             transformOrigin: '50% 50%'
           }}
         />
@@ -166,7 +166,7 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
             backgroundColor: getPatternUrl(vW) ? 'transparent' : '#999',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            transform: 'scaleX(-1)',
+            transform: 'rotate(180deg)',
             transformOrigin: '50% 50%'
           }}
         />

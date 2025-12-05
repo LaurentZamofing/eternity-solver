@@ -50,7 +50,7 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
     return `/patterns/pattern${patternId}.png`;
   };
 
-  const quadrantSize = size / 2;
+  const center = size / 2;
 
   return (
     <div
@@ -64,63 +64,71 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
       onClick={onClick}
       title={pieceId ? `Piece ${pieceId}: N=${north} E=${east} S=${south} W=${west}` : undefined}
     >
+      {/* North triangle - top half */}
       <div
-        className="piece-quadrant"
+        className="piece-triangle"
         style={{
-          width: `${quadrantSize}px`,
-          height: `${quadrantSize}px`,
+          width: `${size}px`,
+          height: `${size}px`,
           position: 'absolute',
           top: 0,
           left: 0,
           backgroundImage: getPatternUrl(vN) ? `url(${getPatternUrl(vN)})` : 'none',
           backgroundColor: getPatternUrl(vN) ? 'transparent' : '#999',
-          backgroundSize: '200% 200%',
-          backgroundPosition: '0% 0%'
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          clipPath: `polygon(50% 50%, 0% 0%, 100% 0%)`
         }}
       />
+
+      {/* East triangle - right half */}
       <div
-        className="piece-quadrant"
+        className="piece-triangle"
         style={{
-          width: `${quadrantSize}px`,
-          height: `${quadrantSize}px`,
+          width: `${size}px`,
+          height: `${size}px`,
           position: 'absolute',
           top: 0,
-          right: 0,
+          left: 0,
           backgroundImage: getPatternUrl(vE) ? `url(${getPatternUrl(vE)})` : 'none',
           backgroundColor: getPatternUrl(vE) ? 'transparent' : '#999',
-          backgroundSize: '200% 200%',
-          backgroundPosition: '0% 100%',
-          transform: 'rotate(-90deg)'
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          clipPath: `polygon(50% 50%, 100% 0%, 100% 100%)`
         }}
       />
+
+      {/* South triangle - bottom half */}
       <div
-        className="piece-quadrant"
+        className="piece-triangle"
         style={{
-          width: `${quadrantSize}px`,
-          height: `${quadrantSize}px`,
+          width: `${size}px`,
+          height: `${size}px`,
           position: 'absolute',
-          bottom: 0,
+          top: 0,
+          left: 0,
+          backgroundImage: getPatternUrl(vS) ? `url(${getPatternUrl(vS)})` : 'none',
+          backgroundColor: getPatternUrl(vS) ? 'transparent' : '#999',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          clipPath: `polygon(50% 50%, 100% 100%, 0% 100%)`
+        }}
+      />
+
+      {/* West triangle - left half */}
+      <div
+        className="piece-triangle"
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          position: 'absolute',
+          top: 0,
           left: 0,
           backgroundImage: getPatternUrl(vW) ? `url(${getPatternUrl(vW)})` : 'none',
           backgroundColor: getPatternUrl(vW) ? 'transparent' : '#999',
-          backgroundSize: '200% 200%',
-          backgroundPosition: '100% 0%',
-          transform: 'rotate(90deg)'
-        }}
-      />
-      <div
-        className="piece-quadrant"
-        style={{
-          width: `${quadrantSize}px`,
-          height: `${quadrantSize}px`,
-          position: 'absolute',
-          bottom: 0,
-          right: 0,
-          backgroundImage: getPatternUrl(vS) ? `url(${getPatternUrl(vS)})` : 'none',
-          backgroundColor: getPatternUrl(vS) ? 'transparent' : '#999',
-          backgroundSize: '200% 200%',
-          backgroundPosition: '100% 100%',
-          transform: 'rotate(180deg)'
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          clipPath: `polygon(50% 50%, 0% 100%, 0% 0%)`
         }}
       />
       {showLabel && pieceId !== undefined && (

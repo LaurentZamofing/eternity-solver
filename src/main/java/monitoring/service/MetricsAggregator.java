@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  * Provides global statistics and insights.
  */
 @Service
-public class MetricsAggregator {
+public class MetricsAggregator implements IMetricsAggregator {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsAggregator.class);
 

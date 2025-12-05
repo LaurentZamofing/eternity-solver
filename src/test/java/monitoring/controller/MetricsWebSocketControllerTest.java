@@ -1,8 +1,8 @@
 package monitoring.controller;
 
 import monitoring.model.ConfigMetrics;
-import monitoring.service.FileWatcherService;
-import monitoring.service.MetricsAggregator;
+import monitoring.service.IFileWatcherService;
+import monitoring.service.IMetricsAggregator;
 import monitoring.service.MetricsAggregator.GlobalStats;
 import org.junit.jupiter.api.*;
 import org.mockito.InjectMocks;
@@ -21,17 +21,15 @@ import static org.mockito.Mockito.*;
  * Comprehensive tests for MetricsWebSocketController.
  * Tests WebSocket subscription handlers and message handlers.
  *
- * NOTE: Disabled due to Mockito unable to mock FileWatcherService
- * See: https://github.com/mockito/mockito/issues/2072
+ * NOTE: Now uses IFileWatcherService interface for mockability
  */
-@Disabled("Mockito cannot mock FileWatcherService - requires interface extraction")
 public class MetricsWebSocketControllerTest {
 
     @Mock
-    private FileWatcherService fileWatcherService;
+    private IFileWatcherService fileWatcherService;
 
     @Mock
-    private MetricsAggregator aggregator;
+    private IMetricsAggregator aggregator;
 
     @InjectMocks
     private MetricsWebSocketController controller;

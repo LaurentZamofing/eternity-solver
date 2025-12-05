@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Service that watches the saves/ directory for file changes.
+ * Implementation of file watcher service that monitors the saves/ directory.
  * Uses Java WatchService API for efficient file system monitoring.
  *
  * Features:
@@ -32,11 +32,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * - Parses changed files and extracts metrics
  * - Publishes metrics via WebSocket for real-time updates
  * - Stores metrics in H2 database for historical tracking
+ *
+ * @see IFileWatcherService for the interface
  */
 @Service
-public class FileWatcherService {
+public class FileWatcherServiceImpl implements IFileWatcherService {
 
-    private static final Logger logger = LoggerFactory.getLogger(FileWatcherService.class);
+    private static final Logger logger = LoggerFactory.getLogger(FileWatcherServiceImpl.class);
 
     @Autowired
     private SaveFileParser parser;

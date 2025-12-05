@@ -146,7 +146,7 @@ public class StatsLogger {
 
             // Calculate pieces per second
             if (totalComputeTimeMs > 0 && depth > 0) {
-                double piecesPerSec = (depth * 1000.0) / totalComputeTimeMs;
+                double piecesPerSec = (depth * TimeConstants.MILLIS_PER_SECOND) / totalComputeTimeMs;
                 data.put("piecesPerSec", Math.round(piecesPerSec * 100.0) / 100.0);
             } else {
                 data.put("piecesPerSec", 0.0);

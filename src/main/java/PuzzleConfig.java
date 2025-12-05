@@ -1,4 +1,5 @@
 import model.Piece;
+import util.TimeConstants;
 import java.io.*;
 import java.util.*;
 
@@ -213,14 +214,14 @@ public class PuzzleConfig {
     }
 
     private String formatDuration(long ms) {
-        if (ms < 1000) {
+        if (ms < TimeConstants.MILLIS_PER_SECOND) {
             return ms + " ms";
-        } else if (ms < 60000) {
-            return String.format("%.2f s", ms / 1000.0);
-        } else if (ms < 3600000) {
-            return String.format("%.2f min", ms / 60000.0);
+        } else if (ms < TimeConstants.MILLIS_PER_MINUTE) {
+            return String.format("%.2f s", ms / (double)TimeConstants.MILLIS_PER_SECOND);
+        } else if (ms < TimeConstants.MILLIS_PER_HOUR) {
+            return String.format("%.2f min", ms / (double)TimeConstants.MILLIS_PER_MINUTE);
         } else {
-            return String.format("%.2f h", ms / 3600000.0);
+            return String.format("%.2f h", ms / (double)TimeConstants.MILLIS_PER_HOUR);
         }
     }
 }

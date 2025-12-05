@@ -2,6 +2,7 @@ import model.Board;
 import model.Piece;
 import solver.EternitySolver;
 import util.SaveStateManager;
+import util.TimeConstants;
 
 import java.io.IOException;
 import java.util.Map;
@@ -58,7 +59,7 @@ public class TestP02 {
             System.out.println();
             System.out.println("═══════════════════════════════════════");
             System.out.println("Solver finished");
-            System.out.println("Time: " + (duration / 1000.0) + " seconds");
+            System.out.println("Time: " + (duration / (double)TimeConstants.MILLIS_PER_SECOND) + " seconds");
             System.out.println("Solved: " + solved);
 
             EternitySolver.Statistics stats = solver.getStatistics();

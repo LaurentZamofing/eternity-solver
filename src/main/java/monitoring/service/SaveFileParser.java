@@ -4,6 +4,7 @@ import monitoring.model.ConfigMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import util.TimeConstants;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -284,7 +285,7 @@ public class SaveFileParser {
 
         // Calculate pieces per second
         if (metrics.getTotalComputeTimeMs() > 0 && metrics.getDepth() > 0) {
-            double seconds = metrics.getTotalComputeTimeMs() / 1000.0;
+            double seconds = metrics.getTotalComputeTimeMs() / (double)TimeConstants.MILLIS_PER_SECOND;
             double piecesPerSecond = metrics.getDepth() / seconds;
             metrics.setPiecesPerSecond(piecesPerSecond);
 
@@ -292,7 +293,7 @@ public class SaveFileParser {
             if (metrics.getTotalPieces() > 0 && piecesPerSecond > 0) {
                 int remainingPieces = metrics.getTotalPieces() - metrics.getDepth();
                 if (remainingPieces > 0) {
-                    long estimatedMs = (long) ((remainingPieces / piecesPerSecond) * 1000);
+                    long estimatedMs = (long) ((remainingPieces / piecesPerSecond) * TimeConstants.MILLIS_PER_SECOND);
                     metrics.setEstimatedTimeRemainingMs(estimatedMs);
                 }
             }

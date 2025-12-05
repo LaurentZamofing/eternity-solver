@@ -231,9 +231,9 @@ public class SaveStateIO {
         }
 
         // Write total compute time
-        long totalSeconds = totalComputeTimeMs / 1000;
-        long hours = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
+        long totalSeconds = totalComputeTimeMs / TimeConstants.MILLIS_PER_SECOND;
+        long hours = totalSeconds / TimeConstants.SECONDS_PER_HOUR;
+        long minutes = (totalSeconds % TimeConstants.SECONDS_PER_HOUR) / TimeConstants.SECONDS_PER_MINUTE;
         long seconds = totalSeconds % 60;
         writer.println("# TotalComputeTime: " + totalComputeTimeMs + " ms (" +
                       String.format("%dh %02dm %02ds", hours, minutes, seconds) + ")");

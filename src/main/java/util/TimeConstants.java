@@ -31,6 +31,9 @@ public final class TimeConstants {
     /** Seconds in one hour */
     public static final int SECONDS_PER_HOUR = 3600;
 
+    /** Seconds in one day (24 hours) */
+    public static final int SECONDS_PER_DAY = 86400;
+
     /** Minutes in one hour */
     public static final int MINUTES_PER_HOUR = 60;
 

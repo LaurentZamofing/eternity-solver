@@ -211,24 +211,6 @@ public class SaveStateManager {
     }
 
     /**
-     * Generates a visual ASCII display of the board WITH detailed edges
-     * @deprecated Use SaveBoardRenderer.generateBoardVisualDetailed() instead
-     */
-    @Deprecated
-    private static void generateBoardVisualDetailed(PrintWriter writer, Board board, Map<Integer, Piece> allPieces) {
-        SaveBoardRenderer.generateBoardVisualDetailed(writer, board, allPieces);
-    }
-
-    /**
-     * Generates a visual ASCII display of the board (simple, without edges)
-     * @deprecated Use SaveBoardRenderer.generateBoardVisual() instead
-     */
-    @Deprecated
-    private static void generateBoardVisual(PrintWriter writer, Board board) {
-        SaveBoardRenderer.generateBoardVisual(writer, board);
-    }
-
-    /**
      * Retrieves the number of fixed pieces from the configuration file
      */
     private static int getNumFixedPiecesFromConfig(String puzzleName) {
@@ -271,19 +253,6 @@ public class SaveStateManager {
             System.err.println("Warning: unable to load config for " + puzzleName + ", fixed pieces = 0");
             return 0;
         }
-    }
-
-    /**
-     * Save to a specific file
-     * @deprecated Use SaveStateIO.writeToFile() instead
-     */
-    @Deprecated
-    private static void saveToFile(String filename, String puzzleName, Board board, int depth,
-                                   List<PlacementInfo> placementOrder, List<Integer> unusedIds, double progressPercentage, long totalComputeTimeMs,
-                                   int numFixedPieces, List<PlacementInfo> initialFixedPieces) throws IOException {
-        // Delegated to SaveStateIO (refactored for better code organization)
-        SaveStateIO.writeToFile(filename, puzzleName, board, depth, placementOrder, unusedIds,
-                               progressPercentage, totalComputeTimeMs, numFixedPieces, initialFixedPieces);
     }
 
     /**

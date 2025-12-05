@@ -39,9 +39,6 @@ public class MainSequential {
         System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
         System.out.println();
 
-        List<PuzzleResult> results = new ArrayList<>();
-        long totalStartTime = System.currentTimeMillis();
-
         // Solve each puzzle in order (with rotation every 10 minutes)
         while (true) {
             for (String puzzleFile : PUZZLE_FILES) {
@@ -65,10 +62,6 @@ public class MainSequential {
                     long startTime = System.currentTimeMillis();
                     boolean solved = solvePuzzleWithTimeout(config, filepath, PUZZLE_TIMEOUT);
                     long duration = System.currentTimeMillis() - startTime;
-
-                    // Record the result
-                    results.add(new PuzzleResult(config.getName(), config.getType(),
-                                                 config.getPieces().size(), solved, duration));
 
                     // Display summary
                     config.printSummary(duration, solved);
@@ -94,9 +87,6 @@ public class MainSequential {
             System.out.println("  Complete cycle finished, restarting from first puzzle...");
             System.out.println("═══════════════════════════════════════════════════════════════════\n");
         }
-
-        // Note: This section is never reached because the loop is infinite
-        // The program runs continuously and changes puzzles every 10 minutes
     }
 
     /**
@@ -390,25 +380,8 @@ public class MainSequential {
         }
     }
 
-    /**
-     * Gets the timeout based on difficulty
-     */
-    private static long getTimeoutForDifficulty(String difficulty) {
-        switch (difficulty.toLowerCase()) {
-            case "facile":
-                return TimeConstants.LONG_TIMEOUT_MS;  // 30 seconds
-            case "moyen":
-                return 2 * TimeConstants.MILLIS_PER_MINUTE; // 2 minutes
-            case "difficile":
-                return 5 * TimeConstants.MILLIS_PER_MINUTE; // 5 minutes
-            case "extreme":
-                return 30 * TimeConstants.MILLIS_PER_MINUTE; // 30 minutes
-            default:
-                return TimeConstants.MILLIS_PER_MINUTE;   // 1 minute by default
-        }
-    }
-
     // Removed: sortPiecesByOrder() - now using ConfigurationUtils.sortPiecesByOrder()
+    // Removed: getTimeoutForDifficulty() - unused method
 
     /**
      * Displays the solution of a board (simple version, backward-compatible)
@@ -461,54 +434,7 @@ public class MainSequential {
         System.out.println("═".repeat(70));
     }
 
-    /**
-     * Displays the final report
-     */
-    private static void printFinalReport(List<PuzzleResult> results, long totalDuration) {
-        System.out.println();
-        System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-        System.out.println("║                        FINAL REPORT                               ║");
-        System.out.println("╠═══════════════════════════════════════════════════════════════════╣");
-
-        int solved = 0;
-        int total = results.size();
-
-        for (PuzzleResult result : results) {
-            String status = result.solved ? "✓" : "✗";
-            String name = String.format("%-35s", result.name);
-            String pieces = String.format("%3d pieces", result.pieceCount);
-            String time = String.format("%12s", FormattingUtils.formatDuration(result.duration));
-
-            System.out.println("║ " + status + " " + name + " " + pieces + " " + time + " ║");
-
-            if (result.solved) solved++;
-        }
-
-        System.out.println("╠═══════════════════════════════════════════════════════════════════╣");
-        System.out.println("║ Solved: " + String.format("%-59s", solved + " / " + total) + " ║");
-        System.out.println("║ Total time: " + String.format("%-54s", FormattingUtils.formatDuration(totalDuration)) + " ║");
-        System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
-        System.out.println();
-    }
-
     // Removed: formatDuration() - now using FormattingUtils.formatDuration()
-
-    /**
-     * Inner class to store results
-     */
-    private static class PuzzleResult {
-        String name;
-        String type;
-        int pieceCount;
-        boolean solved;
-        long duration;
-
-        PuzzleResult(String name, String type, int pieceCount, boolean solved, long duration) {
-            this.name = name;
-            this.type = type;
-            this.pieceCount = pieceCount;
-            this.solved = solved;
-            this.duration = duration;
-        }
-    }
+    // Removed: printFinalReport() - never called (infinite loop)
+    // Removed: PuzzleResult inner class - only used by dead printFinalReport()
 }

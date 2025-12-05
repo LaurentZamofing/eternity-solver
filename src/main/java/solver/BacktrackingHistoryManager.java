@@ -12,6 +12,8 @@ public class BacktrackingHistoryManager {
     private final PlacementValidator validator;
     private final String threadLabel;
     private final EternitySolver.Statistics stats;
+    private long startTimeMs;
+    private long maxExecutionTimeMs;
 
     /** Creates history manager with placement validator, thread label for logging, and statistics tracker. */
     public BacktrackingHistoryManager(PlacementValidator validator,
@@ -20,10 +22,29 @@ public class BacktrackingHistoryManager {
         this.validator = validator;
         this.threadLabel = threadLabel;
         this.stats = stats;
+        this.startTimeMs = 0;
+        this.maxExecutionTimeMs = Long.MAX_VALUE;
+    }
+
+    /** Sets timeout configuration for this backtracking session. */
+    public void setTimeoutConfig(long startTimeMs, long maxExecutionTimeMs) {
+        this.startTimeMs = startTimeMs;
+        this.maxExecutionTimeMs = maxExecutionTimeMs;
+    }
+
+    /** Checks if timeout has been reached. */
+    private boolean isTimeoutReached() {
+        if (maxExecutionTimeMs == Long.MAX_VALUE) {
+            return false; // No timeout configured
+        }
+        return (System.currentTimeMillis() - startTimeMs) > maxExecutionTimeMs;
     }
 
     /** Calculates number of fixed pieces (corners, hints) that should not be backtracked based on puzzle name. */
     public int calculateFixedPieces(String puzzleName) {
+        if (puzzleName == null || puzzleName.isEmpty()) {
+            return 0; // Default: no fixed pieces for null/empty names
+        }
         if (puzzleName.startsWith("eternity2")) {
             return 9; // 4 corners + 5 hints for Eternity II
         } else if (puzzleName.startsWith("indice")) {
@@ -54,6 +75,12 @@ public class BacktrackingHistoryManager {
         boolean result = false;
 
         while (!result && !placementOrder.isEmpty()) {
+            // Check timeout before continuing backtracking
+            if (isTimeoutReached()) {
+                System.out.println("⏱️  " + threadLabel + " Timeout reached during history backtracking - stopping");
+                return false;
+            }
+
             // Remove last piece from history
             SaveStateManager.PlacementInfo lastPlacement =
                 placementOrder.remove(placementOrder.size() - 1);
@@ -110,6 +137,11 @@ public class BacktrackingHistoryManager {
 
         // Try rotations after the one that failed
         for (int rot = (oldRotation + 1) % 4; rot < maxRotations; rot++) {
+            // Check timeout before trying next rotation
+            if (isTimeoutReached()) {
+                return false;
+            }
+
             int[] candidate = piece.edgesRotated(rot);
 
             if (validator.fits(board, row, col, candidate)) {

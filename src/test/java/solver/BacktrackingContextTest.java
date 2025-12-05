@@ -43,9 +43,7 @@ public class BacktrackingContextTest {
     @Test
     @DisplayName("Constructor sets all fields correctly")
     void testConstructor() {
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertNotNull(context.board);
         assertNotNull(context.piecesById);
@@ -58,9 +56,7 @@ public class BacktrackingContextTest {
     @Test
     @DisplayName("Constructor with fixed pieces")
     void testConstructorWithFixedPieces() {
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 3
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 3, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(3, context.numFixedPieces);
     }
@@ -68,9 +64,7 @@ public class BacktrackingContextTest {
     @Test
     @DisplayName("getCurrentDepth returns 0 when no pieces placed")
     void testGetCurrentDepthEmpty() {
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(0, context.getCurrentDepth());
     }
@@ -82,9 +76,7 @@ public class BacktrackingContextTest {
         pieceUsed.set(3);
         pieceUsed.set(5);
 
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(3, context.getCurrentDepth());
     }
@@ -98,9 +90,7 @@ public class BacktrackingContextTest {
         pieceUsed.set(4);
         pieceUsed.set(5);
 
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 2
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 2, System.currentTimeMillis(), Long.MAX_VALUE);
 
         // 5 pieces placed - 2 fixed = depth 3
         assertEquals(3, context.getCurrentDepth());
@@ -113,9 +103,7 @@ public class BacktrackingContextTest {
             pieceUsed.set(i);
         }
 
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(9, context.getCurrentDepth());
     }
@@ -123,9 +111,7 @@ public class BacktrackingContextTest {
     @Test
     @DisplayName("countAvailablePieces returns total when none placed")
     void testCountAvailablePiecesNonePlaced() {
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(9, context.countAvailablePieces());
     }
@@ -137,9 +123,7 @@ public class BacktrackingContextTest {
         pieceUsed.set(2);
         pieceUsed.set(3);
 
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(6, context.countAvailablePieces());
     }
@@ -151,9 +135,7 @@ public class BacktrackingContextTest {
             pieceUsed.set(i);
         }
 
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(0, context.countAvailablePieces());
     }
@@ -165,9 +147,7 @@ public class BacktrackingContextTest {
             pieceUsed.set(i);
         }
 
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(1, context.countAvailablePieces());
     }
@@ -179,9 +159,7 @@ public class BacktrackingContextTest {
         Map<Integer, Piece> largePieces = createTestPieces(256);
         BitSet largePieceUsed = new BitSet(257);
 
-        BacktrackingContext context = new BacktrackingContext(
-            largeBoard, largePieces, largePieceUsed, 256, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(largeBoard, largePieces, largePieceUsed, 256, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(256, context.totalPieces);
         assertEquals(0, context.getCurrentDepth());
@@ -200,12 +178,8 @@ public class BacktrackingContextTest {
         pieceUsed2.set(4);
         pieceUsed2.set(5);
 
-        BacktrackingContext context1 = new BacktrackingContext(
-            board, piecesById, pieceUsed1, 9, stats, 0
-        );
-        BacktrackingContext context2 = new BacktrackingContext(
-            board, piecesById, pieceUsed2, 9, stats, 0
-        );
+        BacktrackingContext context1 = new BacktrackingContext(board, piecesById, pieceUsed1, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
+        BacktrackingContext context2 = new BacktrackingContext(board, piecesById, pieceUsed2, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(2, context1.getCurrentDepth());
         assertEquals(3, context2.getCurrentDepth());
@@ -216,9 +190,7 @@ public class BacktrackingContextTest {
     @Test
     @DisplayName("Modifying pieceUsed after context creation affects depth")
     void testModifyingPieceUsedAfterCreation() {
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(0, context.getCurrentDepth());
         assertEquals(9, context.countAvailablePieces());
@@ -239,9 +211,7 @@ public class BacktrackingContextTest {
         pieceUsed.set(3);
         pieceUsed.set(4);
 
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 2
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 2, System.currentTimeMillis(), Long.MAX_VALUE);
 
         int depth = context.getCurrentDepth();
         int available = context.countAvailablePieces();
@@ -257,9 +227,7 @@ public class BacktrackingContextTest {
         Map<Integer, Piece> singlePiece = createTestPieces(1);
         BitSet singleUsed = new BitSet(2);
 
-        BacktrackingContext context = new BacktrackingContext(
-            smallBoard, singlePiece, singleUsed, 1, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(smallBoard, singlePiece, singleUsed, 1, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(1, context.totalPieces);
         assertEquals(0, context.getCurrentDepth());
@@ -277,9 +245,7 @@ public class BacktrackingContextTest {
             pieceUsed.set(i);
         }
 
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 9
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 9, System.currentTimeMillis(), Long.MAX_VALUE);
 
         // All 9 pieces placed, all 9 fixed -> depth = 0
         assertEquals(0, context.getCurrentDepth());
@@ -289,9 +255,7 @@ public class BacktrackingContextTest {
     @Test
     @DisplayName("Context fields are public and accessible")
     void testPublicFieldAccess() {
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 2
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 2, System.currentTimeMillis(), Long.MAX_VALUE);
 
         // Verify we can access all public fields
         assertNotNull(context.board);
@@ -311,9 +275,7 @@ public class BacktrackingContextTest {
         pieceUsed.set(5);
         pieceUsed.set(7);
 
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 1
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 1, System.currentTimeMillis(), Long.MAX_VALUE);
 
         assertEquals(3, context.getCurrentDepth()); // 4 - 1 fixed
         assertEquals(5, context.countAvailablePieces()); // 9 - 4 placed
@@ -326,9 +288,7 @@ public class BacktrackingContextTest {
         pieceUsed.set(2);
         pieceUsed.set(3);
 
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         int depth1 = context.getCurrentDepth();
         int depth2 = context.getCurrentDepth();
@@ -345,9 +305,7 @@ public class BacktrackingContextTest {
         pieceUsed.set(1);
         pieceUsed.set(2);
 
-        BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, 9, stats, 0
-        );
+        BacktrackingContext context = new BacktrackingContext(board, piecesById, pieceUsed, 9, stats, 0, System.currentTimeMillis(), Long.MAX_VALUE);
 
         int count1 = context.countAvailablePieces();
         int count2 = context.countAvailablePieces();

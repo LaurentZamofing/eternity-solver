@@ -130,7 +130,7 @@ public class ParallelSolverOrchestrator {
         Board localBoard;
         Map<Integer, Piece> localPieces;
         List<Integer> unusedIds;
-        long seed = System.currentTimeMillis() + threadId * 1000;
+        long seed = System.currentTimeMillis() + threadId * SolverConstants.THREAD_SEED_OFFSET_MS;
         boolean loadedFromSave = false;
 
         // Try to load from save

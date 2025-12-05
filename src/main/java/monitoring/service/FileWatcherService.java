@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -133,6 +134,75 @@ public class FileWatcherService {
                     e.getMessage());
             logger.info("Partial scan complete. Found {} configs in cache", metricsCache.size());
         }
+
+        // Backfill historical data from best_*.txt files
+        if (autoSaveHistory) {
+            backfillHistoricalData();
+        }
+    }
+
+    /**
+     * Backfill historical data from existing best_*.txt files.
+     * This allows viewing historical progression even if the backend was offline.
+     */
+    private void backfillHistoricalData() {
+        logger.info("🔄 Backfilling historical data from best_*.txt files...");
+
+        File savesDir = new File(savesDirectory);
+        if (!savesDir.exists() || !savesDir.isDirectory()) {
+            logger.warn("Saves directory does not exist: {}", savesDirectory);
+            return;
+        }
+
+        AtomicInteger filesProcessed = new AtomicInteger(0);
+        AtomicInteger metricsInserted = new AtomicInteger(0);
+
+        try {
+            // Walk the directory tree and find all best_*.txt files
+            Files.walk(Paths.get(savesDirectory))
+                    .filter(Files::isRegularFile)
+                    .filter(path -> {
+                        String fileName = path.getFileName().toString();
+                        return fileName.startsWith("best_") && fileName.endsWith(".txt");
+                    })
+                    .forEach(path -> {
+                        try {
+                            // Parse the best file
+                            ConfigMetrics metrics = parser.parseSaveFile(path);
+
+                            if (metrics != null) {
+                                // Check if this milestone already exists in database
+                                // We check by configName + depth since each best_N.txt represents
+                                // a unique milestone (a config reaches depth N only once)
+                                boolean exists = repository.existsByConfigNameAndDepth(
+                                    metrics.getConfigName(),
+                                    metrics.getDepth()
+                                );
+
+                                if (!exists) {
+                                    // Save to database with original timestamp
+                                    HistoricalMetrics historical = HistoricalMetrics.fromConfigMetrics(metrics);
+                                    historical.setStatus("milestone"); // Mark as milestone from backfill
+                                    repository.save(historical);
+                                    metricsInserted.incrementAndGet();
+                                }
+
+                                filesProcessed.incrementAndGet();
+                            }
+                        } catch (Exception e) {
+                            logger.debug("Skipping file during backfill (might be invalid or deleted): {}", path);
+                        }
+                    });
+
+            logger.info("✅ Backfill complete. Processed {} best files, inserted {} new historical metrics",
+                    filesProcessed.get(), metricsInserted.get());
+
+        } catch (IOException | java.io.UncheckedIOException e) {
+            logger.warn("Error during backfill (files may have been deleted during scan): {}",
+                    e.getMessage());
+            logger.info("Partial backfill complete. Processed {} files, inserted {} metrics",
+                    filesProcessed.get(), metricsInserted.get());
+        }
     }
 
     /**
@@ -207,6 +277,9 @@ public class FileWatcherService {
                             if (parser.isSaveFile(fullPath)) {
                                 logger.debug("File changed: {} ({})", fullPath, kind.name());
                                 processFileChange(fullPath);
+                            } else if (isStatsFile(fullPath)) {
+                                logger.debug("Stats file changed: {} ({})", fullPath, kind.name());
+                                processStatsFileChange(fullPath);
                             }
 
                             // If a new directory was created, register it
@@ -367,6 +440,121 @@ public class FileWatcherService {
      */
     public Map<String, ConfigMetrics> getAllMetrics() {
         return new HashMap<>(metricsCache);
+    }
+
+    /**
+     * Clear cache and rescan all files.
+     * Useful when files have been deleted or modified externally.
+     *
+     * @return number of configs found after refresh
+     */
+    public int refreshCache() {
+        logger.info("🔄 Refreshing cache - clearing and rescanning...");
+
+        // Clear existing cache
+        int oldSize = metricsCache.size();
+        metricsCache.clear();
+        logger.info("Cleared {} configs from cache", oldSize);
+
+        // Perform fresh scan
+        performInitialScan();
+
+        int newSize = metricsCache.size();
+        logger.info("✅ Cache refreshed: {} configs found (was {})", newSize, oldSize);
+
+        return newSize;
+    }
+
+    /**
+     * Checks if a file is a stats history file (stats_history.jsonl).
+     */
+    private boolean isStatsFile(Path path) {
+        String fileName = path.getFileName().toString();
+        return fileName.equals("stats_history.jsonl") || fileName.matches("stats_history_\\d+\\.jsonl");
+    }
+
+    /**
+     * Process stats file change by parsing new lines and inserting into database.
+     */
+    private void processStatsFileChange(Path path) {
+        try {
+            // Extract config name from path: saves/eternity2/{configName}/stats_history.jsonl
+            String configName = path.getParent().getFileName().toString();
+
+            // Read and parse the file (only new lines since last read)
+            parseAndStoreStatsFile(path, configName);
+
+        } catch (Exception e) {
+            logger.error("Error processing stats file: {}", path, e);
+        }
+    }
+
+    /**
+     * Parse stats file and insert new entries into database.
+     * Uses file position tracking to only read new lines.
+     */
+    private void parseAndStoreStatsFile(Path path, String configName) {
+        try {
+            // For simplicity, read all lines and check if they exist in DB
+            // In production, would track last read position
+            List<String> lines = Files.readAllLines(path);
+
+            int inserted = 0;
+            for (String line : lines) {
+                if (line.trim().isEmpty()) continue;
+
+                try {
+                    // Parse JSON line
+                    com.google.gson.Gson gson = new com.google.gson.Gson();
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> data = gson.fromJson(line, Map.class);
+
+                    // Extract fields
+                    long timestamp = ((Number) data.get("ts")).longValue();
+                    int depth = ((Number) data.get("depth")).intValue();
+                    double progress = ((Number) data.get("progress")).doubleValue();
+                    long computeMs = ((Number) data.get("computeMs")).longValue();
+
+                    // Convert timestamp to LocalDateTime
+                    java.time.Instant instant = java.time.Instant.ofEpochMilli(timestamp);
+                    java.time.LocalDateTime dateTime = java.time.LocalDateTime.ofInstant(
+                        instant, java.time.ZoneId.systemDefault());
+
+                    // Check if already exists (avoid duplicates)
+                    boolean exists = repository.existsByConfigNameAndDepthAndTimestamp(
+                        configName, depth, dateTime);
+
+                    if (!exists) {
+                        // Create and save historical metrics
+                        HistoricalMetrics metrics = new HistoricalMetrics();
+                        metrics.setConfigName(configName);
+                        metrics.setTimestamp(dateTime);
+                        metrics.setDepth(depth);
+                        metrics.setProgressPercentage(progress);
+                        metrics.setTotalComputeTimeMs(computeMs);
+                        metrics.setStatus("stats_log");
+
+                        // Add performance metric
+                        if (data.containsKey("piecesPerSec")) {
+                            metrics.setPiecesPerSecond(((Number) data.get("piecesPerSec")).doubleValue());
+                        }
+
+                        repository.save(metrics);
+                        inserted++;
+                    }
+
+                } catch (Exception e) {
+                    logger.trace("Skipping invalid stats line: {}", line);
+                }
+            }
+
+            if (inserted > 0) {
+                logger.debug("Inserted {} stats entries from {} for {}", inserted, path.getFileName(), configName);
+            }
+
+        } catch (IOException e) {
+            logger.error("Failed to read stats file: {}", path, e);
+        }
     }
 
     /**

@@ -38,7 +38,7 @@ public class ConfigurationManager {
 
     // Thread management and saving
     private long randomSeed = 0;
-    private static final long THREAD_SAVE_INTERVAL = 60000; // 1 minute
+    private static final long THREAD_SAVE_INTERVAL = SolverConstants.THREAD_SAVE_INTERVAL_MS;
 
     public ConfigurationManager() {
     }
@@ -173,12 +173,14 @@ public class ConfigurationManager {
 
     // ============ Fixed Pieces Detection ============
 
-    /** Detects and initializes fixed pieces from board state; used when starting with pre-placed pieces. */
-    public void detectFixedPiecesFromBoard(Board board, BitSet pieceUsed,
-                                           List<SaveStateManager.PlacementInfo> placementOrder) {
+    /** Detects and initializes fixed pieces from board state; used when starting with pre-placed pieces.
+     * @return List of fixed piece placements found on the board
+     */
+    public List<SaveStateManager.PlacementInfo> detectFixedPiecesFromBoard(Board board, BitSet pieceUsed) {
         fixedPositions.clear();
         numFixedPieces = 0;
         initialFixedPieces.clear();
+        List<SaveStateManager.PlacementInfo> fixedPiecesList = new ArrayList<>();
 
         for (int r = 0; r < board.getRows(); r++) {
             for (int c = 0; c < board.getCols(); c++) {
@@ -194,13 +196,12 @@ public class ConfigurationManager {
                     SaveStateManager.PlacementInfo fixedPiece =
                         new SaveStateManager.PlacementInfo(r, c, placedPieceId, placedRotation);
                     initialFixedPieces.add(fixedPiece);
-
-                    if (placementOrder != null) {
-                        placementOrder.add(fixedPiece);
-                    }
+                    fixedPiecesList.add(fixedPiece);
                 }
             }
         }
+
+        return fixedPiecesList;
     }
 
     /** Calculates number of fixed pieces based on puzzle name; used when resuming from saved state. */
@@ -230,14 +231,14 @@ public class ConfigurationManager {
 
     /** Creates and initializes AutoSaveManager with current configuration. */
     public AutoSaveManager createAutoSaveManager(
-            List<SaveStateManager.PlacementInfo> placementOrder,
+            PlacementOrderTracker placementOrderTracker,
             Map<Integer, Piece> allPieces) {
 
         AutoSaveManager manager = new AutoSaveManager(
             puzzleName,
             numFixedPieces,
             initialFixedPieces,
-            placementOrder
+            placementOrderTracker
         );
         manager.initializePiecesMap(allPieces);
         return manager;

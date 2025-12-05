@@ -25,7 +25,7 @@ public class AutoSaveManagerTest {
     private Map<Integer, Piece> pieces;
     private BitSet pieceUsed;
     private StatisticsManager stats;
-    private List<SaveStateManager.PlacementInfo> placementOrder;
+    private PlacementOrderTracker placementOrderTracker;
     private List<SaveStateManager.PlacementInfo> initialFixedPieces;
 
     @TempDir
@@ -52,17 +52,20 @@ public class AutoSaveManagerTest {
         stats.start();
 
         // Initialiser les listes de placement
-        placementOrder = new ArrayList<>();
         initialFixedPieces = new ArrayList<>();
+        placementOrderTracker = new PlacementOrderTracker();
+        placementOrderTracker.initialize();
 
         // Créer le gestionnaire de sauvegarde automatique
-        autoSaveManager = new AutoSaveManager("test_puzzle", 0, initialFixedPieces, placementOrder);
+        autoSaveManager = new AutoSaveManager("test_puzzle", 0, initialFixedPieces, placementOrderTracker);
     }
 
     @Test
     @DisplayName("Constructeur initialise correctement")
     void testConstructorInitialization() {
-        AutoSaveManager manager = new AutoSaveManager("puzzle_test", 2, initialFixedPieces, placementOrder);
+        PlacementOrderTracker tracker = new PlacementOrderTracker();
+        tracker.initialize();
+        AutoSaveManager manager = new AutoSaveManager("puzzle_test", 2, initialFixedPieces, tracker);
 
         assertNotNull(manager, "Le gestionnaire devrait être créé");
         assertNull(manager.getAllPiecesMap(), "La carte des pièces devrait être null au départ");
@@ -158,7 +161,7 @@ public class AutoSaveManagerTest {
         fixed.add(new SaveStateManager.PlacementInfo(0, 0, 1, 0));
         fixed.add(new SaveStateManager.PlacementInfo(0, 1, 2, 1));
 
-        AutoSaveManager manager = new AutoSaveManager("puzzle_fixed", 2, fixed, placementOrder);
+        AutoSaveManager manager = new AutoSaveManager("puzzle_fixed", 2, fixed, placementOrderTracker);
 
         assertNotNull(manager, "Devrait créer le gestionnaire avec pièces fixes");
         manager.initializePiecesMap(pieces);
@@ -168,8 +171,8 @@ public class AutoSaveManagerTest {
     @Test
     @DisplayName("Gestion avec ordre de placement non vide")
     void testWithPlacementOrder() {
-        placementOrder.add(new SaveStateManager.PlacementInfo(0, 0, 1, 0));
-        placementOrder.add(new SaveStateManager.PlacementInfo(1, 1, 3, 2));
+        placementOrderTracker.recordPlacement(0, 0, 1, 0);
+        placementOrderTracker.recordPlacement(1, 1, 3, 2);
 
         autoSaveManager.initializePiecesMap(pieces);
 
@@ -293,7 +296,7 @@ public class AutoSaveManagerTest {
     @Test
     @DisplayName("Nom de puzzle avec caractères spéciaux")
     void testPuzzleNameWithSpecialCharacters() {
-        AutoSaveManager manager = new AutoSaveManager("test_puzzle-01_v2", 0, initialFixedPieces, placementOrder);
+        AutoSaveManager manager = new AutoSaveManager("test_puzzle-01_v2", 0, initialFixedPieces, placementOrderTracker);
         manager.initializePiecesMap(pieces);
 
         assertDoesNotThrow(() -> {
@@ -334,7 +337,9 @@ public class AutoSaveManagerTest {
     @DisplayName("Intégration - Workflow complet de sauvegarde")
     void testIntegrationCompleteWorkflow() {
         // 1. Créer le gestionnaire
-        AutoSaveManager manager = new AutoSaveManager("integration_test", 0, initialFixedPieces, placementOrder);
+        PlacementOrderTracker testTracker = new PlacementOrderTracker();
+        testTracker.initialize();
+        AutoSaveManager manager = new AutoSaveManager("integration_test", 0, initialFixedPieces, testTracker);
 
         // 2. Initialiser la carte de pièces
         manager.initializePiecesMap(pieces);
@@ -342,11 +347,11 @@ public class AutoSaveManagerTest {
         // 3. Placer quelques pièces
         board.place(0, 0, pieces.get(1), 0);
         pieceUsed.set(1);
-        placementOrder.add(new SaveStateManager.PlacementInfo(0, 0, 1, 0));
+        testTracker.recordPlacement(0, 0, 1, 0);
 
         board.place(0, 1, pieces.get(2), 1);
         pieceUsed.set(2);
-        placementOrder.add(new SaveStateManager.PlacementInfo(0, 1, 2, 1));
+        testTracker.recordPlacement(0, 1, 2, 1);
 
         // 4. Mettre à jour les statistiques
         stats.recursiveCalls = 500;

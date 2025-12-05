@@ -66,6 +66,10 @@ public class HistoricalSolver {
         long previousComputeTime = SaveStateManager.readTotalComputeTime(solver.configManager.getPuzzleName());
         solver.stats.start(previousComputeTime);
 
+        // IMPORTANT: Reset startTimeMs to NOW for timeout calculation
+        // The timeout should apply to THIS session only, not cumulative time
+        solver.startTimeMs = System.currentTimeMillis();
+
         // Initialize PlacementOrderTracker with provided history
         solver.placementOrderTracker = new PlacementOrderTracker();
         solver.placementOrderTracker.initializeWithHistory(preloadedOrder);
@@ -98,6 +102,11 @@ public class HistoricalSolver {
             solver.validator,  // validator is now properly initialized
             solver.configManager.getThreadLabel(),
             solver.stats);
+
+        // Configure timeout for backtracking
+        backtrackingHistoryManager.setTimeoutConfig(
+            solver.getStartTimeMs(),
+            solver.configManager.getMaxExecutionTimeMs());
 
         System.out.println("  → Resuming with " + preloadedOrder.size() + " pre-loaded pieces");
         System.out.println("  → Backtracking can go back through ALL pieces");

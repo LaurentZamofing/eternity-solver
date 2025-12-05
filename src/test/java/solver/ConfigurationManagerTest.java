@@ -91,14 +91,13 @@ public class ConfigurationManagerTest {
     @Test
     void testDetectFixedPiecesFromBoard_EmptyBoard() {
         BitSet pieceUsed = new BitSet(10);
-        List<SaveStateManager.PlacementInfo> placementOrder = new ArrayList<>();
 
-        config.detectFixedPiecesFromBoard(board, pieceUsed, placementOrder);
+        List<SaveStateManager.PlacementInfo> fixedPieces = config.detectFixedPiecesFromBoard(board, pieceUsed);
 
         assertEquals(0, config.getNumFixedPieces());
         assertTrue(config.getFixedPositions().isEmpty());
         assertTrue(config.getInitialFixedPieces().isEmpty());
-        assertTrue(placementOrder.isEmpty());
+        assertTrue(fixedPieces.isEmpty());
     }
 
     @Test
@@ -108,15 +107,14 @@ public class ConfigurationManagerTest {
         board.place(0, 1, pieces.get(2), 0);
 
         BitSet pieceUsed = new BitSet(10);
-        List<SaveStateManager.PlacementInfo> placementOrder = new ArrayList<>();
 
-        config.detectFixedPiecesFromBoard(board, pieceUsed, placementOrder);
+        List<SaveStateManager.PlacementInfo> fixedPieces = config.detectFixedPiecesFromBoard(board, pieceUsed);
 
         // Should detect 2 fixed pieces
         assertEquals(2, config.getNumFixedPieces());
         assertEquals(2, config.getFixedPositions().size());
         assertEquals(2, config.getInitialFixedPieces().size());
-        assertEquals(2, placementOrder.size());
+        assertEquals(2, fixedPieces.size());
 
         // Verify pieces are marked as used
         assertTrue(pieceUsed.get(1));
@@ -128,14 +126,16 @@ public class ConfigurationManagerTest {
     }
 
     @Test
-    void testDetectFixedPiecesFromBoard_NullPlacementOrder() {
-        // Should not crash with null placementOrder
+    void testDetectFixedPiecesFromBoard_SinglePiece() {
+        // Test with a single placed piece
         board.place(0, 0, pieces.get(1), 0);
         BitSet pieceUsed = new BitSet(10);
 
-        assertDoesNotThrow(() -> config.detectFixedPiecesFromBoard(board, pieceUsed, null));
+        List<SaveStateManager.PlacementInfo> fixedPieces = config.detectFixedPiecesFromBoard(board, pieceUsed);
 
         assertEquals(1, config.getNumFixedPieces());
+        assertEquals(1, fixedPieces.size());
+        assertTrue(pieceUsed.get(1));
     }
 
     @Test
@@ -187,9 +187,10 @@ public class ConfigurationManagerTest {
         config.setPuzzleName("test_puzzle");
         config.setNumFixedPieces(2);
 
-        List<SaveStateManager.PlacementInfo> placementOrder = new ArrayList<>();
+        PlacementOrderTracker tracker = new PlacementOrderTracker();
+        tracker.initialize();
 
-        AutoSaveManager manager = config.createAutoSaveManager(placementOrder, pieces);
+        AutoSaveManager manager = config.createAutoSaveManager(tracker, pieces);
 
         assertNotNull(manager);
     }

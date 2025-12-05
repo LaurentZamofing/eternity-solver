@@ -139,7 +139,7 @@ public class PuzzleFactory {
      * @return map of pieces indexed by ID
      */
     public static Map<Integer, Piece> createEternityII() {
-        return loadEternityIIFromFile("data/eternity2_256_pieces.txt");
+        return loadEternityIIFromFile("data/archives/eternity2_256_pieces.txt");
     }
 
     // ==================== FILE LOADING METHODS ====================

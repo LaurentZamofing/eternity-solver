@@ -30,7 +30,12 @@ public class EternitySolver {
 
     private SolverStateManager stateManager = new SolverStateManager();
     Statistics stats = new Statistics();
-    private long startTimeMs = 0;
+    long startTimeMs = 0;  // Package-private for HistoricalSolver access
+
+    /** Gets start time for timeout checking */
+    public long getStartTimeMs() {
+        return startTimeMs;
+    }
 
     private boolean useAC3 = true;
     private boolean useDomainCache = true;
@@ -154,7 +159,7 @@ public class EternitySolver {
     /** Initializes managers. Package-private for {@link HistoricalSolver}. */
     void initializeManagers(Map<Integer, Piece> pieces) {
         this.autoSaveManager = configManager.createAutoSaveManager(
-            placementOrderTracker != null ? placementOrderTracker.getPlacementHistory() : new ArrayList<>(),
+            placementOrderTracker,
             pieces);
 
         configManager.setThreadId(threadId);
@@ -254,7 +259,9 @@ public class EternitySolver {
         int totalPieces = pieces.size();
         BitSet pieceUsed = createPieceUsedBitSet(pieces);
 
-        configManager.detectFixedPiecesFromBoard(board, pieceUsed, placementOrderTracker.getPlacementHistory());
+        // Detect fixed pieces and initialize tracker with them
+        List<SaveStateManager.PlacementInfo> fixedPieces = configManager.detectFixedPiecesFromBoard(board, pieceUsed);
+        placementOrderTracker.initializeWithFixedPieces(fixedPieces);
 
         initializeManagers(pieces);
         initializeComponents(board, pieces, pieceUsed, totalPieces);
@@ -272,6 +279,11 @@ public class EternitySolver {
                 System.out.println("========================================");
                 stats.print();
             }
+        }
+
+        // Close stats logger
+        if (autoSaveManager != null) {
+            autoSaveManager.close();
         }
 
         return solved;

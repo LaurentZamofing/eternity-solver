@@ -207,12 +207,9 @@ public class BacktrackingSolver {
             autoSaveManager.checkAndLogStats(pieceUsed, totalPieces, stats);
         }
 
-        // Check timeout
-        if (currentTime - startTimeMs > configManager.getMaxExecutionTimeMs()) {
-            long timeoutSeconds = (long) TimeConstants.toSeconds(configManager.getMaxExecutionTimeMs());
-            System.out.println("⏱️  " + configManager.getThreadLabel() + " Timeout reached (" + timeoutSeconds + "s) - stopping search");
-            return false; // Timeout reached
-        }
+        // Note: Timeout check removed - now only checked after successful placement
+        // This prevents interruption during backtracking, ensuring saved states
+        // always contain stable configurations with implicit progress information
 
         // Check if any empty cells remain
         int[] cell = solver.findNextCellMRV(board, piecesById, pieceUsed, totalPieces);
@@ -230,7 +227,8 @@ public class BacktrackingSolver {
 
         // Create backtracking context for strategies
         BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, totalPieces, stats, configManager.getNumFixedPieces()
+            board, piecesById, pieceUsed, totalPieces, stats, configManager.getNumFixedPieces(),
+            startTimeMs, configManager.getMaxExecutionTimeMs()
         );
 
         // STEP 1: Try singleton placement strategy first (most constrained)

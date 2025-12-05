@@ -36,6 +36,12 @@ public class BacktrackingContext {
     /** Number of pieces that were fixed/pre-placed before backtracking started */
     public final int numFixedPieces;
 
+    /** Start time in milliseconds for timeout checking */
+    public final long startTimeMs;
+
+    /** Maximum execution time in milliseconds before timeout */
+    public final long maxExecutionTimeMs;
+
     /**
      * Creates a new backtracking context.
      *
@@ -45,15 +51,20 @@ public class BacktrackingContext {
      * @param totalPieces Total count of pieces in the puzzle
      * @param stats Statistics collector
      * @param numFixedPieces Number of pre-placed/fixed pieces
+     * @param startTimeMs Start time for timeout calculation
+     * @param maxExecutionTimeMs Maximum execution time before timeout
      */
     public BacktrackingContext(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed,
-                              int totalPieces, StatisticsManager stats, int numFixedPieces) {
+                              int totalPieces, StatisticsManager stats, int numFixedPieces,
+                              long startTimeMs, long maxExecutionTimeMs) {
         this.board = board;
         this.piecesById = piecesById;
         this.pieceUsed = pieceUsed;
         this.totalPieces = totalPieces;
         this.stats = stats;
         this.numFixedPieces = numFixedPieces;
+        this.startTimeMs = startTimeMs;
+        this.maxExecutionTimeMs = maxExecutionTimeMs;
     }
 
     /**

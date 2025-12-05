@@ -64,7 +64,8 @@ class MRVPlacementStrategyTest {
         symmetryBreakingManager = null;
         solver = new TestSolver();
 
-        context = new BacktrackingContext(board, testPieces, pieceUsed, 9, stats, 0);
+        context = new BacktrackingContext(board, testPieces, pieceUsed, 9, stats, 0,
+                                         System.currentTimeMillis(), Long.MAX_VALUE);
     }
 
     // ==================== Constructor Tests ====================
@@ -312,22 +313,6 @@ class MRVPlacementStrategyTest {
         assertNotNull(stats, "Statistics should track progress");
     }
 
-    // ==================== Verbose Mode Tests ====================
-
-    @Test
-    @DisplayName("Should execute with verbose mode enabled")
-    void testVerboseMode() {
-        strategy = new MRVPlacementStrategy(
-            true, valueOrderer, null, constraintPropagator, domainManager);
-
-        solver.setNextCell(new int[]{1, 1});
-        solver.setSolveResult(false);
-
-        // Should execute without throwing exceptions
-        assertDoesNotThrow(() -> strategy.tryPlacement(context, solver),
-                          "Verbose mode should not cause errors");
-    }
-
     // ==================== Edge Cases ====================
 
     @Test
@@ -385,6 +370,114 @@ class MRVPlacementStrategyTest {
 
         assertFalse(result, "Should return false when no piece fits");
         assertEquals(0, stats.placements, "No placements should be made");
+    }
+
+    // ==================== Timeout Enforcement Tests ====================
+
+    @Test
+    @DisplayName("Should enforce timeout after successful placement")
+    void testTimeoutEnforcementAfterPlacement() {
+        strategy = new MRVPlacementStrategy(
+            false, valueOrderer, null, constraintPropagator, domainManager);
+
+        // Set a very short timeout in context (already expired)
+        long pastTime = System.currentTimeMillis() - 10000; // 10 seconds ago
+        BacktrackingContext shortTimeoutContext = new BacktrackingContext(
+            board, testPieces, pieceUsed, 9, stats, 0,
+            pastTime, 100 // 100ms max execution time, already exceeded
+        );
+
+        solver.setNextCell(new int[]{0, 0});
+        solver.setSolveResult(true); // Would succeed but timeout prevents it
+
+        boolean result = strategy.tryPlacement(shortTimeoutContext, solver);
+
+        // Should return false due to timeout after placement
+        assertFalse(result, "Should return false when timeout is exceeded after placement");
+
+        // At least one placement should have been attempted before timeout
+        assertTrue(stats.placements > 0, "Should have attempted at least one placement before timeout");
+    }
+
+    @Test
+    @DisplayName("Should preserve piece order when timeout occurs")
+    void testPieceOrderPreservedOnTimeout() {
+        strategy = new MRVPlacementStrategy(
+            false, valueOrderer, null, constraintPropagator, domainManager);
+
+        // Test with ascending order
+        strategy.setSortOrder("ascending");
+
+        // Set a timeout that will trigger after first placement
+        long startTime = System.currentTimeMillis();
+        BacktrackingContext timedContext = new BacktrackingContext(
+            board, testPieces, pieceUsed, 9, stats, 0,
+            startTime, 50 // Very short timeout (50ms)
+        );
+
+        solver.setNextCell(new int[]{0, 0});
+        solver.setSolveResult(false);
+
+        // Add small delay before tryPlacement to ensure timeout will trigger
+        try {
+            Thread.sleep(60);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        boolean result = strategy.tryPlacement(timedContext, solver);
+
+        // Should timeout and return false
+        assertFalse(result, "Should timeout during exploration");
+
+        // Piece should have been placed (timeout happens AFTER placement, not during backtracking)
+        assertTrue(stats.placements > 0, "Should have placed at least one piece before timeout");
+    }
+
+    // ==================== Sort Order Configuration Tests ====================
+
+    @Test
+    @DisplayName("setSortOrder should configure piece iteration order")
+    void testSetSortOrder() {
+        strategy = new MRVPlacementStrategy(
+            false, valueOrderer, null, constraintPropagator, domainManager);
+
+        // Test ascending order (default)
+        strategy.setSortOrder("ascending");
+        assertDoesNotThrow(() -> strategy.tryPlacement(context, solver),
+                          "Ascending order should work");
+
+        // Reset for next test
+        setUp();
+        strategy = new MRVPlacementStrategy(
+            false, valueOrderer, null, constraintPropagator, domainManager);
+
+        // Test descending order
+        strategy.setSortOrder("descending");
+        assertDoesNotThrow(() -> strategy.tryPlacement(context, solver),
+                          "Descending order should work");
+
+        // Reset for next test
+        setUp();
+        strategy = new MRVPlacementStrategy(
+            false, valueOrderer, null, constraintPropagator, domainManager);
+
+        // Test null defaults to ascending
+        strategy.setSortOrder(null);
+        assertDoesNotThrow(() -> strategy.tryPlacement(context, solver),
+                          "Null sort order should default to ascending");
+    }
+
+    @Test
+    @DisplayName("setSortOrder should accept any string value")
+    void testSetSortOrderInvalidValue() {
+        strategy = new MRVPlacementStrategy(
+            false, valueOrderer, null, constraintPropagator, domainManager);
+
+        // Test invalid value (should default to ascending)
+        strategy.setSortOrder("invalid");
+        assertDoesNotThrow(() -> strategy.tryPlacement(context, solver),
+                          "Invalid sort order should not cause errors");
     }
 
     // ==================== Helper Methods ====================

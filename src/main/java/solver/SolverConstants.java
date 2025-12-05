@@ -63,6 +63,14 @@ public final class SolverConstants {
     public static final long THREAD_SAVE_INTERVAL_MS = 60_000;
 
     /**
+     * Statistics logging interval.
+     * Frequency at which statistics are logged to file.
+     *
+     * Value: 10,000 ms = 10 seconds
+     */
+    public static final long STATS_LOG_INTERVAL_MS = 10_000;
+
+    /**
      * Default timeout for puzzle execution.
      * Maximum execution time before automatic stop.
      *
@@ -218,4 +226,47 @@ public final class SolverConstants {
      * Value: 5,000 ms = 5 seconds
      */
     public static final long THREAD_SHUTDOWN_TIMEOUT_MS = 5_000;
+
+    /**
+     * Wait time for thread join (in milliseconds).
+     * Time to wait for thread to finish before continuing.
+     *
+     * Value: 1,000 ms = 1 second
+     */
+    public static final long THREAD_JOIN_TIMEOUT_MS = 1_000;
+
+    // ═══════════════════════════════════════════════════════════════
+    // TIME CONVERSION
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Milliseconds to seconds conversion factor.
+     *
+     * Value: 1,000 (divide ms by 1000 to get seconds)
+     */
+    public static final long MILLIS_TO_SECONDS = 1_000;
+
+    // ═══════════════════════════════════════════════════════════════
+    // RANDOM SEED GENERATION
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Thread seed offset multiplier.
+     * Ensures different threads have different random seeds.
+     *
+     * Value: 1,000 ms offset per thread ID
+     */
+    public static final long THREAD_SEED_OFFSET_MS = 1_000;
+
+    // ═══════════════════════════════════════════════════════════════
+    // PERCENTAGE CALCULATION
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Percentage multiplier (to convert 0.0-1.0 to 0-100).
+     *
+     * Value: 100.0
+     */
+    public static final double PERCENTAGE_MULTIPLIER = 100.0;
 }
+

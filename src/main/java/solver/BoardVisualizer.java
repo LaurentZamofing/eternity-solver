@@ -152,14 +152,16 @@ public class BoardVisualizer {
         // Display grid graphically
         for (int r = 0; r < board.getRows(); r++) {
             // Top border line
+            System.out.print("|");
             for (int c = 0; c < board.getCols(); c++) {
                 boolean isLastPlaced = (r == lastPlacedRow && c == lastPlacedCol);
                 boolean isMinCount = (r == minRow && c == minCol);
                 if (isLastPlaced || isMinCount) {
-                    System.out.print(BOLD + "----------" + RESET);
+                    System.out.print(BOLD + "---------" + RESET);
                 } else {
-                    System.out.print("----------");
+                    System.out.print("---------");
                 }
+                System.out.print("|");
             }
             System.out.println();
 
@@ -174,16 +176,16 @@ public class BoardVisualizer {
                 }
 
                 if (p == null) {
-                    System.out.print("|         |");  // 9 spaces
+                    System.out.print("|         ");  // 9 spaces
                 } else {
-                    System.out.printf("|   %2d    |", p.edges[0]);  // 3 + 2 + 4 = 9
+                    System.out.printf("|   %2d    ", p.edges[0]);  // 3 + 2 + 4 = 9
                 }
 
                 if (isLastPlaced || isMinCount) {
                     System.out.print(RESET);
                 }
             }
-            System.out.println();
+            System.out.println("|");
 
             // Line 2: West edges, ID/count, East edges
             for (int c = 0; c < board.getCols(); c++) {
@@ -206,17 +208,17 @@ public class BoardVisualizer {
 
                 if (p == null) {
                     // Empty cell - show count with 3 digits (3+3+3=9 chars)
-                    System.out.printf("|   %3d   |", counts[r][c]);
+                    System.out.printf("|   %3d   ", counts[r][c]);
                 } else {
                     // Placed piece - edges(2) ID(3) edges(2) with spaces (2+1+3+1+2=9)
-                    System.out.printf("|%2d %3d %2d|", p.edges[3], p.getPieceId(), p.edges[1]);
+                    System.out.printf("|%2d %3d %2d", p.edges[3], p.getPieceId(), p.edges[1]);
                 }
 
                 if (!color.isEmpty()) {
                     System.out.print(RESET);
                 }
             }
-            System.out.println();
+            System.out.println("|");
 
             // Line 3: South edges
             for (int c = 0; c < board.getCols(); c++) {
@@ -229,21 +231,23 @@ public class BoardVisualizer {
                 }
 
                 if (p == null) {
-                    System.out.print("|         |");  // 9 spaces
+                    System.out.print("|         ");  // 9 spaces
                 } else {
-                    System.out.printf("|   %2d    |", p.edges[2]);  // 3 + 2 + 4 = 9
+                    System.out.printf("|   %2d    ", p.edges[2]);  // 3 + 2 + 4 = 9
                 }
 
                 if (isLastPlaced || isMinCount) {
                     System.out.print(RESET);
                 }
             }
-            System.out.println();
+            System.out.println("|");
         }
 
         // Final border line
+        System.out.print("|");
         for (int c = 0; c < board.getCols(); c++) {
-            System.out.print("----------");
+            System.out.print("---------");
+            System.out.print("|");
         }
         System.out.println();
         System.out.println();

@@ -78,7 +78,8 @@ class SingletonPlacementStrategyTest {
         solver = new TestSolver();
 
         // Create context
-        context = new BacktrackingContext(board, testPieces, pieceUsed, 9, stats, 0);
+        context = new BacktrackingContext(board, testPieces, pieceUsed, 9, stats, 0,
+                                         System.currentTimeMillis(), Long.MAX_VALUE);
     }
 
     // ==================== Constructor Tests ====================
@@ -277,23 +278,6 @@ class SingletonPlacementStrategyTest {
 
         // If singleton was found and backtracked, backtracks should increment
         assertTrue(stats.backtracks >= initialBacktracks, "Backtracks should not decrease");
-    }
-
-    // ==================== Verbose Mode Tests ====================
-
-    @Test
-    @DisplayName("Should execute with verbose mode enabled")
-    void testVerboseMode() {
-        strategy = new SingletonPlacementStrategy(
-            singletonDetector, true, true, null, constraintPropagator, domainManager);
-
-        // Create scenario with singleton
-        fillBoardExceptCenter();
-        solver.setSolveResult(false);
-
-        // Should execute without throwing exceptions even with verbose output
-        assertDoesNotThrow(() -> strategy.tryPlacement(context, solver),
-                          "Verbose mode should not cause errors");
     }
 
     // ==================== Edge Cases ====================

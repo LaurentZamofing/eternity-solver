@@ -260,9 +260,12 @@ export const CellDetailsModal: React.FC<CellDetailsModalProps> = ({
                     <PieceVisualizer
                       pieceId={currentPiece.pieceId}
                       rotation={currentPiece.rotation}
-                      edges={currentPiece.edges}
+                      north={currentPiece.edges[0]}
+                      east={currentPiece.edges[1]}
+                      south={currentPiece.edges[2]}
+                      west={currentPiece.edges[3]}
                       size={80}
-                      isCurrent={true}
+                      showLabel={true}
                     />
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       <p>Piece ID: {currentPiece.pieceId}</p>
@@ -287,11 +290,12 @@ export const CellDetailsModal: React.FC<CellDetailsModalProps> = ({
                       <PieceVisualizer
                         pieceId={piece.pieceId}
                         rotation={piece.rotation}
-                        edges={piece.edges}
+                        north={piece.edges[0]}
+                        east={piece.edges[1]}
+                        south={piece.edges[2]}
+                        west={piece.edges[3]}
                         size={60}
-                        isCurrent={piece.current}
-                        isValid={piece.valid}
-                        alreadyTried={piece.alreadyTried}
+                        showLabel={false}
                       />
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                         {piece.pieceId} r{piece.rotation}

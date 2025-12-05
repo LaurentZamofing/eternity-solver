@@ -46,3 +46,31 @@ target/
 # Coverage and report files
 coverage/
 reports/
+
+# Frontend
+frontend/node_modules/
+frontend/.vite/
+frontend/dist/
+frontend/*.pid
+
+# Process ID files
+*.pid
+
+# Database files
+data/monitoring-db.*
+
+# Maven wrapper (if not needed in repo)
+.mvn/
+
+# IntelliJ output
+out/
+
+# Monitoring and documentation (if generated)
+# MONITORING.md
+# QUICKSTART.md
+
+# Build scripts (if temporary)
+# build-production.sh
+
+# Thread save files
+saves/thread_*.txt

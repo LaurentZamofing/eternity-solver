@@ -64,7 +64,7 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
       onClick={onClick}
       title={pieceId ? `Piece ${pieceId}: N=${north} E=${east} S=${south} W=${west}` : undefined}
     >
-      {/* North triangle - top half */}
+      {/* North triangle - top half (0° rotation) */}
       <div
         className="piece-triangle"
         style={{
@@ -77,11 +77,13 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
           backgroundColor: getPatternUrl(vN) ? 'transparent' : '#999',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          clipPath: `polygon(50% 50%, 0% 0%, 100% 0%)`
+          clipPath: `polygon(50% 50%, 0% 0%, 100% 0%)`,
+          transform: 'rotate(180deg)',
+          transformOrigin: '50% 50%'
         }}
       />
 
-      {/* East triangle - right half */}
+      {/* East triangle - right half (270° rotation = -90°) */}
       <div
         className="piece-triangle"
         style={{
@@ -94,11 +96,13 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
           backgroundColor: getPatternUrl(vE) ? 'transparent' : '#999',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          clipPath: `polygon(50% 50%, 100% 0%, 100% 100%)`
+          clipPath: `polygon(50% 50%, 100% 0%, 100% 100%)`,
+          transform: 'rotate(90deg)',
+          transformOrigin: '50% 50%'
         }}
       />
 
-      {/* South triangle - bottom half */}
+      {/* South triangle - bottom half (90° rotation) */}
       <div
         className="piece-triangle"
         style={{
@@ -111,11 +115,13 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
           backgroundColor: getPatternUrl(vS) ? 'transparent' : '#999',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          clipPath: `polygon(50% 50%, 100% 100%, 0% 100%)`
+          clipPath: `polygon(50% 50%, 100% 100%, 0% 100%)`,
+          transform: 'rotate(0deg)',
+          transformOrigin: '50% 50%'
         }}
       />
 
-      {/* West triangle - left half */}
+      {/* West triangle - left half (180° rotation) */}
       <div
         className="piece-triangle"
         style={{
@@ -128,7 +134,9 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
           backgroundColor: getPatternUrl(vW) ? 'transparent' : '#999',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          clipPath: `polygon(50% 50%, 0% 100%, 0% 0%)`
+          clipPath: `polygon(50% 50%, 0% 100%, 0% 0%)`,
+          transform: 'rotate(-90deg)',
+          transformOrigin: '50% 50%'
         }}
       />
       {showLabel && pieceId !== undefined && (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { PieceDefinition } from '../types/metrics';
 import { CellDetailsModal } from './CellDetailsModal';
+import { PieceVisualizer } from './PieceVisualizer';
 
 interface BoardVisualizerEnhancedProps {
   boardState?: string[][];
@@ -75,6 +76,7 @@ export const BoardVisualizerEnhanced: React.FC<BoardVisualizerEnhancedProps> = (
   const [deadEndCells, setDeadEndCells] = useState<Set<string>>(new Set()); // Set of "row,col" with 0 valid options
   const [validCountByCell, setValidCountByCell] = useState<Map<string, number>>(new Map()); // Map "row,col" -> valid piece count
   const [loadingDeadEnds, setLoadingDeadEnds] = useState(false);
+  const [usePatterns, setUsePatterns] = useState(true); // Toggle between patterns and colored triangles
 
   // Cell sizes for different zoom levels
   const cellSizes = {

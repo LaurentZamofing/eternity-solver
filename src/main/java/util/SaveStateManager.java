@@ -12,23 +12,26 @@ import java.util.*;
  * Manager for saving and loading puzzle state.
  * Saves the current board state and allows restoring it.
  *
- * TODO: REFACTORING NEEDED (Current: 519 lines, Target: ~130 lines per class)
+ * TODO: REFACTORING NEEDED (Current: 508 lines, Target: ~130 lines per class)
  * See REFACTORING_ROADMAP.md for detailed plan.
  *
  * God Class Issues:
  * - Multiple responsibilities: I/O, serialization, discovery, backup rotation
- * - 3 @Deprecated methods still present (lines 197, 206, 260)
  * - Complex save/load logic mixed with file management
+ * - Many delegation wrapper methods that could be inlined
  *
  * Refactoring Plan:
  * 1. Extract util/state/SaveStateWriter.java (~150 lines) - Write operations
  * 2. Extract util/state/SaveStateReader.java (~120 lines) - Read operations
  * 3. Extract util/state/SaveStateLocator.java (~100 lines) - File discovery
  * 4. Extract util/state/BackupManager.java (~90 lines) - Backup rotation
- * 5. Remove all @Deprecated methods
+ * 5. Inline or remove delegation wrapper methods
  * 6. Add tests for each component
  *
- * Estimated effort: 4-6 hours
+ * Progress:
+ * - ✅ Removed 3 @Deprecated wrapper methods (31 lines)
+ *
+ * Estimated remaining effort: 3-5 hours
  * Priority: MEDIUM
  * See: REFACTORING_ROADMAP.md Section 3
  */

@@ -223,41 +223,6 @@ public final class SolverLogger {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // HELPERS POUR LA MIGRATION
-    // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * Displays a message directly on the console (for compatibility).
-     *
-     * <p><b>Warning:</b> This method is provided only to facilitate
-     * progressive migration. It should be replaced by appropriate
-     * logging methods (info, debug, etc.).</p>
-     *
-     * @param message The message to display
-     * @deprecated Use {@link #info(String)} or {@link #debug(String)} instead
-     */
-    @Deprecated
-    public static void print(String message) {
-        System.out.println(message);
-        logger.debug("[CONSOLE] {}", message);
-    }
-
-    /**
-     * Displays an error message directly on the console (for compatibility).
-     *
-     * <p><b>Warning:</b> This method is provided only to facilitate
-     * progressive migration. It should be replaced by {@link #error(String)}.</p>
-     *
-     * @param message The error message
-     * @deprecated Use {@link #error(String)} instead
-     */
-    @Deprecated
-    public static void printError(String message) {
-        System.err.println(message);
-        logger.error("[CONSOLE] {}", message);
-    }
-
-    // ═══════════════════════════════════════════════════════════════
     // UTILITAIRES
     // ═══════════════════════════════════════════════════════════════
 

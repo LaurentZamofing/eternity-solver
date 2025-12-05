@@ -1,5 +1,7 @@
 package monitoring.model;
 
+import util.TimeConstants;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -77,19 +79,19 @@ public class ConfigMetrics {
             // Calculate relative time
             long now = System.currentTimeMillis();
             long diffMs = now - timestamp;
-            long diffSeconds = diffMs / 1000;
+            long diffSeconds = diffMs / TimeConstants.MILLIS_PER_SECOND;
 
             if (diffSeconds < 60) {
                 this.lastSaveRelative = diffSeconds + "s ago";
-            } else if (diffSeconds < 3600) {
+            } else if (diffSeconds < TimeConstants.SECONDS_PER_HOUR) {
                 long minutes = diffSeconds / 60;
                 this.lastSaveRelative = minutes + "m ago";
             } else if (diffSeconds < 86400) {
-                long hours = diffSeconds / 3600;
-                long minutes = (diffSeconds % 3600) / 60;
+                long hours = diffSeconds / TimeConstants.SECONDS_PER_HOUR;
+                long minutes = (diffSeconds % TimeConstants.SECONDS_PER_HOUR) / 60;
                 this.lastSaveRelative = String.format("%dh %02dm ago", hours, minutes);
             } else {
-                long days = diffSeconds / 86400;
+                long days = diffSeconds / TimeConstants.SECONDS_PER_DAY;
                 this.lastSaveRelative = days + "d ago";
             }
         } else {
@@ -285,9 +287,9 @@ public class ConfigMetrics {
 
     // Utility methods
     private String formatTime(long milliseconds) {
-        long seconds = milliseconds / 1000;
-        long hours = seconds / 3600;
-        long minutes = (seconds % 3600) / 60;
+        long seconds = milliseconds / TimeConstants.MILLIS_PER_SECOND;
+        long hours = seconds / TimeConstants.SECONDS_PER_HOUR;
+        long minutes = (seconds % TimeConstants.SECONDS_PER_HOUR) / 60;
         long secs = seconds % 60;
 
         if (hours > 0) {

@@ -151,9 +151,9 @@ public class MainParallel {
                 System.out.println("🚀 [Thread " + threadId + "] Starting: " + configInfo.config.getName());
                 System.out.println("   File: " + new File(configInfo.filepath).getName());
                 if (configInfo.hasBeenStarted) {
-                    long totalSeconds = configInfo.totalComputeTimeMs / 1000;
-                    long hours = totalSeconds / 3600;
-                    long minutes = (totalSeconds % 3600) / 60;
+                    long totalSeconds = configInfo.totalComputeTimeMs / TimeConstants.MILLIS_PER_SECOND;
+                    long hours = totalSeconds / TimeConstants.SECONDS_PER_HOUR;
+                    long minutes = (totalSeconds % TimeConstants.SECONDS_PER_HOUR) / TimeConstants.SECONDS_PER_MINUTE;
                     long seconds = totalSeconds % 60;
                     System.out.println("   Status: RESUME (cumulative time: " +
                         String.format("%dh %02dm %02ds", hours, minutes, seconds) + ")");
@@ -247,7 +247,7 @@ public class MainParallel {
 
                 System.out.println("   [Thread " + threadId + "] Pieces to place: " + allPieces.size() + " pieces");
                 System.out.println("   [Thread " + threadId + "] Fixed pieces on board: " + config.getFixedPieces().size());
-                System.out.println("   [Thread " + threadId + "] Configured timeout: " + (timeoutMs / 1000) + " seconds");
+                System.out.println("   [Thread " + threadId + "] Configured timeout: " + (timeoutMs / TimeConstants.MILLIS_PER_SECOND) + " seconds");
                 System.out.println("   [Thread " + threadId + "] Starting solver...");
 
                 boolean solved = solver.solve(board, allPieces);
@@ -309,9 +309,9 @@ public class MainParallel {
             try {
                 // Display rotation
                 if (nextConfig.hasBeenStarted) {
-                    long totalSeconds = nextConfig.totalComputeTimeMs / 1000;
-                    long hours = totalSeconds / 3600;
-                    long minutes = (totalSeconds % 3600) / 60;
+                    long totalSeconds = nextConfig.totalComputeTimeMs / TimeConstants.MILLIS_PER_SECOND;
+                    long hours = totalSeconds / TimeConstants.SECONDS_PER_HOUR;
+                    long minutes = (totalSeconds % TimeConstants.SECONDS_PER_HOUR) / TimeConstants.SECONDS_PER_MINUTE;
                     System.out.println("🔄 [Thread " + threadId + "] Rotating to: " + configId +
                         " (cumulative time: " + String.format("%dh%02dm", hours, minutes) + ")");
                 } else {
@@ -412,7 +412,7 @@ public class MainParallel {
             Set<String> solvedConfigs = Collections.synchronizedSet(new HashSet<>());
 
             // Launch threads with rotation
-            long timeoutMs = (long)(timePerConfigMinutes * 60 * 1000);
+            long timeoutMs = (long)(timePerConfigMinutes * TimeConstants.SECONDS_PER_MINUTE * TimeConstants.MILLIS_PER_SECOND);
 
             System.out.println("✓ Starting " + numThreads + " thread(s) with automatic rotation");
             System.out.println();

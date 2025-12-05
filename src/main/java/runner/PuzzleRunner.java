@@ -4,6 +4,7 @@ import model.Board;
 import model.Piece;
 import solver.EternitySolver;
 import util.ShutdownManager;
+import util.TimeConstants;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -200,7 +201,7 @@ public class PuzzleRunner {
                 if (solverThread.isAlive()) {
                     logger.warn("Timeout reached ({}s), interrupting...", config.getTimeoutSeconds());
                     solverThread.interrupt();
-                    solverThread.join(5000); // Wait 5s for graceful shutdown
+                    solverThread.join(TimeConstants.DEFAULT_THREAD_JOIN_TIMEOUT_MS); // Wait 5s for graceful shutdown
                 }
             } else {
                 solverThread.join();
@@ -212,7 +213,7 @@ public class PuzzleRunner {
         }
 
         endTime = System.currentTimeMillis();
-        double duration = (endTime - startTime) / 1000.0;
+        double duration = (endTime - startTime) / (double)TimeConstants.MILLIS_PER_SECOND;
 
         logger.info("Resolution completed: solved={}, duration={}s", solved.get(), duration);
 
@@ -243,6 +244,6 @@ public class PuzzleRunner {
      */
     public double getDuration() {
         if (endTime == 0) return 0;
-        return (endTime - startTime) / 1000.0;
+        return (endTime - startTime) / (double)TimeConstants.MILLIS_PER_SECOND;
     }
 }

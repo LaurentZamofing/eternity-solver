@@ -27,14 +27,14 @@ public class FormattingUtils {
      * @return Formatted string (e.g., "1.50 s", "3.25 min", "2.00 h")
      */
     public static String formatDuration(long ms) {
-        if (ms < 1000) {
+        if (ms < TimeConstants.MILLIS_PER_SECOND) {
             return ms + " ms";
-        } else if (ms < 60000) {
-            return String.format("%.2f s", ms / 1000.0);
-        } else if (ms < 3600000) {
-            return String.format("%.2f min", ms / 60000.0);
+        } else if (ms < TimeConstants.MILLIS_PER_MINUTE) {
+            return String.format("%.2f s", TimeConstants.toSeconds(ms));
+        } else if (ms < TimeConstants.MILLIS_PER_HOUR) {
+            return String.format("%.2f min", TimeConstants.toMinutes(ms));
         } else {
-            return String.format("%.2f h", ms / 3600000.0);
+            return String.format("%.2f h", TimeConstants.toHours(ms));
         }
     }
 
@@ -45,10 +45,10 @@ public class FormattingUtils {
      * @return Formatted string (e.g., "2h 15m 30s")
      */
     public static String formatDurationHMS(long ms) {
-        long totalSeconds = ms / 1000;
-        long hours = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
-        long seconds = totalSeconds % 60;
+        long totalSeconds = ms / TimeConstants.MILLIS_PER_SECOND;
+        long hours = totalSeconds / TimeConstants.SECONDS_PER_HOUR;
+        long minutes = (totalSeconds % TimeConstants.SECONDS_PER_HOUR) / 60;
+        long seconds = totalSeconds % TimeConstants.SECONDS_PER_MINUTE;
 
         if (hours > 0) {
             return String.format("%dh %02dm %02ds", hours, minutes, seconds);

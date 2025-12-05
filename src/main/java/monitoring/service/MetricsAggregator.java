@@ -4,6 +4,7 @@ import monitoring.model.ConfigMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import util.TimeConstants;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -171,10 +172,10 @@ public class MetricsAggregator implements IMetricsAggregator {
         }
 
         private String formatTime(long milliseconds) {
-            long seconds = milliseconds / 1000;
-            long days = seconds / 86400;
-            long hours = (seconds % 86400) / 3600;
-            long minutes = (seconds % 3600) / 60;
+            long seconds = milliseconds / TimeConstants.MILLIS_PER_SECOND;
+            long days = seconds / TimeConstants.SECONDS_PER_DAY;
+            long hours = (seconds % TimeConstants.SECONDS_PER_DAY) / TimeConstants.SECONDS_PER_HOUR;
+            long minutes = (seconds % TimeConstants.SECONDS_PER_HOUR) / 60;
 
             if (days > 0) {
                 return String.format("%dd %dh %dm", days, hours, minutes);

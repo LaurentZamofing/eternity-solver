@@ -6,8 +6,9 @@ import monitoring.model.HistoricalMetrics;
 import monitoring.model.PieceDefinition;
 import monitoring.repository.MetricsRepository;
 import monitoring.service.CellDetailsService;
-import monitoring.service.FileWatcherService;
+import monitoring.service.IFileWatcherService;
 import monitoring.service.HistoricalCellDetailsService;
+import monitoring.service.IMetricsAggregator;
 import monitoring.service.MetricsAggregator;
 import monitoring.service.PieceDefinitionService;
 import monitoring.service.SaveFileParser;
@@ -39,13 +40,13 @@ public class DashboardController {
     private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
 
     @Autowired
-    private FileWatcherService fileWatcherService;
+    private IFileWatcherService fileWatcherService;
 
     @Autowired
     private MetricsRepository repository;
 
     @Autowired
-    private MetricsAggregator aggregator;
+    private IMetricsAggregator aggregator;
 
     @Autowired
     private PieceDefinitionService pieceDefinitionService;

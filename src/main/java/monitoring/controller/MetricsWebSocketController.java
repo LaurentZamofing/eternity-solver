@@ -1,7 +1,8 @@
 package monitoring.controller;
 
 import monitoring.model.ConfigMetrics;
-import monitoring.service.FileWatcherService;
+import monitoring.service.IFileWatcherService;
+import monitoring.service.IMetricsAggregator;
 import monitoring.service.MetricsAggregator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,10 +44,10 @@ public class MetricsWebSocketController {
     private static final Logger logger = LoggerFactory.getLogger(MetricsWebSocketController.class);
 
     @Autowired
-    private FileWatcherService fileWatcherService;
+    private IFileWatcherService fileWatcherService;
 
     @Autowired
-    private MetricsAggregator aggregator;
+    private IMetricsAggregator aggregator;
 
     /**
      * Handle client subscription to /topic/metrics.

@@ -350,6 +350,59 @@ export const BoardVisualizerEnhanced: React.FC<BoardVisualizerEnhancedProps> = (
     const center = cellSize / 2;
     const fontSize = Math.max(8, cellSize / 8);
 
+    // Use PieceVisualizer when patterns mode is enabled
+    if (usePatterns) {
+      return (
+        <div
+          key={`${rowIndex}-${colIndex}`}
+          className="relative inline-block"
+          style={{ width: cellSize, height: cellSize }}
+        >
+          <PieceVisualizer
+            north={piece.north}
+            east={piece.east}
+            south={piece.south}
+            west={piece.west}
+            rotation={rotation}
+            size={cellSize}
+            pieceId={pieceId}
+            showLabel={zoom !== 'small'}
+            onClick={() => setSelectedCell({ row: rowIndex, col: colIndex })}
+            className={isLastPlaced ? 'ring-4 ring-green-500' : ''}
+          />
+
+          {/* Sequence number badge */}
+          {sequenceNum && (
+            <div
+              className="absolute top-0 left-0 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold z-10"
+              style={{
+                width: Math.max(16, cellSize * 0.25),
+                height: Math.max(16, cellSize * 0.25),
+                fontSize: Math.max(8, cellSize * 0.12)
+              }}
+            >
+              {sequenceNum}
+            </div>
+          )}
+
+          {/* Fixed piece badge */}
+          {isFixedPiece && (
+            <div
+              className="absolute top-0 left-0 bg-yellow-400 rounded-full flex items-center justify-center text-yellow-900 font-bold border-2 border-yellow-600 z-10"
+              style={{
+                width: Math.max(18, cellSize * 0.28),
+                height: Math.max(18, cellSize * 0.28),
+                fontSize: Math.max(10, cellSize * 0.15)
+              }}
+            >
+              ★
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Otherwise, use SVG triangle rendering
     return (
       <svg
         key={`${rowIndex}-${colIndex}`}
@@ -556,6 +609,22 @@ export const BoardVisualizerEnhanced: React.FC<BoardVisualizerEnhancedProps> = (
           >
             Large
           </button>
+
+          {/* Visual mode toggle */}
+          <div className="ml-4 flex items-center space-x-2 border-l border-gray-300 dark:border-gray-600 pl-4">
+            <label className="text-sm text-gray-600 dark:text-gray-400">View:</label>
+            <button
+              onClick={() => setUsePatterns(!usePatterns)}
+              className={`px-3 py-1 text-sm rounded ${
+                usePatterns
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              }`}
+              title={usePatterns ? 'Showing pattern images' : 'Showing colored triangles'}
+            >
+              {usePatterns ? '🎨 Patterns' : '△ Triangles'}
+            </button>
+          </div>
         </div>
       </div>
 

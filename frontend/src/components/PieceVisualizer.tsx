@@ -26,31 +26,15 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
   className = '',
   onClick
 }) => {
-  const getRotatedEdges = () => {
-    const rot = rotation % 4;
-    switch (rot) {
-      case 0:
-        return { vN: north, vE: east, vS: south, vW: west };
-      case 1:
-        return { vN: west, vE: north, vS: east, vW: south };
-      case 2:
-        return { vN: south, vE: west, vS: north, vW: east };
-      case 3:
-        return { vN: east, vE: south, vS: west, vW: north };
-      default:
-        return { vN: north, vE: east, vS: south, vW: west };
-    }
+  // Use pre-rendered piece images (complete pieces with 45° algorithm applied)
+  const getPieceImageUrl = (id: number | undefined): string | null => {
+    if (!id || id < 1 || id > 256) return null;
+    const paddedId = String(id).padStart(3, '0');
+    return `/pieces/${paddedId}.png`;
   };
 
-  const { vN, vE, vS, vW } = getRotatedEdges();
-
-  const getPatternUrl = (patternId: number): string | null => {
-    if (patternId === 0) return null;
-    if (patternId < 1 || patternId > 22) return null;
-    return `/patterns/pattern${patternId}.png`;
-  };
-
-  const center = size / 2;
+  const pieceUrl = getPieceImageUrl(pieceId);
+  const rotationDeg = rotation * 90;
 
   return (
     <div
@@ -59,118 +43,18 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
         width: `${size}px`,
         height: `${size}px`,
         position: 'relative',
-        cursor: onClick ? 'pointer' : 'default'
+        cursor: onClick ? 'pointer' : 'default',
+        backgroundImage: pieceUrl ? `url(${pieceUrl})` : 'none',
+        backgroundColor: pieceUrl ? 'transparent' : '#f0f0f0',
+        backgroundSize: 'contain',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        transform: `rotate(${rotationDeg}deg)`,
+        transformOrigin: 'center'
       }}
       onClick={onClick}
-      title={pieceId ? `Piece ${pieceId}: N=${north} E=${east} S=${south} W=${west}` : undefined}
+      title={pieceId ? `Piece ${pieceId}: N=${north} E=${east} S=${south} W=${west} (rot=${rotation})` : 'Empty cell'}
     >
-      {/* North triangle */}
-      <div
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          clipPath: `polygon(50% 50%, 0% 0%, 100% 0%)`,
-          overflow: 'hidden'
-        }}
-      >
-        <div
-          className="piece-triangle"
-          style={{
-            width: `${size}px`,
-            height: `${size}px`,
-            backgroundImage: getPatternUrl(vN) ? `url(${getPatternUrl(vN)})` : 'none',
-            backgroundColor: getPatternUrl(vN) ? 'transparent' : '#999',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            transform: 'rotate(0deg)',
-            transformOrigin: '50% 50%'
-          }}
-        />
-      </div>
-
-      {/* East triangle */}
-      <div
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          clipPath: `polygon(50% 50%, 100% 0%, 100% 100%)`,
-          overflow: 'hidden'
-        }}
-      >
-        <div
-          className="piece-triangle"
-          style={{
-            width: `${size}px`,
-            height: `${size}px`,
-            backgroundImage: getPatternUrl(vE) ? `url(${getPatternUrl(vE)})` : 'none',
-            backgroundColor: getPatternUrl(vE) ? 'transparent' : '#999',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            transform: 'rotate(270deg)',
-            transformOrigin: '50% 50%'
-          }}
-        />
-      </div>
-
-      {/* South triangle */}
-      <div
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          clipPath: `polygon(50% 50%, 100% 100%, 0% 100%)`,
-          overflow: 'hidden'
-        }}
-      >
-        <div
-          className="piece-triangle"
-          style={{
-            width: `${size}px`,
-            height: `${size}px`,
-            backgroundImage: getPatternUrl(vS) ? `url(${getPatternUrl(vS)})` : 'none',
-            backgroundColor: getPatternUrl(vS) ? 'transparent' : '#999',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            transform: 'rotate(90deg)',
-            transformOrigin: '50% 50%'
-          }}
-        />
-      </div>
-
-      {/* West triangle */}
-      <div
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          clipPath: `polygon(50% 50%, 0% 100%, 0% 0%)`,
-          overflow: 'hidden'
-        }}
-      >
-        <div
-          className="piece-triangle"
-          style={{
-            width: `${size}px`,
-            height: `${size}px`,
-            backgroundImage: getPatternUrl(vW) ? `url(${getPatternUrl(vW)})` : 'none',
-            backgroundColor: getPatternUrl(vW) ? 'transparent' : '#999',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            transform: 'rotate(180deg)',
-            transformOrigin: '50% 50%'
-          }}
-        />
-      </div>
       {showLabel && pieceId !== undefined && (
         <div
           className="piece-label"
@@ -178,7 +62,7 @@ export const PieceVisualizer: React.FC<PieceVisualizerProps> = ({
             position: 'absolute',
             top: '50%',
             left: '50%',
-            transform: 'translate(-50%, -50%)',
+            transform: `translate(-50%, -50%) rotate(-${rotationDeg}deg)`,
             backgroundColor: 'rgba(0, 0, 0, 0.7)',
             color: 'white',
             padding: '2px 6px',

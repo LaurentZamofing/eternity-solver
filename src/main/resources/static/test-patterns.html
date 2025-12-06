@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Pattern Images</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        h1 {
+            color: #333;
+        }
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .pattern-item {
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .pattern-item img {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #333;
+            image-rendering: pixelated;
+        }
+        .pattern-item.success img {
+            border-color: green;
+        }
+        .pattern-item.error img {
+            border-color: red;
+        }
+        .pattern-label {
+            margin-top: 8px;
+            font-weight: bold;
+        }
+        .pattern-info {
+            font-size: 12px;
+            color: #666;
+        }
+        .status {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .piece-example {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .piece-visualizer {
+            display: inline-block;
+            width: 200px;
+            height: 200px;
+            position: relative;
+            border: 2px solid #333;
+        }
+        .quadrant {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-size: 200% 200%;
+        }
+        .quadrant.north {
+            top: 0;
+            left: 0;
+            background-position: 0% 0%;
+        }
+        .quadrant.east {
+            top: 0;
+            right: 0;
+            background-position: 0% 100%;
+            transform: rotate(-90deg);
+        }
+        .quadrant.west {
+            bottom: 0;
+            left: 0;
+            background-position: 100% 0%;
+            transform: rotate(90deg);
+        }
+        .quadrant.south {
+            bottom: 0;
+            right: 0;
+            background-position: 100% 100%;
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Test des Pattern Images - Eternity II</h1>
+
+        <div id="status" class="status">
+            <strong>Status:</strong> <span id="status-text">Chargement...</span>
+        </div>
+
+        <h2>22 Patterns Disponibles</h2>
+        <div class="pattern-grid" id="pattern-grid"></div>
+
+        <div class="piece-example">
+            <h2>Exemple: Pièce 139 (N=9, E=14, S=8, W=8)</h2>
+            <div class="piece-visualizer" id="example-piece">
+                <div class="quadrant north"></div>
+                <div class="quadrant east"></div>
+                <div class="quadrant west"></div>
+                <div class="quadrant south"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8080';
+        let loadedCount = 0;
+        let errorCount = 0;
+
+        // Load pattern list from API
+        async function loadPatterns() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/patterns/list`);
+                const patterns = await response.json();
+
+                document.getElementById('status-text').textContent =
+                    `API accessible - ${patterns.length} patterns trouvés`;
+                document.getElementById('status').className = 'status success';
+
+                // Display each pattern
+                const grid = document.getElementById('pattern-grid');
+                patterns.slice(1).forEach(pattern => {  // Skip pattern 0 (border)
+                    const item = document.createElement('div');
+                    item.className = 'pattern-item';
+                    item.id = `pattern-${pattern.id}`;
+
+                    const img = document.createElement('img');
+                    img.src = `${BASE_URL}${pattern.url}`;
+                    img.alt = pattern.name;
+
+                    img.onload = () => {
+                        loadedCount++;
+                        item.classList.add('success');
+                        updateStatus();
+                    };
+
+                    img.onerror = () => {
+                        errorCount++;
+                        item.classList.add('error');
+                        updateStatus();
+                    };
+
+                    const label = document.createElement('div');
+                    label.className = 'pattern-label';
+                    label.textContent = pattern.name;
+
+                    const info = document.createElement('div');
+                    info.className = 'pattern-info';
+                    info.textContent = `${pattern.type} - ${pattern.url}`;
+
+                    item.appendChild(img);
+                    item.appendChild(label);
+                    item.appendChild(info);
+                    grid.appendChild(item);
+                });
+
+                // Render example piece (Piece 139: N=9, E=14, S=8, W=8)
+                renderExamplePiece(9, 14, 8, 8);
+
+            } catch (error) {
+                document.getElementById('status-text').textContent =
+                    `Erreur: ${error.message}`;
+                document.getElementById('status').className = 'status error';
+            }
+        }
+
+        function updateStatus() {
+            const total = 22;
+            document.getElementById('status-text').textContent =
+                `${loadedCount} / ${total} images chargées${errorCount > 0 ? ` (${errorCount} erreurs)` : ''}`;
+        }
+
+        function renderExamplePiece(north, east, south, west) {
+            document.querySelector('.quadrant.north').style.backgroundImage =
+                `url('${BASE_URL}/patterns/pattern${north}.png')`;
+            document.querySelector('.quadrant.east').style.backgroundImage =
+                `url('${BASE_URL}/patterns/pattern${east}.png')`;
+            document.querySelector('.quadrant.south').style.backgroundImage =
+                `url('${BASE_URL}/patterns/pattern${south}.png')`;
+            document.querySelector('.quadrant.west').style.backgroundImage =
+                `url('${BASE_URL}/patterns/pattern${west}.png')`;
+        }
+
+        // Load on page load
+        loadPatterns();
+    </script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{"depth":242,"calls":6,"piecesPerSec":23.0,"progress":45.71,"placements":5,"computeMs":10337,"singletons":0,"fitChecks":2747070,"ts":1764965444478,"backtracks":0,"deadEnds":0}
+{"depth":233,"calls":15,"piecesPerSec":10.0,"progress":45.71,"placements":15,"computeMs":21311,"singletons":0,"fitChecks":6976001,"ts":1764965455452,"backtracks":0,"deadEnds":2}
+{"depth":227,"calls":21,"piecesPerSec":7.0,"progress":45.71,"placements":21,"computeMs":31756,"singletons":0,"fitChecks":9596778,"ts":1764965465897,"backtracks":0,"deadEnds":2}
+{"depth":224,"calls":25,"piecesPerSec":5.0,"progress":45.71,"placements":26,"computeMs":44006,"singletons":0,"fitChecks":11279643,"ts":1764965478147,"backtracks":1,"deadEnds":4}
+{"depth":222,"calls":27,"piecesPerSec":4.0,"progress":45.71,"placements":28,"computeMs":54226,"singletons":0,"fitChecks":12101916,"ts":1764965488367,"backtracks":1,"deadEnds":4}

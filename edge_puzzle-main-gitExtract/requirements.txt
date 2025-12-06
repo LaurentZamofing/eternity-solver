@@ -1,0 +1,4 @@
+pygame
+deap
+svgwrite
+networkx

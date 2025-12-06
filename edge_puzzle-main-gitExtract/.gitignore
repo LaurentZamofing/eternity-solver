@@ -1,0 +1,11 @@
+.idea/
+records/
+*.pyc
+
+.vs/
+x64/
+release/
+debug/
+build/
+*.user
+*.exe

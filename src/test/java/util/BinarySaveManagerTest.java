@@ -3,8 +3,9 @@ package util;
 import model.Board;
 import model.Piece;
 import org.junit.jupiter.api.*;
-import util.BinarySaveManager.SaveData;
-import util.BinarySaveManager.PlacementData;
+import util.state.BinarySaveManager;
+import util.state.BinarySaveManager.SaveData;
+import util.state.BinarySaveManager.PlacementData;
 
 import java.io.File;
 import java.io.IOException;

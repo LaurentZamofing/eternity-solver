@@ -388,7 +388,7 @@ public class ParallelSolverOrchestrator {
     private void printThreadError(int threadId, Exception e) {
         synchronized (System.err) {
             System.err.println("✗ Thread " + threadId + " error: " + e.getMessage());
-            e.printStackTrace();
+            SolverLogger.error("Error occurred", e);
         }
     }
 

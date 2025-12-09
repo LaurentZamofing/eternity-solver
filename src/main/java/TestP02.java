@@ -1,3 +1,5 @@
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import solver.EternitySolver;
@@ -73,7 +75,7 @@ public class TestP02 {
 
         } catch (IOException e) {
             System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
+            SolverLogger.error("Error occurred", e);
             System.exit(1);
         }
     }

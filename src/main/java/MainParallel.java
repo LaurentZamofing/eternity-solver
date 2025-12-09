@@ -1,3 +1,5 @@
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import solver.EternitySolver;
@@ -262,7 +264,7 @@ public class MainParallel {
 
             } catch (Exception e) {
                 System.err.println("✗ [Thread " + threadId + "] Error: " + e.getMessage());
-                e.printStackTrace();
+                SolverLogger.error("Error occurred", e);
                 return false;
             }
         }
@@ -427,7 +429,7 @@ public class MainParallel {
                         runWorkerWithRotation(tid, timeoutMs, executor, solvedConfigs);
                     } catch (Exception e) {
                         System.err.println("✗ [Thread " + tid + "] Fatal error: " + e.getMessage());
-                        e.printStackTrace();
+                        SolverLogger.error("Error occurred", e);
                     }
                 });
             }
@@ -440,7 +442,7 @@ public class MainParallel {
 
         } catch (Exception e) {
             System.err.println("✗ Fatal error: " + e.getMessage());
-            e.printStackTrace();
+            SolverLogger.error("Error occurred", e);
         }
     }
 }

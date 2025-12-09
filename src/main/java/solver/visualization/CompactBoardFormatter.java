@@ -1,5 +1,7 @@
 package solver.visualization;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -71,7 +73,7 @@ public class CompactBoardFormatter implements BoardFormatter {
         for (int c = 0; c < cols; c++) {
             System.out.print("-------");
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     /**
@@ -91,7 +93,7 @@ public class CompactBoardFormatter implements BoardFormatter {
                 }
             }
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     /**
@@ -123,7 +125,7 @@ public class CompactBoardFormatter implements BoardFormatter {
                 System.out.printf("|%s %s|", wStr, eStr);
             }
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     /**
@@ -143,7 +145,7 @@ public class CompactBoardFormatter implements BoardFormatter {
                 }
             }
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     /**

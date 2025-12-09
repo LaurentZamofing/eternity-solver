@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import util.SaveManager;
@@ -218,9 +220,9 @@ public class BacktrackingSolver {
             solutionFound.set(true); // Signal to other threads
             stats.end();
             if (configManager.isVerbose()) {
-                System.out.println("\n========================================");
-                System.out.println("SOLUTION FOUND!");
-                System.out.println("========================================");
+                SolverLogger.info("\n========================================");
+                SolverLogger.info("SOLUTION FOUND!");
+                SolverLogger.info("========================================");
             }
             return true;
         }

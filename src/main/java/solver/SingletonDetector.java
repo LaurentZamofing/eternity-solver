@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 
@@ -150,7 +152,7 @@ public class SingletonDetector {
             if (possiblePositions.size() == 0) {
                 stats.incrementDeadEnds();
                 if (verbose) {
-                    System.out.println("⚠ DEAD-END: Piece " + pid + " cannot go anywhere!");
+                    SolverLogger.info("⚠ DEAD-END: Piece " + pid + " cannot go anywhere!");
                 }
                 return null;
             }
@@ -195,7 +197,7 @@ public class SingletonDetector {
             if (!hasValidPlacement) {
                 stats.incrementDeadEnds();
                 if (verbose) {
-                    System.out.println("⚠ DEAD-END: Piece " + pid + " cannot go anywhere!");
+                    SolverLogger.info("⚠ DEAD-END: Piece " + pid + " cannot go anywhere!");
                 }
                 return true;
             }

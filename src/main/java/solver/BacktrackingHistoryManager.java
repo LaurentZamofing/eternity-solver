@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import util.SaveStateManager;
@@ -77,7 +79,7 @@ public class BacktrackingHistoryManager {
         while (!result && !placementOrder.isEmpty()) {
             // Check timeout before continuing backtracking
             if (isTimeoutReached()) {
-                System.out.println("⏱️  " + threadLabel + " Timeout reached during history backtracking - stopping");
+                SolverLogger.info("⏱️  " + threadLabel + " Timeout reached during history backtracking - stopping");
                 return false;
             }
 
@@ -219,7 +221,7 @@ public class BacktrackingHistoryManager {
 
     /** Logs backtrack progress showing count and current depth. */
     public void logBacktrackProgress(int backtrackCount, int currentDepth) {
-        System.out.println(threadLabel + "  → Total backtracks in history: " + backtrackCount);
-        System.out.println(threadLabel + "  → Current depth: " + currentDepth + " pieces");
+        SolverLogger.info(threadLabel + "  → Total backtracks in history: " + backtrackCount);
+        SolverLogger.info(threadLabel + "  → Current depth: " + currentDepth + " pieces");
     }
 }

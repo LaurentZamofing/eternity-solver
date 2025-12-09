@@ -1,5 +1,7 @@
 package util;
 
+import util.SolverLogger;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,26 +128,26 @@ public class ShutdownManager {
      * Displays a formatted shutdown message
      */
     public static void printShutdownMessage(String message) {
-        System.out.println();
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("⚠️  INTERRUPTION DETECTED");
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println(message);
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println();
+        SolverLogger.info("");
+        SolverLogger.info("═══════════════════════════════════════════════════════");
+        SolverLogger.info("⚠️  INTERRUPTION DETECTED");
+        SolverLogger.info("═══════════════════════════════════════════════════════");
+        SolverLogger.info(message);
+        SolverLogger.info("═══════════════════════════════════════════════════════");
+        SolverLogger.info("");
     }
 
     /**
      * Displays final statistics during shutdown
      */
     public static void printFinalStatistics(Object stats) {
-        System.out.println();
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("FINAL STATISTICS");
-        System.out.println("═══════════════════════════════════════════════════════");
+        SolverLogger.info("");
+        SolverLogger.info("═══════════════════════════════════════════════════════");
+        SolverLogger.info("FINAL STATISTICS");
+        SolverLogger.info("═══════════════════════════════════════════════════════");
         System.out.println(stats.toString());
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println();
+        SolverLogger.info("═══════════════════════════════════════════════════════");
+        SolverLogger.info("");
     }
 
     /**
@@ -165,7 +167,7 @@ public class ShutdownManager {
             if (saveAction != null) {
                 printShutdownMessage("Saving state in progress...");
                 saveAction.run();
-                System.out.println("✓ State saved successfully");
+                SolverLogger.info("✓ State saved successfully");
             }
         }
 

@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -145,7 +147,7 @@ public class SymmetryBreakingManager {
     /** Logs symmetry-breaking configuration at solver start. */
     public void logConfiguration() {
         if (verbose) {
-            System.out.println("  🔄 Symmetry breaking:");
+            SolverLogger.info("  🔄 Symmetry breaking:");
             System.out.println("     - Lexicographic ordering: " + (enableLexicographicOrdering ? "✓" : "✗"));
             System.out.println("     - Rotation fixing: " + (enableRotationalFixing ? "✓" : "✗"));
             System.out.println("     - Reflection pruning: " + (enableReflectionPruning ? "✓" : "✗"));

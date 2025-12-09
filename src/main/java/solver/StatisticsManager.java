@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import util.TimeConstants;
 
 import java.util.HashMap;
@@ -107,17 +109,17 @@ public class StatisticsManager {
     }
 
     public void print() {
-        System.out.println("\n╔════════════════ STATISTICS ═════════════════════╗");
+        SolverLogger.info("\n╔════════════════ STATISTICS ═════════════════════╗");
         System.out.println("║ Elapsed time       : " + String.format("%.2f", getElapsedTimeSec()) + " seconds");
-        System.out.println("║ Recursive calls    : " + recursiveCalls);
-        System.out.println("║ Placements tested  : " + placements);
-        System.out.println("║ Backtracks         : " + backtracks);
-        System.out.println("║ Fit checks         : " + fitChecks);
-        System.out.println("║ Forward check rejects : " + forwardCheckRejects);
-        System.out.println("║ Singletons found   : " + singletonsFound);
-        System.out.println("║ Singletons placed  : " + singletonsPlaced);
-        System.out.println("║ Dead-ends detected : " + deadEndsDetected);
-        System.out.println("╚══════════════════════════════════════════════════╝");
+        SolverLogger.info("║ Recursive calls    : " + recursiveCalls);
+        SolverLogger.info("║ Placements tested  : " + placements);
+        SolverLogger.info("║ Backtracks         : " + backtracks);
+        SolverLogger.info("║ Fit checks         : " + fitChecks);
+        SolverLogger.info("║ Forward check rejects : " + forwardCheckRejects);
+        SolverLogger.info("║ Singletons found   : " + singletonsFound);
+        SolverLogger.info("║ Singletons placed  : " + singletonsPlaced);
+        SolverLogger.info("║ Dead-ends detected : " + deadEndsDetected);
+        SolverLogger.info("╚══════════════════════════════════════════════════╝");
     }
 
     public void printCompact() {

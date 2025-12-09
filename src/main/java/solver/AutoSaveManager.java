@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import util.SaveStateManager;

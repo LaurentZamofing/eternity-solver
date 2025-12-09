@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -85,7 +87,7 @@ public class ConfigurationManager {
     public void setPrioritizeBorders(boolean enabled) {
         this.prioritizeBorders = enabled;
         if (verbose && enabled) {
-            System.out.println("  🔲 Border prioritization enabled - borders will be filled first");
+            SolverLogger.info("  🔲 Border prioritization enabled - borders will be filled first");
         }
     }
 
@@ -269,16 +271,16 @@ public class ConfigurationManager {
     /** Logs current configuration parameters if verbose enabled. */
     public void logConfiguration() {
         if (verbose) {
-            System.out.println("\n═══════════════════════════════════════");
-            System.out.println("  Configuration:");
-            System.out.println("  - Puzzle: " + puzzleName);
-            System.out.println("  - Thread: " + threadLabel);
+            SolverLogger.info("\n═══════════════════════════════════════");
+            SolverLogger.info("  Configuration:");
+            SolverLogger.info("  - Puzzle: " + puzzleName);
+            SolverLogger.info("  - Thread: " + threadLabel);
             System.out.println("  - Singletons: " + (useSingletons ? "✓" : "✗"));
             System.out.println("  - AC-3: " + (useAC3 ? "✓" : "✗"));
             System.out.println("  - Domain Cache: " + (useDomainCache ? "✓" : "✗"));
             System.out.println("  - Prioritize Borders: " + (prioritizeBorders ? "✓" : "✗"));
-            System.out.println("  - Fixed Pieces: " + numFixedPieces);
-            System.out.println("═══════════════════════════════════════\n");
+            SolverLogger.info("  - Fixed Pieces: " + numFixedPieces);
+            SolverLogger.info("═══════════════════════════════════════\n");
         }
     }
 }

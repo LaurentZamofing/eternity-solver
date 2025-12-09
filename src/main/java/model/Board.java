@@ -1,5 +1,7 @@
 package model;
 
+import util.SolverLogger;
+
 import java.util.Arrays;
 import java.util.Map;
 
@@ -90,7 +92,7 @@ public class Board {
      * @param piecesById map of pieces by ID (optional for detailed display)
      */
     public void prettyPrint(Map<Integer, Piece> piecesById) {
-        System.out.println("Board " + rows + "x" + cols + ":");
+        SolverLogger.info("Board " + rows + "x" + cols + ":");
         for (int r = 0; r < rows; r++) {
             StringBuilder sb = new StringBuilder();
             for (int c = 0; c < cols; c++) {
@@ -102,7 +104,7 @@ public class Board {
             }
             System.out.println(sb.toString());
         }
-        System.out.println();
+        SolverLogger.info("");
 
         if (piecesById != null) {
             System.out.println("Details (coord -> id,rot,edges after rotation):");
@@ -115,7 +117,7 @@ public class Board {
                     }
                 }
             }
-            System.out.println();
+            SolverLogger.info("");
         }
     }
 
@@ -203,9 +205,9 @@ public class Board {
         int max = score[1];
         double percentage = max > 0 ? (current * 100.0 / max) : 0.0;
 
-        System.out.println("╔════════════════════════════════════════════════════════╗");
-        System.out.println("║                    BOARD SCORE                         ║");
-        System.out.println("╚════════════════════════════════════════════════════════╝");
+        SolverLogger.info("╔════════════════════════════════════════════════════════╗");
+        SolverLogger.info("║                    BOARD SCORE                         ║");
+        SolverLogger.info("╚════════════════════════════════════════════════════════╝");
         System.out.printf("Correct internal edges: %d / %d (%.1f%%)%n", current, max, percentage);
 
         // Score breakdown
@@ -215,7 +217,7 @@ public class Board {
         System.out.printf("  - Horizontal edges: %d max%n", internalH);
         System.out.printf("  - Vertical edges: %d max%n", internalV);
         System.out.println("  (Borders don't count in the score)");
-        System.out.println();
+        SolverLogger.info("");
     }
 
     /**

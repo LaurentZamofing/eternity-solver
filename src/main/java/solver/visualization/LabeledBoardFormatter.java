@@ -1,5 +1,7 @@
 package solver.visualization;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -83,7 +85,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
             System.out.printf("  %2d     ", (c + 1));
             if (c < cols - 1) System.out.print(" ");
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printTopLine(int cols) {
@@ -92,7 +94,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
             System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
             if (c < cols - 1) System.out.print(HORIZONTAL);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printNorthEdgeLine(Board board, int row, int cols, Set<String> fixedPositions) {
@@ -101,7 +103,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
             printNorthEdge(board, row, c, fixedPositions);
             System.out.print(VERTICAL);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printNorthEdge(Board board, int row, int col, Set<String> fixedPositions) {
@@ -136,7 +138,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
             printCellContent(board, piecesById, unusedIds, fitsChecker, row, c, cols, fixedPositions);
             System.out.print(VERTICAL);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printCellContent(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
@@ -195,7 +197,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
             printSouthEdge(board, row, c, fixedPositions);
             System.out.print(VERTICAL);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printSouthEdge(Board board, int row, int col, Set<String> fixedPositions) {
@@ -227,7 +229,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
             System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
             if (c < cols - 1) System.out.print(CROSS);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printBottomLine(int cols) {
@@ -236,7 +238,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
             System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
             if (c < cols - 1) System.out.print(HORIZONTAL);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     // ===== Edge Matching Helpers =====

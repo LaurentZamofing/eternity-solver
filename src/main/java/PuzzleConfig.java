@@ -1,4 +1,5 @@
 import model.Piece;
+import util.SolverLogger;
 import util.TimeConstants;
 import java.io.*;
 import java.util.*;
@@ -188,9 +189,9 @@ public class PuzzleConfig {
      * Display puzzle information
      */
     public void printInfo() {
-        System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
+        SolverLogger.info("╔═══════════════════════════════════════════════════════════════════╗");
         System.out.println("║ " + String.format("%-65s", name) + " ║");
-        System.out.println("╠═══════════════════════════════════════════════════════════════════╣");
+        SolverLogger.info("╠═══════════════════════════════════════════════════════════════════╣");
         System.out.println("║ Type: " + String.format("%-59s", type) + " ║");
         System.out.println("║ Dimensions: " + String.format("%-54s", rows + "×" + cols) + " ║");
         System.out.println("║ Pieces: " + String.format("%-58s", pieces.size()) + " ║");
@@ -198,19 +199,19 @@ public class PuzzleConfig {
         if (fixedPiece != null) {
             System.out.println("║ Fixed piece: " + String.format("%-53s", fixedPiece) + " ║");
         }
-        System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
+        SolverLogger.info("╚═══════════════════════════════════════════════════════════════════╝");
     }
 
     /**
      * Display a summary of results
      */
     public void printSummary(long duration, boolean solved) {
-        System.out.println("\n┌───────────────────────────────────────────────────────────────────┐");
+        SolverLogger.info("\n┌───────────────────────────────────────────────────────────────────┐");
         System.out.println("│ SUMMARY: " + String.format("%-57s", name) + " │");
-        System.out.println("├───────────────────────────────────────────────────────────────────┤");
+        SolverLogger.info("├───────────────────────────────────────────────────────────────────┤");
         System.out.println("│ Result: " + String.format("%-58s", solved ? "✓ SOLVED" : "✗ NOT SOLVED") + " │");
         System.out.println("│ Time: " + String.format("%-61s", formatDuration(duration)) + " │");
-        System.out.println("└───────────────────────────────────────────────────────────────────┘");
+        SolverLogger.info("└───────────────────────────────────────────────────────────────────┘");
     }
 
     private String formatDuration(long ms) {

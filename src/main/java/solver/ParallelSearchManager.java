@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -329,9 +331,9 @@ public class ParallelSearchManager {
     public boolean solveParallel(Board board, Map<Integer, Piece> allPieces,
                                 Map<Integer, Piece> availablePieces, int numThreads,
                                 String puzzleName, SequentialSolver sequentialSolver) {
-        System.out.println("\n╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║           PARALLEL SEARCH WITH " + numThreads + " THREADS            ║");
-        System.out.println("╚══════════════════════════════════════════════════════════╝\n");
+        SolverLogger.info("\n╔══════════════════════════════════════════════════════════╗");
+        SolverLogger.info("║           PARALLEL SEARCH WITH " + numThreads + " THREADS            ║");
+        SolverLogger.info("╚══════════════════════════════════════════════════════════╝\n");
 
         // Reset flags
         if (sharedState != null) {

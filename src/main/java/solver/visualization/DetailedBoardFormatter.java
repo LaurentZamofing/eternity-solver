@@ -1,5 +1,7 @@
 package solver.visualization;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -53,8 +55,8 @@ public class DetailedBoardFormatter implements BoardFormatter {
         int lastPlacedCol = context.getLastPlacedCol();
         FitsChecker fitsChecker = context.getFitsChecker();
 
-        System.out.println("\nPuzzle state:");
-        System.out.println("===============");
+        SolverLogger.info("\nPuzzle state:");
+        SolverLogger.info("===============");
 
         int rows = board.getRows();
         int cols = board.getCols();
@@ -73,7 +75,7 @@ public class DetailedBoardFormatter implements BoardFormatter {
 
         // Final border
         printFinalBorder(cols);
-        System.out.println();
+        SolverLogger.info("");
     }
 
     /**
@@ -111,7 +113,7 @@ public class DetailedBoardFormatter implements BoardFormatter {
             }
             System.out.print("|");
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printNorthEdges(Board board, int row, int lastRow, int lastCol, CellCoord mrvCell) {
@@ -129,7 +131,7 @@ public class DetailedBoardFormatter implements BoardFormatter {
 
             if (highlight) System.out.print(RESET);
         }
-        System.out.println("|");
+        SolverLogger.info("|");
     }
 
     private void printMiddleLine(Board board, Map<Integer, Piece> piecesById, int[][] counts,
@@ -152,7 +154,7 @@ public class DetailedBoardFormatter implements BoardFormatter {
 
             if (!color.isEmpty()) System.out.print(RESET);
         }
-        System.out.println("|");
+        SolverLogger.info("|");
     }
 
     private void printSouthEdges(Board board, int row, int lastRow, int lastCol, CellCoord mrvCell) {
@@ -170,7 +172,7 @@ public class DetailedBoardFormatter implements BoardFormatter {
 
             if (highlight) System.out.print(RESET);
         }
-        System.out.println("|");
+        SolverLogger.info("|");
     }
 
     private void printFinalBorder(int cols) {
@@ -178,7 +180,7 @@ public class DetailedBoardFormatter implements BoardFormatter {
         for (int c = 0; c < cols; c++) {
             System.out.print("---------|");
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private boolean shouldHighlight(int row, int col, int lastRow, int lastCol, CellCoord mrvCell) {

@@ -1,5 +1,7 @@
 package util;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -204,7 +206,7 @@ public class SaveStateManager {
                                            elapsedTimeMs, numFixedPieces, initialFixedPieces);
 
                     if (isNewRecord(puzzleDir, state.depth)) {
-                        System.out.println("  🏆 New record confirmed: best_" + state.depth + ".txt written successfully");
+                        SolverLogger.info("  🏆 New record confirmed: best_" + state.depth + ".txt written successfully");
                     }
                 } else {
                     // File already exists - this depth was already reached before
@@ -509,7 +511,7 @@ public class SaveStateManager {
         File saveFile = new File(filename);
         if (saveFile.exists()) {
             saveFile.delete();
-            System.out.println("  🗑️  Save deleted: " + filename);
+            SolverLogger.info("  🗑️  Save deleted: " + filename);
         }
     }
 }

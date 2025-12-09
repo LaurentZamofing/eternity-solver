@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -303,7 +305,7 @@ public class ParallelSolverOrchestrator {
     private void handleSolutionFound(int threadId, Board board, Map<Integer, Piece> pieces) {
         synchronized (System.out) {
             System.out.println("\n" + "=".repeat(60));
-            System.out.println("🎉 Thread " + threadId + " found SOLUTION! 🎉");
+            SolverLogger.info("🎉 Thread " + threadId + " found SOLUTION! 🎉");
             System.out.println("=".repeat(60));
         }
 
@@ -353,9 +355,9 @@ public class ParallelSolverOrchestrator {
     // ==================== Printing Methods ====================
 
     private void printHeader(int numThreads) {
-        System.out.println("\n╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║           PARALLEL SEARCH WITH " + numThreads + " THREADS            ║");
-        System.out.println("╚══════════════════════════════════════════════════════════╝\n");
+        SolverLogger.info("\n╔══════════════════════════════════════════════════════════╗");
+        SolverLogger.info("║           PARALLEL SEARCH WITH " + numThreads + " THREADS            ║");
+        SolverLogger.info("╚══════════════════════════════════════════════════════════╝\n");
     }
 
     private void printThreadRestored(int threadId, int depth) {
@@ -379,7 +381,7 @@ public class ParallelSolverOrchestrator {
 
     private void printThreadComplete(int threadId) {
         synchronized (System.out) {
-            System.out.println("✗ Thread " + threadId + " completed without solution");
+            SolverLogger.info("✗ Thread " + threadId + " completed without solution");
         }
     }
 
@@ -398,13 +400,13 @@ public class ParallelSolverOrchestrator {
             int maxScore = 480;
             double percentage = maxScore > 0 ? (score * 100.0 / maxScore) : 0.0;
 
-            System.out.println("\n╔════════════════════════════════════════════════════════╗");
-            System.out.println("║                  PROGRESS - 30 minutes                 ║");
-            System.out.println("╚════════════════════════════════════════════════════════╝");
-            System.out.println("📊 Max depth:  " + depth + " pieces placed");
+            SolverLogger.info("\n╔════════════════════════════════════════════════════════╗");
+            SolverLogger.info("║                  PROGRESS - 30 minutes                 ║");
+            SolverLogger.info("╚════════════════════════════════════════════════════════╝");
+            SolverLogger.info("📊 Max depth:  " + depth + " pieces placed");
             System.out.println("⭐ Best score:  " + score + "/" + maxScore +
                              " internal edges (" + String.format("%.1f%%", percentage) + ")");
-            System.out.println();
+            SolverLogger.info("");
         }
     }
 

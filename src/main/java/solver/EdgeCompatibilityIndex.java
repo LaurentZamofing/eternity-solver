@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Piece;
 
 import java.util.*;
@@ -51,7 +53,7 @@ public class EdgeCompatibilityIndex {
         }
 
         if (verbose) {
-            System.out.println("✓ Edge compatibility tables built:");
+            SolverLogger.info("✓ Edge compatibility tables built:");
             System.out.println("  - Unique edge values: ~" + northEdgeCompatible.size());
         }
     }

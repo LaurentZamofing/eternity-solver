@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import util.SaveStateManager;
@@ -109,7 +111,7 @@ public class HistoricalSolver {
             solver.configManager.getMaxExecutionTimeMs());
 
         System.out.println("  → Resuming with " + preloadedOrder.size() + " pre-loaded pieces");
-        System.out.println("  → Backtracking can go back through ALL pieces");
+        SolverLogger.info("  → Backtracking can go back through ALL pieces");
 
         // Try to solve with current state
         boolean result = solver.solveBacktracking(board, allPieces, pieceUsed, totalPieces);

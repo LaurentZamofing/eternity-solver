@@ -5,6 +5,7 @@ import model.Piece;
 import org.junit.jupiter.api.*;
 import util.SaveStateManager.PlacementInfo;
 import util.SaveStateManager.SaveState;
+import util.state.SaveStateIO;
 
 import java.io.File;
 import java.io.IOException;

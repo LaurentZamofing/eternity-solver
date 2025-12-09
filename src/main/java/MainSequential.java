@@ -1,3 +1,5 @@
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -266,7 +268,7 @@ public class MainSequential {
 
         } catch (Exception e) {
             System.out.println("  → ✗ Error: " + e.getMessage());
-            e.printStackTrace();
+            SolverLogger.error("Error occurred", e);
             return false;
         }
     }
@@ -375,7 +377,7 @@ public class MainSequential {
 
         } catch (Exception e) {
             System.out.println("  → ✗ Error: " + e.getMessage());
-            e.printStackTrace();
+            SolverLogger.error("Error occurred", e);
             return false;
         }
     }

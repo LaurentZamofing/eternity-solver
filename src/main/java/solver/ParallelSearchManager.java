@@ -414,7 +414,7 @@ public class ParallelSearchManager {
                     return sequentialSolver.solve(localBoard, localPieces, pieceUsed, totalPieces);
 
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    SolverLogger.error("Error occurred", e);
                     return false;
                 }
             });
@@ -430,7 +430,7 @@ public class ParallelSearchManager {
                     solved = true;
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                SolverLogger.error("Error occurred", e);
             }
         }
 

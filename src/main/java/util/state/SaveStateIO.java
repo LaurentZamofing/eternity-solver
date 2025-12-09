@@ -1,5 +1,7 @@
 package util.state;
 
+import util.SolverLogger;
+
 import model.Board;
 import util.SaveBoardRenderer;
 import util.SaveStateManager.PlacementInfo;

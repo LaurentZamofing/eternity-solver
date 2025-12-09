@@ -1,5 +1,7 @@
 package util;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 
@@ -36,7 +38,7 @@ public final class BoardRenderer {
             System.out.printf("  %2d    ", (c + 1));
             if (c < cols - 1) System.out.print(" ");
         }
-        System.out.println();
+        SolverLogger.info("");
 
         // Top line
         System.out.print("   ─");
@@ -44,7 +46,7 @@ public final class BoardRenderer {
             System.out.print("────────");
             if (c < cols - 1) System.out.print("─");
         }
-        System.out.println();
+        SolverLogger.info("");
 
         for (int r = 0; r < rows; r++) {
             char rowLabel = (char) ('A' + r);
@@ -60,7 +62,7 @@ public final class BoardRenderer {
                 }
                 System.out.print("│");
             }
-            System.out.println();
+            SolverLogger.info("");
 
             // Line 2: West + Piece ID + East
             System.out.print(" " + rowLabel + " │");
@@ -74,7 +76,7 @@ public final class BoardRenderer {
                 }
                 System.out.print("│");
             }
-            System.out.println();
+            SolverLogger.info("");
 
             // Line 3: South Edge
             System.out.print("   │");
@@ -87,7 +89,7 @@ public final class BoardRenderer {
                 }
                 System.out.print("│");
             }
-            System.out.println();
+            SolverLogger.info("");
 
             // Separator between rows
             if (r < rows - 1) {
@@ -96,7 +98,7 @@ public final class BoardRenderer {
                     System.out.print("────────");
                     if (c < cols - 1) System.out.print("┼");
                 }
-                System.out.println();
+                SolverLogger.info("");
             }
         }
 
@@ -106,6 +108,6 @@ public final class BoardRenderer {
             System.out.print("────────");
             if (c < cols - 1) System.out.print("─");
         }
-        System.out.println("\n");
+        SolverLogger.info("\n");
     }
 }

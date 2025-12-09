@@ -1,5 +1,7 @@
 package solver.heuristics;
 
+import util.SolverLogger;
+
 import model.Piece;
 
 import java.util.HashMap;
@@ -53,7 +55,7 @@ public class LeastConstrainingValueOrderer {
         }
 
         if (verbose) {
-            System.out.println("✓ Edge compatibility tables built:");
+            SolverLogger.info("✓ Edge compatibility tables built:");
             System.out.println("  - Unique edge values: ~" + northEdgeCompatible.size());
         }
     }
@@ -97,7 +99,7 @@ public class LeastConstrainingValueOrderer {
         }
 
         if (verbose) {
-            System.out.println("✓ Piece difficulty scores computed");
+            SolverLogger.info("✓ Piece difficulty scores computed");
         }
     }
 

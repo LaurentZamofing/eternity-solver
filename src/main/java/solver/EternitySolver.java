@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import solver.BoardVisualizer;
@@ -274,9 +276,9 @@ public class EternitySolver {
         if (!solved) {
             stats.end();
             if (configManager.isVerbose()) {
-                System.out.println("\n========================================");
-                System.out.println("PAS DE SOLUTION TROUVÉE");
-                System.out.println("========================================");
+                SolverLogger.info("\n========================================");
+                SolverLogger.info("PAS DE SOLUTION TROUVÉE");
+                SolverLogger.info("========================================");
                 stats.print();
             }
         }

@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 
@@ -61,7 +63,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
             // Check if stdin is actually available
             if (System.in.available() == 0) {
                 // Only wait if there's a real terminal
-                System.out.println("\n[Press Enter to continue...]");
+                SolverLogger.info("\n[Press Enter to continue...]");
                 Scanner scanner = new Scanner(System.in);
                 scanner.nextLine();
             }
@@ -96,11 +98,11 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
         // Verbose output
         if (verbose) {
             int availableCount = context.countAvailablePieces();
-            System.out.println("\n╔════════════════════════════════════════╗");
+            SolverLogger.info("\n╔════════════════════════════════════════╗");
             System.out.println("║  Step " + (solver.getStepCount() + 1) + " - FORCED SINGLETON");
             System.out.println("║  Piece " + pid + " → Cell (" + r + ", " + c + ")");
-            System.out.println("║  Available pieces: " + availableCount);
-            System.out.println("╚════════════════════════════════════════╝");
+            SolverLogger.info("║  Available pieces: " + availableCount);
+            SolverLogger.info("╚════════════════════════════════════════╝");
             context.stats.printCompact();
             waitForEnter();
         }

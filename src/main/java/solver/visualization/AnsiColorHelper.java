@@ -1,5 +1,7 @@
 package solver.visualization;
 
+import util.SolverLogger;
+
 /**
  * Utility class providing ANSI color codes and text formatting for terminal output.
  *
@@ -11,7 +13,7 @@ package solver.visualization;
  *
  * Usage:
  * <pre>
- * System.out.println(AnsiColorHelper.RED + "Error!" + AnsiColorHelper.RESET);
+ * SolverLogger.info(AnsiColorHelper.RED + "Error!" + AnsiColorHelper.RESET);
  * System.out.println(AnsiColorHelper.colorize("Success", AnsiColorHelper.GREEN));
  * </pre>
  *

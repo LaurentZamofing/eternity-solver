@@ -1,5 +1,7 @@
 package solver.visualization;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -83,7 +85,7 @@ public class ComparisonBoardFormatter implements BoardFormatter {
             System.out.printf("  %2d     ", (c + 1));
             if (c < cols - 1) System.out.print(" ");
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printTopLine(int cols) {
@@ -92,7 +94,7 @@ public class ComparisonBoardFormatter implements BoardFormatter {
             System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
             if (c < cols - 1) System.out.print(HORIZONTAL);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printNorthEdgeLine(Board current, Board reference, int row, int cols) {
@@ -112,7 +114,7 @@ public class ComparisonBoardFormatter implements BoardFormatter {
             }
             System.out.print(VERTICAL);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printMiddleLine(Board current, Board reference, Map<Integer, Piece> piecesById,
@@ -154,7 +156,7 @@ public class ComparisonBoardFormatter implements BoardFormatter {
             }
             System.out.print(VERTICAL);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printSouthEdgeLine(Board current, Board reference, int row, int cols) {
@@ -174,7 +176,7 @@ public class ComparisonBoardFormatter implements BoardFormatter {
             }
             System.out.print(VERTICAL);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printSeparatorLine(int cols) {
@@ -183,7 +185,7 @@ public class ComparisonBoardFormatter implements BoardFormatter {
             System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
             if (c < cols - 1) System.out.print(CROSS);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     private void printBottomLine(int cols) {
@@ -192,7 +194,7 @@ public class ComparisonBoardFormatter implements BoardFormatter {
             System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
             if (c < cols - 1) System.out.print(HORIZONTAL);
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     /**

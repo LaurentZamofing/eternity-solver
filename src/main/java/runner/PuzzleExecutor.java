@@ -1,5 +1,7 @@
 package runner;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import runner.PuzzleDefinition.HintPlacement;
@@ -45,9 +47,9 @@ public class PuzzleExecutor {
 
         // Handle save/load for supported puzzles
         if (puzzleDef.supportsSaveLoad() && SaveManager.hasSavedState()) {
-            System.out.println("╔══════════════════════════════════════════════════════════╗");
-            System.out.println("║              SAVE DETECTED                         ║");
-            System.out.println("╚══════════════════════════════════════════════════════════╝\n");
+            SolverLogger.info("╔══════════════════════════════════════════════════════════╗");
+            SolverLogger.info("║              SAVE DETECTED                         ║");
+            SolverLogger.info("╚══════════════════════════════════════════════════════════╝\n");
 
             Object[] savedState = SaveManager.loadBestState(allPieces);
             if (savedState != null) {
@@ -62,10 +64,10 @@ public class PuzzleExecutor {
                     piecesToPlace.remove(usedId);
                 }
 
-                System.out.println("✓ State restored: " + savedDepth + " pieces placed");
+                SolverLogger.info("✓ State restored: " + savedDepth + " pieces placed");
                 System.out.println("  Remaining pieces: " + piecesToPlace.size() + "\n");
             } else {
-                System.out.println("✗ Loading error - starting new\n");
+                SolverLogger.info("✗ Loading error - starting new\n");
                 board = new Board(puzzleDef.getRows(), puzzleDef.getCols());
                 piecesToPlace = new HashMap<>(allPieces);
                 setupHints(board, piecesToPlace, puzzleDef.getHints());
@@ -96,11 +98,11 @@ public class PuzzleExecutor {
      * Displays puzzle header.
      */
     private void displayHeader(PuzzleDefinition puzzleDef) {
-        System.out.println("\n╔════════════════════════════════════════════════════════╗");
+        SolverLogger.info("\n╔════════════════════════════════════════════════════════╗");
         String title = "  " + puzzleDef.getDisplayName();
         int padding = 56 - title.length();
         System.out.println("║" + title + " ".repeat(Math.max(0, padding)) + "  ║");
-        System.out.println("╚════════════════════════════════════════════════════════╝\n");
+        SolverLogger.info("╚════════════════════════════════════════════════════════╝\n");
     }
 
     /**
@@ -119,9 +121,9 @@ public class PuzzleExecutor {
             return usedPieces;
         }
 
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("PLACING HINTS");
-        System.out.println("═══════════════════════════════════════════════════════");
+        SolverLogger.info("═══════════════════════════════════════════════════════");
+        SolverLogger.info("PLACING HINTS");
+        SolverLogger.info("═══════════════════════════════════════════════════════");
 
         for (HintPlacement hint : hints) {
             Piece piece = pieces.get(hint.pieceId);
@@ -135,7 +137,7 @@ public class PuzzleExecutor {
             }
         }
 
-        System.out.println();
+        SolverLogger.info("");
         System.out.printf("  → %d pieces pre-placed, %d remaining pieces to place%n%n",
             usedPieces.size(), pieces.size());
 
@@ -146,18 +148,18 @@ public class PuzzleExecutor {
      * Displays the puzzle result.
      */
     private void displayResult(PuzzleRunner.PuzzleResult result, PuzzleDefinition puzzleDef) {
-        System.out.println("\n═══════════════════════════════════════════════════════");
-        System.out.println("RESULT");
-        System.out.println("═══════════════════════════════════════════════════════\n");
+        SolverLogger.info("\n═══════════════════════════════════════════════════════");
+        SolverLogger.info("RESULT");
+        SolverLogger.info("═══════════════════════════════════════════════════════\n");
 
         if (result.isSolved()) {
-            System.out.println("✓ PUZZLE SOLVED!");
+            SolverLogger.info("✓ PUZZLE SOLVED!");
             System.out.printf("Time: %.2f seconds%n%n", result.getDurationSeconds());
 
             // Display board
             result.getBoard().prettyPrint(puzzleDef.loadPieces());
         } else {
-            System.out.println("✗ No solution found");
+            SolverLogger.info("✗ No solution found");
             System.out.printf("Time: %.2f seconds%n%n", result.getDurationSeconds());
         }
 

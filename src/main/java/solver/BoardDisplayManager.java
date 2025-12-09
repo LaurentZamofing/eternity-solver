@@ -1,5 +1,7 @@
 package solver;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 
@@ -30,7 +32,7 @@ public class BoardDisplayManager {
             System.out.printf("  %2d     ", (c + 1));
             if (c < cols - 1) System.out.print(" ");
         }
-        System.out.println();
+        SolverLogger.info("");
 
         // Top line
         System.out.print("   ─");
@@ -38,7 +40,7 @@ public class BoardDisplayManager {
             System.out.print("─────────");
             if (c < cols - 1) System.out.print("─");
         }
-        System.out.println();
+        SolverLogger.info("");
 
         for (int r = 0; r < rows; r++) {
             char rowLabel = (char) ('A' + r);
@@ -67,7 +69,7 @@ public class BoardDisplayManager {
                 }
                 System.out.print("│");
             }
-            System.out.println();
+            SolverLogger.info("");
 
             // Line 2: West + piece identifier + East
             System.out.print(" " + rowLabel + " │");
@@ -123,7 +125,7 @@ public class BoardDisplayManager {
                 }
                 System.out.print("│");
             }
-            System.out.println();
+            SolverLogger.info("");
 
             // Line 3: South Edge
             System.out.print("   │");
@@ -149,7 +151,7 @@ public class BoardDisplayManager {
                 }
                 System.out.print("│");
             }
-            System.out.println();
+            SolverLogger.info("");
 
             // Separator between rows
             if (r < rows - 1) {
@@ -158,7 +160,7 @@ public class BoardDisplayManager {
                     System.out.print("─────────");
                     if (c < cols - 1) System.out.print("┼");
                 }
-                System.out.println();
+                SolverLogger.info("");
             }
         }
 
@@ -168,7 +170,7 @@ public class BoardDisplayManager {
             System.out.print("─────────");
             if (c < cols - 1) System.out.print("─");
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     /** Displays board comparison showing differences; colors: magenta (regression), orange (change), yellow (progress), cyan (stable). */
@@ -183,7 +185,7 @@ public class BoardDisplayManager {
             System.out.printf("  %2d     ", (c + 1));
             if (c < cols - 1) System.out.print(" ");
         }
-        System.out.println();
+        SolverLogger.info("");
 
         // Top line
         System.out.print("   ─");
@@ -191,7 +193,7 @@ public class BoardDisplayManager {
             System.out.print("─────────");
             if (c < cols - 1) System.out.print("─");
         }
-        System.out.println();
+        SolverLogger.info("");
 
         for (int r = 0; r < rows; r++) {
             char rowLabel = (char) ('A' + r);
@@ -213,7 +215,7 @@ public class BoardDisplayManager {
                 }
                 System.out.print("│");
             }
-            System.out.println();
+            SolverLogger.info("");
 
             // Line 2: West + piece identifier + East
             System.out.print(" " + rowLabel + " │");
@@ -249,7 +251,7 @@ public class BoardDisplayManager {
                 }
                 System.out.print("│");
             }
-            System.out.println();
+            SolverLogger.info("");
 
             // Line 3: South Edge
             System.out.print("   │");
@@ -268,7 +270,7 @@ public class BoardDisplayManager {
                 }
                 System.out.print("│");
             }
-            System.out.println();
+            SolverLogger.info("");
 
             // Separator line between rows
             if (r < rows - 1) {
@@ -277,7 +279,7 @@ public class BoardDisplayManager {
                     System.out.print("─────────");
                     if (c < cols - 1) System.out.print("┼");
                 }
-                System.out.println();
+                SolverLogger.info("");
             }
         }
 
@@ -287,7 +289,7 @@ public class BoardDisplayManager {
             System.out.print("─────────");
             if (c < cols - 1) System.out.print("─");
         }
-        System.out.println();
+        SolverLogger.info("");
     }
 
     /** Counts valid pieces for position (all rotations); returns number of unused pieces that fit at (r,c). */

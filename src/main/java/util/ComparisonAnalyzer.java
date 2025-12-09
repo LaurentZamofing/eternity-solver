@@ -1,5 +1,7 @@
 package util;
 
+import util.SolverLogger;
+
 import model.Board;
 import model.Piece;
 import solver.EternitySolver;
@@ -31,14 +33,14 @@ public final class ComparisonAnalyzer {
         int rows = 5, cols = 5;
         Map<Integer, Piece> pieces = PuzzleFactory.createExample5x5();
 
-        System.out.println("╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║   COMPARISON 5x5 : WITH vs WITHOUT SINGLETON optimization ║");
-        System.out.println("╚══════════════════════════════════════════════════════════╝\n");
+        SolverLogger.info("╔══════════════════════════════════════════════════════════╗");
+        SolverLogger.info("║   COMPARISON 5x5 : WITH vs WITHOUT SINGLETON optimization ║");
+        SolverLogger.info("╚══════════════════════════════════════════════════════════╝\n");
 
         // ===== WITH SINGLETONS =====
-        System.out.println("\n█████████████████████████████████████████████████████████");
-        System.out.println("█  TEST 1 : WITH SINGLETON optimization                 █");
-        System.out.println("█████████████████████████████████████████████████████████\n");
+        SolverLogger.info("\n█████████████████████████████████████████████████████████");
+        SolverLogger.info("█  TEST 1 : WITH SINGLETON optimization                 █");
+        SolverLogger.info("█████████████████████████████████████████████████████████\n");
 
         Board board1 = new Board(rows, cols);
         EternitySolver solver1 = new EternitySolver();
@@ -52,9 +54,9 @@ public final class ComparisonAnalyzer {
         }
 
         // ===== WITHOUT SINGLETONS =====
-        System.out.println("\n\n█████████████████████████████████████████████████████████");
+        SolverLogger.info("\n\n█████████████████████████████████████████████████████████");
         System.out.println("█  TEST 2 : WITHOUT SINGLETON optimization (MRV only)      █");
-        System.out.println("█████████████████████████████████████████████████████████\n");
+        SolverLogger.info("█████████████████████████████████████████████████████████\n");
 
         Board board2 = new Board(rows, cols);
         EternitySolver solver2 = new EternitySolver();
@@ -68,13 +70,13 @@ public final class ComparisonAnalyzer {
         }
 
         // ===== COMPARISON =====
-        System.out.println("\n\n╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║                   COMPARATIVE SUMMARY                      ║");
-        System.out.println("╚══════════════════════════════════════════════════════════╝\n");
+        SolverLogger.info("\n\n╔══════════════════════════════════════════════════════════╗");
+        SolverLogger.info("║                   COMPARATIVE SUMMARY                      ║");
+        SolverLogger.info("╚══════════════════════════════════════════════════════════╝\n");
 
-        System.out.println("┌──────────────────────────┬─────────────────┬─────────────────┬─────────────┐");
-        System.out.println("│ Metric                   │ WITH Singleton  │ WITHOUT Singleton  │ Gain        │");
-        System.out.println("├──────────────────────────┼─────────────────┼─────────────────┼─────────────┤");
+        SolverLogger.info("┌──────────────────────────┬─────────────────┬─────────────────┬─────────────┐");
+        SolverLogger.info("│ Metric                   │ WITH Singleton  │ WITHOUT Singleton  │ Gain        │");
+        SolverLogger.info("├──────────────────────────┼─────────────────┼─────────────────┼─────────────┤");
 
         printComparisonRow("Time (seconds)",
             stats1.getElapsedTimeSec(), stats2.getElapsedTimeSec());
@@ -87,7 +89,7 @@ public final class ComparisonAnalyzer {
         printComparisonRow("fit() checks",
             stats1.fitChecks, stats2.fitChecks);
 
-        System.out.println("└──────────────────────────┴─────────────────┴─────────────────┴─────────────┘\n");
+        SolverLogger.info("└──────────────────────────┴─────────────────┴─────────────────┴─────────────┘\n");
 
         System.out.println("Singletons detected (test 1) : " + stats1.singletonsFound);
         System.out.println("Singletons placed (test 1)    : " + stats1.singletonsPlaced);

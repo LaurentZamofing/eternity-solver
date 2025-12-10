@@ -13,6 +13,7 @@ import monitoring.service.IMetricsAggregator;
 import monitoring.service.MetricsAggregator;
 import monitoring.service.PieceDefinitionService;
 import monitoring.service.SaveFileParser;
+import monitoring.util.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,10 +121,10 @@ public class DashboardController {
         ConfigMetrics metrics = fileWatcherService.getMetrics(configName);
 
         if (metrics == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseHelper.notFound();
         }
 
-        return ResponseEntity.ok(metrics);
+        return ResponseHelper.ok(metrics);
     }
 
     /**
@@ -138,7 +139,7 @@ public class DashboardController {
             // Get current metrics to find bestDepthEver
             ConfigMetrics currentMetrics = fileWatcherService.getMetrics(configName);
             if (currentMetrics == null || currentMetrics.getBestDepthEver() == 0) {
-                return ResponseEntity.notFound().build();
+                return ResponseHelper.notFound();
             }
 
             // Construct path to best file: saves/eternity2/configName/best_{depth}.txt
@@ -147,24 +148,24 @@ public class DashboardController {
 
             if (!java.nio.file.Files.exists(bestFilePath)) {
                 logger.warn("Best file not found: {}", bestFilePath);
-                return ResponseEntity.notFound().build();
+                return ResponseHelper.notFound();
             }
 
             // Parse the best file
             ConfigMetrics bestMetrics = saveFileParser.parseSaveFile(bestFilePath);
             if (bestMetrics == null) {
-                return ResponseEntity.notFound().build();
+                return ResponseHelper.notFound();
             }
 
             // Set bestDepthEver to match current
             bestMetrics.setBestDepthEver(currentMetrics.getBestDepthEver());
             bestMetrics.setStatus("best_record");
 
-            return ResponseEntity.ok(bestMetrics);
+            return ResponseHelper.ok(bestMetrics);
 
         } catch (Exception e) {
             logger.error("Error loading best result for {}", configName, e);
-            return ResponseEntity.status(MonitoringConstants.HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseHelper.internalError();
         }
     }
 
@@ -315,10 +316,10 @@ public class DashboardController {
         PieceDefinition definition = pieceDefinitionService.getPieceDefinition(puzzleName, pieceId);
 
         if (definition == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseHelper.notFound();
         }
 
-        return ResponseEntity.ok(definition);
+        return ResponseHelper.ok(definition);
     }
 
     /**
@@ -335,25 +336,21 @@ public class DashboardController {
         try {
             int configsFound = fileWatcherService.refreshCache();
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Cache refreshed successfully");
-            response.put("configsFound", configsFound);
-            response.put("timestamp", LocalDateTime.now().toString());
-
             logger.info("Cache refresh completed: {} configs found", configsFound);
 
-            return ResponseEntity.ok(response);
+            return ResponseHelper.builder()
+                    .message("Cache refreshed successfully")
+                    .put("configsFound", configsFound)
+                    .build();
 
         } catch (Exception e) {
             logger.error("Failed to refresh cache", e);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Failed to refresh cache: " + e.getMessage());
-            response.put("timestamp", LocalDateTime.now().toString());
-
-            return ResponseEntity.status(MonitoringConstants.HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            return ResponseHelper.builder()
+                    .success(false)
+                    .status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                    .message("Failed to refresh cache: " + e.getMessage())
+                    .build();
         }
     }
 
@@ -379,10 +376,10 @@ public class DashboardController {
         CellDetails details = cellDetailsService.getCellDetails(configName, row, col);
 
         if (details == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseHelper.notFound();
         }
 
-        return ResponseEntity.ok(details);
+        return ResponseHelper.ok(details);
     }
 
     /**
@@ -401,9 +398,9 @@ public class DashboardController {
         CellDetails details = historicalCellDetailsService.getHistoricalCellDetails(configName, row, col);
 
         if (details == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseHelper.notFound();
         }
 
-        return ResponseEntity.ok(details);
+        return ResponseHelper.ok(details);
     }
 }

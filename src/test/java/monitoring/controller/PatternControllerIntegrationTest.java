@@ -45,11 +45,11 @@ public class PatternControllerIntegrationTest {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$", hasSize(23)))  // 0-22 = 23 patterns
                 .andExpect(jsonPath("$[0].id").value(0))
-                .andExpect(jsonPath("$[0].name").value("border"))
-                .andExpect(jsonPath("$[0].imageUrl").doesNotExist())  // Pattern 0 has no image
+                .andExpect(jsonPath("$[0].name").value("Border"))
+                .andExpect(jsonPath("$[0].url").doesNotExist())  // Pattern 0 has no image
                 .andExpect(jsonPath("$[1].id").value(1))
-                .andExpect(jsonPath("$[1].name").value("pattern1"))
-                .andExpect(jsonPath("$[1].imageUrl").value("/patterns/pattern1.png"));
+                .andExpect(jsonPath("$[1].name").value("Pattern 1"))
+                .andExpect(jsonPath("$[1].url").value("/patterns/pattern1.png"));
     }
 
     /**
@@ -64,24 +64,24 @@ public class PatternControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(0))
-                .andExpect(jsonPath("$.name").value("border"))
-                .andExpect(jsonPath("$.imageUrl").doesNotExist());
+                .andExpect(jsonPath("$.name").value("Border"))
+                .andExpect(jsonPath("$.url").doesNotExist());
 
         // Pattern 1
         mockMvc.perform(get("/api/patterns/1")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("pattern1"))
-                .andExpect(jsonPath("$.imageUrl").value("/patterns/pattern1.png"));
+                .andExpect(jsonPath("$.name").value("Pattern 1"))
+                .andExpect(jsonPath("$.url").value("/patterns/pattern1.png"));
 
         // Pattern 22 (last valid pattern)
         mockMvc.perform(get("/api/patterns/22")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(22))
-                .andExpect(jsonPath("$.name").value("pattern22"))
-                .andExpect(jsonPath("$.imageUrl").value("/patterns/pattern22.png"));
+                .andExpect(jsonPath("$.name").value("Pattern 22"))
+                .andExpect(jsonPath("$.url").value("/patterns/pattern22.png"));
     }
 
     /**

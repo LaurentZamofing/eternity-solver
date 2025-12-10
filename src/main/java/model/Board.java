@@ -102,18 +102,18 @@ public class Board {
                     sb.append(String.format("%s ", grid[r][c].toString()));
                 }
             }
-            System.out.println(sb.toString());
+            SolverLogger.info(sb.toString());
         }
         SolverLogger.info("");
 
         if (piecesById != null) {
-            System.out.println("Details (coord -> id,rot,edges after rotation):");
+            SolverLogger.info("Details (coord -> id,rot,edges after rotation):");
             for (int r = 0; r < rows; r++) {
                 for (int c = 0; c < cols; c++) {
                     Placement p = grid[r][c];
                     if (p != null) {
-                        System.out.printf("(%d,%d) => id=%d, rot=%d, edges=%s%n",
-                                r, c, p.getPieceId(), p.getRotation(), Arrays.toString(p.edges));
+                        SolverLogger.info(String.format("(%d,%d) => id=%d, rot=%d, edges=%s",
+                                r, c, p.getPieceId(), p.getRotation(), Arrays.toString(p.edges)));
                     }
                 }
             }

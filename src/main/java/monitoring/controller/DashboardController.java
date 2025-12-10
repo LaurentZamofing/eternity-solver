@@ -1,5 +1,12 @@
 package monitoring.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import monitoring.MonitoringConstants;
 import monitoring.model.CellDetails;
 import monitoring.model.ConfigMetrics;
@@ -37,6 +44,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "*") // Allow CORS for frontend development
+@Tag(name = "Monitoring Dashboard", description = "APIs for monitoring puzzle solver configurations and metrics")
 public class DashboardController {
 
     private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
@@ -65,10 +73,26 @@ public class DashboardController {
      * - order: asc or desc (default: desc)
      * - status: filter by status (running, idle, solved, stuck)
      */
+    @Operation(
+            summary = "Get all solver configurations",
+            description = "Returns a list of all puzzle solver configurations with their current metrics. " +
+                    "Results can be sorted and filtered by various criteria."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully retrieved configurations",
+                    content = @Content(schema = @Schema(implementation = ConfigMetrics.class))
+            ),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @GetMapping("/configs")
     public ResponseEntity<List<ConfigMetrics>> getAllConfigs(
+            @Parameter(description = "Field to sort by (progress, depth, bestdepthever, time, name)", example = "progress")
             @RequestParam(required = false, defaultValue = "progress") String sort,
+            @Parameter(description = "Sort order (asc or desc)", example = "desc")
             @RequestParam(required = false, defaultValue = "desc") String order,
+            @Parameter(description = "Filter by status (running, idle, solved, stuck)", example = "running")
             @RequestParam(required = false) String status
     ) {
         logger.debug("GET /api/configs - sort={}, order={}, status={}", sort, order, status);
@@ -114,8 +138,19 @@ public class DashboardController {
      * GET /api/configs/{configName}
      * Get detailed metrics for a specific configuration.
      */
+    @Operation(
+            summary = "Get specific configuration details",
+            description = "Returns detailed metrics for a specific puzzle solver configuration by name"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Configuration found"),
+            @ApiResponse(responseCode = "404", description = "Configuration not found")
+    })
     @GetMapping("/configs/{configName}")
-    public ResponseEntity<ConfigMetrics> getConfig(@PathVariable String configName) {
+    public ResponseEntity<ConfigMetrics> getConfig(
+            @Parameter(description = "Configuration name", example = "eternity2_p01_ascending")
+            @PathVariable String configName
+    ) {
         logger.debug("GET /api/configs/{}", configName);
 
         ConfigMetrics metrics = fileWatcherService.getMetrics(configName);
@@ -177,10 +212,22 @@ public class DashboardController {
      * - hours: number of hours to look back (default: 24)
      * - limit: max number of data points (default: 1000)
      */
+    @Operation(
+            summary = "Get configuration history",
+            description = "Returns historical metrics data for a specific configuration over time. " +
+                    "Useful for charting progress and analyzing solver behavior."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Historical data retrieved"),
+            @ApiResponse(responseCode = "404", description = "Configuration not found")
+    })
     @GetMapping("/configs/{configName}/history")
     public ResponseEntity<List<HistoricalMetrics>> getConfigHistory(
+            @Parameter(description = "Configuration name", example = "eternity2_p01_ascending")
             @PathVariable String configName,
+            @Parameter(description = "Number of hours to look back", example = "24")
             @RequestParam(required = false, defaultValue = "" + MonitoringConstants.Api.DEFAULT_HISTORY_HOURS) int hours,
+            @Parameter(description = "Maximum number of data points to return", example = "1000")
             @RequestParam(required = false, defaultValue = "" + MonitoringConstants.Api.DEFAULT_HISTORY_LIMIT) int limit
     ) {
         logger.debug("GET /api/configs/{}/history - hours={}, limit={}", configName, hours, limit);
@@ -212,6 +259,14 @@ public class DashboardController {
      * GET /api/stats/global
      * Get aggregated statistics across all configurations.
      */
+    @Operation(
+            summary = "Get global statistics",
+            description = "Returns aggregated statistics across all solver configurations. " +
+                    "Includes totals, averages, and summary information."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully")
+    })
     @GetMapping("/stats/global")
     public ResponseEntity<MetricsAggregator.GlobalStats> getGlobalStats() {
         logger.debug("GET /api/stats/global");
@@ -242,6 +297,14 @@ public class DashboardController {
      * GET /api/health
      * Health check endpoint.
      */
+    @Operation(
+            summary = "Health check",
+            description = "Check the health status of the monitoring API. " +
+                    "Returns system status, number of monitored configs, and database statistics."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Service is healthy")
+    })
     @GetMapping("/health")
     public ResponseEntity<Map<String, Object>> healthCheck() {
         Map<String, Object> health = new HashMap<>();

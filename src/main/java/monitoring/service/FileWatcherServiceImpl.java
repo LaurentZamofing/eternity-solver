@@ -1,5 +1,6 @@
 package monitoring.service;
 
+import monitoring.MonitoringConstants;
 import monitoring.model.ConfigMetrics;
 import monitoring.model.HistoricalMetrics;
 import monitoring.repository.MetricsRepository;
@@ -320,7 +321,7 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
     private void processFileChange(Path path) {
         try {
             // Small delay to ensure file is fully written
-            Thread.sleep(100);
+            Thread.sleep(MonitoringConstants.FileParsing.FILE_WRITE_DELAY_MS);
 
             // Parse the file
             ConfigMetrics metrics = parser.parseSaveFile(path);
@@ -528,7 +529,7 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
     /**
      * Periodic health check and cleanup (runs every 5 minutes).
      */
-    @Scheduled(fixedRate = 300000) // 5 minutes
+    @Scheduled(fixedRate = MonitoringConstants.Time.HEALTH_CHECK_INTERVAL_MS)
     public void healthCheck() {
         logger.debug("Health check: {} configs in cache", cacheManager.size());
     }
@@ -544,7 +545,9 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
         if (executorService != null) {
             executorService.shutdown();
             try {
-                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                if (!executorService.awaitTermination(
+                        MonitoringConstants.Time.SHUTDOWN_TIMEOUT_SECONDS,
+                        TimeUnit.SECONDS)) {
                     executorService.shutdownNow();
                 }
             } catch (InterruptedException e) {

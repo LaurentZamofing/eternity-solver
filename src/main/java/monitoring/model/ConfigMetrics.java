@@ -1,5 +1,6 @@
 package monitoring.model;
 
+import monitoring.MonitoringConstants;
 import util.TimeConstants;
 
 import java.time.LocalDateTime;
@@ -86,7 +87,7 @@ public class ConfigMetrics {
             } else if (diffSeconds < TimeConstants.SECONDS_PER_HOUR) {
                 long minutes = diffSeconds / 60;
                 this.lastSaveRelative = minutes + "m ago";
-            } else if (diffSeconds < 86400) {
+            } else if (diffSeconds < MonitoringConstants.Time.SECONDS_PER_DAY) {
                 long hours = diffSeconds / TimeConstants.SECONDS_PER_HOUR;
                 long minutes = (diffSeconds % TimeConstants.SECONDS_PER_HOUR) / 60;
                 this.lastSaveRelative = String.format("%dh %02dm ago", hours, minutes);

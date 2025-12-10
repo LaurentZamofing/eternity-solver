@@ -1,6 +1,8 @@
 package monitoring.model;
 
 import jakarta.persistence.*;
+import monitoring.MonitoringConstants;
+
 import java.time.LocalDateTime;
 
 /**
@@ -17,7 +19,7 @@ public class HistoricalMetrics {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = MonitoringConstants.Database.CONFIG_NAME_MAX_LENGTH)
     private String configName;
 
     @Column(nullable = false)

@@ -52,6 +52,9 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
     @Autowired
     private MetricsCacheManager cacheManager;
 
+    @Autowired
+    private BestDepthCalculator bestDepthCalculator;
+
     @Value("${monitoring.saves-directory:./saves}")
     private String savesDirectory;
 
@@ -324,7 +327,7 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
 
             if (metrics != null) {
                 // Calculate and set best depth ever from best_*.txt files
-                int bestDepth = calculateBestDepthEver(metrics.getConfigName());
+                int bestDepth = bestDepthCalculator.calculateBestDepthEver(metrics.getConfigName());
                 metrics.setBestDepthEver(bestDepth);
 
                 // Update cache
@@ -356,7 +359,7 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
 
         if (metrics != null) {
             // Calculate and set best depth ever from best_*.txt files
-            int bestDepth = calculateBestDepthEver(metrics.getConfigName());
+            int bestDepth = bestDepthCalculator.calculateBestDepthEver(metrics.getConfigName());
             metrics.setBestDepthEver(bestDepth);
 
             // Update cache
@@ -400,41 +403,6 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
      */
     public ConfigMetrics getMetrics(String configName) {
         return cacheManager.get(configName);
-    }
-
-    /**
-     * Calculate the best depth ever reached for a configuration by scanning all best_*.txt files.
-     */
-    private int calculateBestDepthEver(String configName) {
-        int maxDepth = 0;
-        try {
-            // Construct path to config directory: saves/eternity2/configName/
-            Path configDir = Paths.get(savesDirectory, "eternity2", configName);
-
-            if (Files.exists(configDir) && Files.isDirectory(configDir)) {
-                // Find all best_*.txt files and extract depths
-                maxDepth = Files.list(configDir)
-                    .filter(path -> {
-                        String fileName = path.getFileName().toString();
-                        return fileName.startsWith("best_") && fileName.endsWith(".txt");
-                    })
-                    .mapToInt(path -> {
-                        String fileName = path.getFileName().toString();
-                        try {
-                            // Extract depth from "best_123.txt" -> 123
-                            String depthStr = fileName.replace("best_", "").replace(".txt", "");
-                            return Integer.parseInt(depthStr);
-                        } catch (NumberFormatException e) {
-                            return 0;
-                        }
-                    })
-                    .max()
-                    .orElse(0);
-            }
-        } catch (IOException e) {
-            logger.debug("Could not calculate best depth for {}: {}", configName, e.getMessage());
-        }
-        return maxDepth;
     }
 
     /**

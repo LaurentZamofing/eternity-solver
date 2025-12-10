@@ -55,120 +55,7 @@ public class CellDetailsService {
                 return null;
             }
 
-            // Extract puzzle name from config (e.g., "eternity2_p11_ascending" -> "eternity2")
-            String puzzleName = extractPuzzleName(configName);
-
-            // Load piece definitions
-            Map<Integer, PieceDefinition> pieceDefinitions = pieceDefinitionService.getPieceDefinitions(puzzleName);
-            if (pieceDefinitions.isEmpty()) {
-                logger.warn("No piece definitions found for puzzle: {}", puzzleName);
-                return null;
-            }
-
-            // Build board from boardState
-            int rows = metrics.getRows();
-            int cols = metrics.getCols();
-            Board board = buildBoard(metrics.getBoardState(), pieceDefinitions, rows, cols);
-
-            // Determine used pieces
-            Set<Integer> usedPieces = getUsedPieces(metrics.getBoardState());
-
-            // Build CellDetails
-            CellDetails details = new CellDetails(row, col);
-
-            // Set current piece (if any)
-            String cellValue = metrics.getBoardState()[row][col];
-            Integer currentPieceId = null;
-            if (cellValue != null && !cellValue.isEmpty()) {
-                String[] parts = cellValue.split("_");
-                int pieceId = Integer.parseInt(parts[0]);
-                int rotation = Integer.parseInt(parts[1]);
-
-                PieceDefinition pieceDef = pieceDefinitions.get(pieceId);
-                int[] edges = rotateEdges(pieceDef, rotation);
-
-                PieceOption current = new PieceOption(pieceId, rotation, edges, true);
-                current.setCurrent(true);
-                details.setCurrentPiece(current);
-                currentPieceId = pieceId;
-            }
-
-            // Determine placement strategy (ascending/descending)
-            boolean isAscending = configName.contains("ascending");
-            boolean isDescending = configName.contains("descending");
-
-            // Calculate constraints
-            CellConstraints constraints = calculateConstraints(board, row, col, rows, cols);
-            details.setConstraints(constraints);
-
-            // Find all possible pieces
-            List<PieceOption> possibilities = new ArrayList<>();
-            int validCount = 0;
-            int invalidCount = 0;
-
-            for (Map.Entry<Integer, PieceDefinition> entry : pieceDefinitions.entrySet()) {
-                int pieceId = entry.getKey();
-
-                // Skip if piece is already used (unless it's the current piece)
-                if (usedPieces.contains(pieceId)) {
-                    if (details.getCurrentPiece() == null || details.getCurrentPiece().getPieceId() != pieceId) {
-                        continue;
-                    }
-                }
-
-                PieceDefinition pieceDef = entry.getValue();
-
-                // Test each rotation
-                for (int rotation = 0; rotation < 4; rotation++) {
-                    int[] edges = rotateEdges(pieceDef, rotation);
-                    boolean isValid = fits(board, row, col, edges, rows, cols);
-
-                    PieceOption option = new PieceOption(pieceId, rotation, edges, isValid);
-
-                    // Mark if this is the current piece
-                    if (details.getCurrentPiece() != null &&
-                        details.getCurrentPiece().getPieceId() == pieceId &&
-                        details.getCurrentPiece().getRotation() == rotation) {
-                        option.setCurrent(true);
-                    }
-
-                    // Mark if this piece was already tried based on placement strategy
-                    if (currentPieceId != null) {
-                        if (isAscending && pieceId < currentPieceId) {
-                            option.setAlreadyTried(true);
-                        } else if (isDescending && pieceId > currentPieceId) {
-                            option.setAlreadyTried(true);
-                        }
-                    }
-
-                    possibilities.add(option);
-
-                    if (isValid) {
-                        validCount++;
-                    } else {
-                        invalidCount++;
-                    }
-                }
-            }
-
-            // Sort: current first, then valid, then invalid
-            possibilities.sort((a, b) -> {
-                if (a.isCurrent()) return -1;
-                if (b.isCurrent()) return 1;
-                if (a.isValid() && !b.isValid()) return -1;
-                if (!a.isValid() && b.isValid()) return 1;
-                return Integer.compare(a.getPieceId(), b.getPieceId());
-            });
-
-            details.setPossiblePieces(possibilities);
-
-            // Set statistics
-            int totalPieces = pieceDefinitions.size();
-            int usedCount = usedPieces.size();
-            CellDetails.Statistics stats = new CellDetails.Statistics(totalPieces, usedCount, validCount, invalidCount);
-            details.setStatistics(stats);
-
-            return details;
+            return getCellDetailsFromMetrics(metrics, row, col);
 
         } catch (Exception e) {
             logger.error("Error calculating cell details for {}[{},{}]", configName, row, col, e);
@@ -205,111 +92,164 @@ public class CellDetailsService {
             int rows = metrics.getRows();
             int cols = metrics.getCols();
             Board board = buildBoard(metrics.getBoardState(), pieceDefinitions, rows, cols);
-
-            // Determine used pieces
             Set<Integer> usedPieces = getUsedPieces(metrics.getBoardState());
 
-            // Build CellDetails
-            CellDetails details = new CellDetails(row, col);
-
-            // Set current piece (if any)
-            String cellValue = metrics.getBoardState()[row][col];
-            Integer currentPieceId = null;
-            if (cellValue != null && !cellValue.isEmpty()) {
-                String[] parts = cellValue.split("_");
-                int pieceId = Integer.parseInt(parts[0]);
-                int rotation = Integer.parseInt(parts[1]);
-
-                PieceDefinition pieceDef = pieceDefinitions.get(pieceId);
-                int[] edges = rotateEdges(pieceDef, rotation);
-
-                PieceOption current = new PieceOption(pieceId, rotation, edges, true);
-                current.setCurrent(true);
-                details.setCurrentPiece(current);
-                currentPieceId = pieceId;
-            }
-
-            // Determine placement strategy (ascending/descending)
-            boolean isAscending = configName.contains("ascending");
-            boolean isDescending = configName.contains("descending");
-
-            // Calculate constraints
-            CellConstraints constraints = calculateConstraints(board, row, col, rows, cols);
-            details.setConstraints(constraints);
-
-            // Find all possible pieces
-            List<PieceOption> possibilities = new ArrayList<>();
-            int validCount = 0;
-            int invalidCount = 0;
-
-            for (Map.Entry<Integer, PieceDefinition> entry : pieceDefinitions.entrySet()) {
-                int pieceId = entry.getKey();
-
-                // Skip if piece is already used (unless it's the current piece)
-                if (usedPieces.contains(pieceId)) {
-                    if (details.getCurrentPiece() == null || details.getCurrentPiece().getPieceId() != pieceId) {
-                        continue;
-                    }
-                }
-
-                PieceDefinition pieceDef = entry.getValue();
-
-                // Test each rotation
-                for (int rotation = 0; rotation < 4; rotation++) {
-                    int[] edges = rotateEdges(pieceDef, rotation);
-                    boolean isValid = fits(board, row, col, edges, rows, cols);
-
-                    PieceOption option = new PieceOption(pieceId, rotation, edges, isValid);
-
-                    // Mark if this is the current piece
-                    if (details.getCurrentPiece() != null &&
-                        details.getCurrentPiece().getPieceId() == pieceId &&
-                        details.getCurrentPiece().getRotation() == rotation) {
-                        option.setCurrent(true);
-                    }
-
-                    // Mark if this piece was already tried based on placement strategy
-                    if (currentPieceId != null) {
-                        if (isAscending && pieceId < currentPieceId) {
-                            option.setAlreadyTried(true);
-                        } else if (isDescending && pieceId > currentPieceId) {
-                            option.setAlreadyTried(true);
-                        }
-                    }
-
-                    possibilities.add(option);
-
-                    if (isValid) {
-                        validCount++;
-                    } else {
-                        invalidCount++;
-                    }
-                }
-            }
-
-            // Sort: current first, then valid, then invalid
-            possibilities.sort((a, b) -> {
-                if (a.isCurrent()) return -1;
-                if (b.isCurrent()) return 1;
-                if (a.isValid() && !b.isValid()) return -1;
-                if (!a.isValid() && b.isValid()) return 1;
-                return Integer.compare(a.getPieceId(), b.getPieceId());
-            });
-
-            details.setPossiblePieces(possibilities);
-
-            // Set statistics
-            int totalPieces = pieceDefinitions.size();
-            int usedCount = usedPieces.size();
-            CellDetails.Statistics stats = new CellDetails.Statistics(totalPieces, usedCount, validCount, invalidCount);
-            details.setStatistics(stats);
-
-            return details;
+            // Calculate cell details
+            return calculateCellDetailsCore(metrics.getBoardState(), board, pieceDefinitions,
+                                           usedPieces, configName, row, col, rows, cols);
 
         } catch (Exception e) {
             logger.error("Error calculating cell details from metrics for [{},{}]", row, col, e);
             return null;
         }
+    }
+
+    /**
+     * Core logic for calculating cell details. Extracted to eliminate duplication.
+     */
+    private CellDetails calculateCellDetailsCore(String[][] boardState, Board board,
+                                                  Map<Integer, PieceDefinition> pieceDefinitions,
+                                                  Set<Integer> usedPieces, String configName,
+                                                  int row, int col, int rows, int cols) {
+        CellDetails details = new CellDetails(row, col);
+
+        // Parse and set current piece
+        PieceOption currentPiece = parseCurrentPiece(boardState[row][col], pieceDefinitions);
+        details.setCurrentPiece(currentPiece);
+        Integer currentPieceId = currentPiece != null ? currentPiece.getPieceId() : null;
+
+        // Calculate constraints
+        CellConstraints constraints = calculateConstraints(board, row, col, rows, cols);
+        details.setConstraints(constraints);
+
+        // Determine placement strategy
+        boolean isAscending = configName.contains("ascending");
+        boolean isDescending = configName.contains("descending");
+
+        // Calculate all possible pieces
+        PossibilitiesResult result = calculatePossibilities(pieceDefinitions, usedPieces, board,
+                                                           row, col, rows, cols, currentPieceId,
+                                                           currentPiece, isAscending, isDescending);
+        details.setPossiblePieces(result.possibilities);
+
+        // Set statistics
+        CellDetails.Statistics stats = createStatistics(pieceDefinitions.size(), usedPieces.size(),
+                                                        result.validCount, result.invalidCount);
+        details.setStatistics(stats);
+
+        return details;
+    }
+
+    /**
+     * Parse current piece from cell value.
+     */
+    private PieceOption parseCurrentPiece(String cellValue, Map<Integer, PieceDefinition> pieceDefinitions) {
+        if (cellValue == null || cellValue.isEmpty()) {
+            return null;
+        }
+
+        String[] parts = cellValue.split("_");
+        int pieceId = Integer.parseInt(parts[0]);
+        int rotation = Integer.parseInt(parts[1]);
+
+        PieceDefinition pieceDef = pieceDefinitions.get(pieceId);
+        int[] edges = rotateEdges(pieceDef, rotation);
+
+        PieceOption current = new PieceOption(pieceId, rotation, edges, true);
+        current.setCurrent(true);
+        return current;
+    }
+
+    /**
+     * Result object for possibilities calculation.
+     */
+    private static class PossibilitiesResult {
+        List<PieceOption> possibilities;
+        int validCount;
+        int invalidCount;
+
+        PossibilitiesResult(List<PieceOption> possibilities, int validCount, int invalidCount) {
+            this.possibilities = possibilities;
+            this.validCount = validCount;
+            this.invalidCount = invalidCount;
+        }
+    }
+
+    /**
+     * Calculate all possible pieces for a cell.
+     */
+    private PossibilitiesResult calculatePossibilities(Map<Integer, PieceDefinition> pieceDefinitions,
+                                                       Set<Integer> usedPieces, Board board,
+                                                       int row, int col, int rows, int cols,
+                                                       Integer currentPieceId, PieceOption currentPiece,
+                                                       boolean isAscending, boolean isDescending) {
+        List<PieceOption> possibilities = new ArrayList<>();
+        int validCount = 0;
+        int invalidCount = 0;
+
+        for (Map.Entry<Integer, PieceDefinition> entry : pieceDefinitions.entrySet()) {
+            int pieceId = entry.getKey();
+
+            // Skip if piece is already used (unless it's the current piece)
+            if (usedPieces.contains(pieceId)) {
+                if (currentPiece == null || currentPiece.getPieceId() != pieceId) {
+                    continue;
+                }
+            }
+
+            PieceDefinition pieceDef = entry.getValue();
+
+            // Test each rotation
+            for (int rotation = 0; rotation < 4; rotation++) {
+                int[] edges = rotateEdges(pieceDef, rotation);
+                boolean isValid = fits(board, row, col, edges, rows, cols);
+
+                PieceOption option = new PieceOption(pieceId, rotation, edges, isValid);
+
+                // Mark if this is the current piece
+                if (currentPiece != null &&
+                    currentPiece.getPieceId() == pieceId &&
+                    currentPiece.getRotation() == rotation) {
+                    option.setCurrent(true);
+                }
+
+                // Mark if this piece was already tried based on placement strategy
+                if (currentPieceId != null) {
+                    if (isAscending && pieceId < currentPieceId) {
+                        option.setAlreadyTried(true);
+                    } else if (isDescending && pieceId > currentPieceId) {
+                        option.setAlreadyTried(true);
+                    }
+                }
+
+                possibilities.add(option);
+
+                if (isValid) {
+                    validCount++;
+                } else {
+                    invalidCount++;
+                }
+            }
+        }
+
+        // Sort: current first, then valid, then invalid
+        possibilities.sort((a, b) -> {
+            if (a.isCurrent()) return -1;
+            if (b.isCurrent()) return 1;
+            if (a.isValid() && !b.isValid()) return -1;
+            if (!a.isValid() && b.isValid()) return 1;
+            return Integer.compare(a.getPieceId(), b.getPieceId());
+        });
+
+        return new PossibilitiesResult(possibilities, validCount, invalidCount);
+    }
+
+    /**
+     * Create statistics object.
+     */
+    private CellDetails.Statistics createStatistics(int totalPieces, int usedCount,
+                                                    int validCount, int invalidCount) {
+        return new CellDetails.Statistics(totalPieces, usedCount, validCount, invalidCount);
     }
 
     /**

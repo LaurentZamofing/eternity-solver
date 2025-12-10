@@ -1,5 +1,6 @@
 package monitoring.service;
 
+import monitoring.MonitoringConstants;
 import monitoring.model.ConfigMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,7 +139,7 @@ public class SaveFileParser {
                 }
 
                 // Stop after reading enough lines (increased limit to capture placement order)
-                if (lineCount > 500) break;
+                if (lineCount > MonitoringConstants.FileParsing.MAX_LINES_TO_READ) break;
             }
 
             // Parse board state if we have data

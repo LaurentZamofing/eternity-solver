@@ -1,5 +1,6 @@
 package monitoring.controller;
 
+import monitoring.MonitoringConstants;
 import monitoring.model.CellDetails;
 import monitoring.model.ConfigMetrics;
 import monitoring.model.HistoricalMetrics;
@@ -163,7 +164,7 @@ public class DashboardController {
 
         } catch (Exception e) {
             logger.error("Error loading best result for {}", configName, e);
-            return ResponseEntity.status(500).build();
+            return ResponseEntity.status(MonitoringConstants.HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -178,8 +179,8 @@ public class DashboardController {
     @GetMapping("/configs/{configName}/history")
     public ResponseEntity<List<HistoricalMetrics>> getConfigHistory(
             @PathVariable String configName,
-            @RequestParam(required = false, defaultValue = "24") int hours,
-            @RequestParam(required = false, defaultValue = "1000") int limit
+            @RequestParam(required = false, defaultValue = "" + MonitoringConstants.Api.DEFAULT_HISTORY_HOURS) int hours,
+            @RequestParam(required = false, defaultValue = "" + MonitoringConstants.Api.DEFAULT_HISTORY_LIMIT) int limit
     ) {
         logger.debug("GET /api/configs/{}/history - hours={}, limit={}", configName, hours, limit);
 
@@ -226,7 +227,7 @@ public class DashboardController {
      */
     @GetMapping("/stats/recent")
     public ResponseEntity<List<HistoricalMetrics>> getRecentActivity(
-            @RequestParam(required = false, defaultValue = "1") int hours
+            @RequestParam(required = false, defaultValue = "" + MonitoringConstants.Api.DEFAULT_RECENT_HOURS) int hours
     ) {
         logger.debug("GET /api/stats/recent - hours={}", hours);
 
@@ -352,7 +353,7 @@ public class DashboardController {
             response.put("message", "Failed to refresh cache: " + e.getMessage());
             response.put("timestamp", LocalDateTime.now().toString());
 
-            return ResponseEntity.status(500).body(response);
+            return ResponseEntity.status(MonitoringConstants.HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 

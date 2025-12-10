@@ -80,8 +80,9 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 Scanner scanner = new Scanner(System.in);
                 scanner.nextLine();
             }
-        } catch (Exception e) {
+        } catch (java.io.IOException e) {
             // If stdin check fails, skip waiting (test environment)
+            SolverLogger.debug("stdin not available: " + e.getMessage());
         }
     }
 

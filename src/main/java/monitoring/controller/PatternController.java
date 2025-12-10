@@ -1,6 +1,7 @@
 package monitoring.controller;
 
 import monitoring.model.PatternInfo;
+import monitoring.util.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -84,11 +85,11 @@ public class PatternController {
 
         if (!PatternInfo.isValidPatternId(patternId)) {
             logger.warn("Invalid pattern ID requested: {}", patternId);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseHelper.badRequest();
         }
 
         PatternInfo pattern = new PatternInfo(patternId);
-        return ResponseEntity.ok(pattern);
+        return ResponseHelper.ok(pattern);
     }
 
     /**
@@ -108,12 +109,12 @@ public class PatternController {
         // Pattern 0 (border/gray) has no image file
         if (patternId == 0) {
             logger.warn("Pattern 0 (border) has no image file");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseHelper.notFound();
         }
 
         if (!PatternInfo.isValidPatternId(patternId)) {
             logger.warn("Invalid pattern ID requested: {}", patternId);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseHelper.badRequest();
         }
 
         try {
@@ -123,7 +124,7 @@ public class PatternController {
 
             if (!resource.exists()) {
                 logger.error("Pattern image not found: {}", imagePath);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+                return ResponseHelper.notFound();
             }
 
             return ResponseEntity.ok()
@@ -132,7 +133,7 @@ public class PatternController {
 
         } catch (Exception e) {
             logger.error("Error loading pattern {} image", patternId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseHelper.internalError();
         }
     }
 
@@ -147,7 +148,7 @@ public class PatternController {
         try {
             Resource resource = new ClassPathResource("static/patterns/pattern1.png");
             if (resource.exists()) {
-                return ResponseEntity.ok("Pattern service is healthy. " + (TOTAL_PATTERNS + 1) + " patterns available.");
+                return ResponseHelper.ok("Pattern service is healthy. " + (TOTAL_PATTERNS + 1) + " patterns available.");
             } else {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                         .body("Pattern service is unhealthy. Pattern files not found.");

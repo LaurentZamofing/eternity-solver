@@ -39,6 +39,7 @@ saves/**/thread_*.txt
 *.swp
 *.swo
 *~
+*.bak
 
 # Maven target (if used)
 target/

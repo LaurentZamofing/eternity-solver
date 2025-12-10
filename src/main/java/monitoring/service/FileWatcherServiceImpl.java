@@ -49,6 +49,9 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    @Autowired
+    private MetricsCacheManager cacheManager;
+
     @Value("${monitoring.saves-directory:./saves}")
     private String savesDirectory;
 
@@ -59,9 +62,6 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
     private WatchService watchService;
     private ExecutorService executorService;
     private volatile boolean running = false;
-
-    // Cache of latest metrics for each config (in-memory state)
-    private final Map<String, ConfigMetrics> metricsCache = new ConcurrentHashMap<>();
 
     // Watch keys for each directory
     private final Map<WatchKey, Path> watchKeys = new ConcurrentHashMap<>();
@@ -129,12 +129,12 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
                     });
 
             logger.info("Initial scan complete. Scanned {} files, found {} configs in cache",
-                    filesScanned.get(), metricsCache.size());
+                    filesScanned.get(), cacheManager.size());
 
         } catch (IOException | java.io.UncheckedIOException e) {
             logger.warn("Error during initial scan (files may have been deleted during scan): {}",
                     e.getMessage());
-            logger.info("Partial scan complete. Found {} configs in cache", metricsCache.size());
+            logger.info("Partial scan complete. Found {} configs in cache", cacheManager.size());
         }
 
         // Backfill historical data from best_*.txt files
@@ -328,7 +328,7 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
                 metrics.setBestDepthEver(bestDepth);
 
                 // Update cache
-                metricsCache.put(metrics.getConfigName(), metrics);
+                cacheManager.put(metrics.getConfigName(), metrics);
 
                 // Publish to WebSocket
                 publishMetricsUpdate(metrics);
@@ -360,7 +360,7 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
             metrics.setBestDepthEver(bestDepth);
 
             // Update cache
-            metricsCache.put(metrics.getConfigName(), metrics);
+            cacheManager.put(metrics.getConfigName(), metrics);
 
             // Don't publish to WebSocket during initial scan (no clients connected yet)
             // Don't save to DB during initial scan (will be saved on first update)
@@ -399,7 +399,7 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
      * Get current metrics for a specific configuration.
      */
     public ConfigMetrics getMetrics(String configName) {
-        return metricsCache.get(configName);
+        return cacheManager.get(configName);
     }
 
     /**
@@ -441,7 +441,7 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
      * Get all current metrics (latest for each config).
      */
     public Map<String, ConfigMetrics> getAllMetrics() {
-        return new HashMap<>(metricsCache);
+        return cacheManager.getAll();
     }
 
     /**
@@ -454,14 +454,12 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
         logger.info("🔄 Refreshing cache - clearing and rescanning...");
 
         // Clear existing cache
-        int oldSize = metricsCache.size();
-        metricsCache.clear();
-        logger.info("Cleared {} configs from cache", oldSize);
+        int oldSize = cacheManager.clear();
 
         // Perform fresh scan
         performInitialScan();
 
-        int newSize = metricsCache.size();
+        int newSize = cacheManager.size();
         logger.info("✅ Cache refreshed: {} configs found (was {})", newSize, oldSize);
 
         return newSize;
@@ -564,7 +562,7 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
      */
     @Scheduled(fixedRate = 300000) // 5 minutes
     public void healthCheck() {
-        logger.debug("Health check: {} configs in cache", metricsCache.size());
+        logger.debug("Health check: {} configs in cache", cacheManager.size());
     }
 
     /**

@@ -144,36 +144,6 @@ public class BoardVisualizer {
         comparisonFormatter.format(context);
     }
 
-    /**
-     * Returns cell comparison color for visualization.
-     * This method is kept for backward compatibility.
-     *
-     * @param current Current board state
-     * @param reference Reference board state
-     * @param row Row index
-     * @param col Column index
-     * @return ANSI color code based on comparison result
-     * @deprecated This method is now internal to ComparisonBoardFormatter.
-     *             Consider using {@link AnsiColorHelper#getComparisonColor} instead.
-     */
-    @Deprecated
-    public static String getCellComparisonColor(Board current, Board reference, int row, int col) {
-        boolean currentEmpty = current.isEmpty(row, col);
-        boolean refEmpty = reference.isEmpty(row, col);
-
-        if (refEmpty && currentEmpty) {
-            return "";
-        }
-
-        boolean sameContent = false;
-        if (!refEmpty && !currentEmpty) {
-            sameContent = current.getPlacement(row, col).getPieceId() == reference.getPlacement(row, col).getPieceId()
-                    && current.getPlacement(row, col).getRotation() == reference.getPlacement(row, col).getRotation();
-        }
-
-        return AnsiColorHelper.getComparisonColor(currentEmpty, refEmpty, sameContent);
-    }
-
     // ===== Functional Interface =====
 
     /**

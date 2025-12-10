@@ -1,5 +1,10 @@
 package monitoring.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import monitoring.model.PatternInfo;
 import monitoring.util.ResponseHelper;
 import org.slf4j.Logger;
@@ -41,6 +46,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/patterns")
 @CrossOrigin(origins = "*") // Allow CORS for frontend development
+@Tag(name = "Pattern Service", description = "APIs for accessing puzzle piece patterns and images")
 public class PatternController {
 
     private static final Logger logger = LoggerFactory.getLogger(PatternController.class);
@@ -55,6 +61,14 @@ public class PatternController {
      *
      * @return List of PatternInfo objects for patterns 0-22
      */
+    @Operation(
+            summary = "List all patterns",
+            description = "Returns a list of all available puzzle piece patterns (0-22). " +
+                    "Pattern 0 is the border/gray pattern with no image file."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pattern list retrieved successfully")
+    })
     @GetMapping("/list")
     public ResponseEntity<List<PatternInfo>> getAllPatterns() {
         logger.debug("Request to list all patterns");
@@ -79,8 +93,19 @@ public class PatternController {
      * @param patternId Pattern ID (0-22)
      * @return PatternInfo for the requested pattern
      */
+    @Operation(
+            summary = "Get pattern information",
+            description = "Returns metadata about a specific pattern including ID, image URL, and display name"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pattern found"),
+            @ApiResponse(responseCode = "400", description = "Invalid pattern ID")
+    })
     @GetMapping("/{patternId}")
-    public ResponseEntity<PatternInfo> getPattern(@PathVariable int patternId) {
+    public ResponseEntity<PatternInfo> getPattern(
+            @Parameter(description = "Pattern ID (0-22)", example = "1")
+            @PathVariable int patternId
+    ) {
         logger.debug("Request for pattern {}", patternId);
 
         if (!PatternInfo.isValidPatternId(patternId)) {
@@ -102,8 +127,22 @@ public class PatternController {
      * @param patternId Pattern ID (1-22, note: 0 has no image)
      * @return Pattern image as PNG
      */
+    @Operation(
+            summary = "Get pattern image",
+            description = "Returns the PNG image file for a specific pattern. " +
+                    "Pattern 0 (border) has no image. " +
+                    "Note: Images are also available via static URL: /patterns/pattern{N}.png"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Image file retrieved"),
+            @ApiResponse(responseCode = "400", description = "Invalid pattern ID"),
+            @ApiResponse(responseCode = "404", description = "Image file not found")
+    })
     @GetMapping(value = "/{patternId}/image", produces = MediaType.IMAGE_PNG_VALUE)
-    public ResponseEntity<Resource> getPatternImage(@PathVariable int patternId) {
+    public ResponseEntity<Resource> getPatternImage(
+            @Parameter(description = "Pattern ID (1-22, pattern 0 has no image)", example = "1")
+            @PathVariable int patternId
+    ) {
         logger.debug("Request for pattern {} image", patternId);
 
         // Pattern 0 (border/gray) has no image file

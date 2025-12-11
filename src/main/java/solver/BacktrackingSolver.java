@@ -191,11 +191,12 @@ public class BacktrackingSolver {
             lastThreadSaveTime = currentTime;
             try {
                 SaveManager.saveThreadState(board, piecesById, currentDepth, threadId, randomSeed);
-            } catch (Exception e) {
+            } catch (java.io.IOException e) {
                 // Log error but don't crash the solver - saving is optional
-                if (configManager.isVerbose()) {
-                    System.err.println("⚠️  Error saving thread " + threadId + " state: " + e.getMessage());
-                }
+                SolverLogger.warn("Error saving thread " + threadId + " state: " + e.getMessage());
+            } catch (IllegalStateException e) {
+                // Invalid state, skip save
+                SolverLogger.debug("Skipping save for thread " + threadId + ": " + e.getMessage());
             }
         }
 

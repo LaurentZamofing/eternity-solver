@@ -109,7 +109,10 @@
       "Bash(/tmp/replace_sysout.sh \"$file\")",
       "Bash(while read file)",
       "Bash(npm test:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(while read f)",
+      "Bash(if [ ! -f \"$test_file\" ])",
+      "Bash(then echo \"$f\")"
     ],
     "deny": [],
     "ask": []

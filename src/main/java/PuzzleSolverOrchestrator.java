@@ -84,8 +84,8 @@ public class PuzzleSolverOrchestrator {
 
             return solved;
 
-        } catch (Exception e) {
-            SolverLogger.error("  → ✗ Error: " + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            SolverLogger.error("Error during puzzle solving from save: " + e.getMessage(), e);
             return false;
         }
     }
@@ -128,8 +128,8 @@ public class PuzzleSolverOrchestrator {
 
             return solved;
 
-        } catch (Exception e) {
-            SolverLogger.error("  → ✗ Error: " + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            SolverLogger.error("Error during puzzle solving from scratch: " + e.getMessage(), e);
             return false;
         }
     }

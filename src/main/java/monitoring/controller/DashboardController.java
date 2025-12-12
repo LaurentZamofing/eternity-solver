@@ -198,7 +198,7 @@ public class DashboardController {
 
             return ResponseHelper.ok(bestMetrics);
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("Error loading best result for {}", configName, e);
             return ResponseHelper.internalError();
         }
@@ -406,7 +406,7 @@ public class DashboardController {
                     .put("configsFound", configsFound)
                     .build();
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("Failed to refresh cache", e);
 
             return ResponseHelper.builder()

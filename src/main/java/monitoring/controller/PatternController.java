@@ -170,7 +170,7 @@ public class PatternController {
                     .contentType(MediaType.IMAGE_PNG)
                     .body(resource);
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("Error loading pattern {} image", patternId, e);
             return ResponseHelper.internalError();
         }
@@ -192,7 +192,7 @@ public class PatternController {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                         .body("Pattern service is unhealthy. Pattern files not found.");
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Pattern service error: " + e.getMessage());
         }

@@ -120,7 +120,7 @@ public class ParallelSolverOrchestrator {
             printThreadComplete(threadId);
             return false;
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             printThreadError(threadId, e);
             return false;
         }
@@ -281,10 +281,8 @@ public class ParallelSolverOrchestrator {
                         monitor.interrupt();
                         break;
                     }
-                } catch (Exception e) {
-                    synchronized (System.err) {
-                        System.err.println("Error in thread: " + e.getMessage());
-                    }
+                } catch (InterruptedException | java.util.concurrent.ExecutionException e) {
+                    SolverLogger.error("Error in thread: " + e.getMessage(), e);
                 }
             }
 

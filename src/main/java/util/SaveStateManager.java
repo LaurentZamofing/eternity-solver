@@ -175,7 +175,7 @@ public class SaveStateManager {
                     }
                     BinarySaveManager.saveBinary(binaryFile, board, allPieces, pieceUsed, maxPieceId);
                 } catch (IOException e) {
-                    System.err.println("Warning: Failed to save binary format: " + e.getMessage());
+                    SolverLogger.warn("Failed to save binary format: " + e.getMessage());
                 }
             }
 
@@ -203,7 +203,7 @@ public class SaveStateManager {
             }
 
         } catch (IOException e) {
-            System.err.println("  ⚠️  Error during save: " + e.getMessage());
+            SolverLogger.error("Error during save: " + e.getMessage(), e);
         }
     }
 
@@ -245,9 +245,9 @@ public class SaveStateManager {
             }
 
             return count;
-        } catch (Exception e) {
+        } catch (IOException e) {
             // If we can't load the config, return 0
-            System.err.println("Warning: unable to load config for " + puzzleName + ", fixed pieces = 0");
+            SolverLogger.warn("Unable to load config for " + puzzleName + ", fixed pieces = 0: " + e.getMessage());
             return 0;
         }
     }
@@ -428,8 +428,9 @@ public class SaveStateManager {
                     }
                 }
             }
-        } catch (Exception e) {
-            // Old format without TotalComputeTime
+        } catch (IOException | NumberFormatException e) {
+            // Old format without TotalComputeTime or invalid format
+            SolverLogger.debug("Could not read TotalComputeTime from save file: " + e.getMessage());
             return 0L;
         }
         return 0L;

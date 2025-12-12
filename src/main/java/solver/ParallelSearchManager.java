@@ -267,8 +267,9 @@ public class ParallelSearchManager {
                             tasks.add(task);
                             task.fork(); // Submit to work-stealing pool
                         }
-                    } catch (Exception e) {
+                    } catch (RuntimeException e) {
                         // Continue with next placement if copy fails
+                        SolverLogger.debug("Failed to create parallel task: " + e.getMessage());
                     }
                 }
 
@@ -286,8 +287,9 @@ public class ParallelSearchManager {
                             }
                             return true;
                         }
-                    } catch (Exception e) {
+                    } catch (RuntimeException e) {
                         // Continue with next task
+                        SolverLogger.debug("Task join failed: " + e.getMessage());
                     }
                 }
                 return false;
@@ -413,8 +415,8 @@ public class ParallelSearchManager {
                     // Solve with this thread's configuration
                     return sequentialSolver.solve(localBoard, localPieces, pieceUsed, totalPieces);
 
-                } catch (Exception e) {
-                    SolverLogger.error("Error occurred", e);
+                } catch (RuntimeException e) {
+                    SolverLogger.error("Error during parallel search execution: " + e.getMessage(), e);
                     return false;
                 }
             });

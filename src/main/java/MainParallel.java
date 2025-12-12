@@ -94,8 +94,8 @@ public class MainParallel {
 
                 configs.add(new ConfigInfo(file.getAbsolutePath(), config, currentSave, totalComputeTimeMs));
 
-            } catch (Exception e) {
-                System.err.println("⚠️  Erreur lors du chargement de " + file.getName() + ": " + e.getMessage());
+            } catch (IOException | RuntimeException e) {
+                SolverLogger.warn("Error loading configuration " + file.getName() + ": " + e.getMessage());
             }
         }
 
@@ -262,9 +262,8 @@ public class MainParallel {
 
                 return solved;
 
-            } catch (Exception e) {
-                System.err.println("✗ [Thread " + threadId + "] Error: " + e.getMessage());
-                SolverLogger.error("Error occurred", e);
+            } catch (RuntimeException e) {
+                SolverLogger.error("[Thread " + threadId + "] Error during solving: " + e.getMessage(), e);
                 return false;
             }
         }
@@ -335,7 +334,7 @@ public class MainParallel {
                     }
 
                 } catch (Exception e) {
-                    System.err.println("✗ [Thread " + threadId + "] Error during execution: " + e.getMessage());
+                    SolverLogger.error("[Thread " + threadId + "] Error during execution: " + e.getMessage(), e);
                 }
 
             } finally {

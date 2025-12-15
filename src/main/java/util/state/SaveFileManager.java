@@ -61,7 +61,7 @@ public class SaveFileManager {
             for (int i = MAX_BACKUP_SAVES; i < saveFiles.length; i++) {
                 saveFiles[i].delete();
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             SolverLogger.warn("Error cleaning up saves: {}", e.getMessage());
         }
     }
@@ -100,7 +100,7 @@ public class SaveFileManager {
             for (int i = 0; i < toDelete; i++) {
                 bestFiles[i].delete();
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             SolverLogger.warn("Error cleaning up best saves: {}", e.getMessage());
         }
     }

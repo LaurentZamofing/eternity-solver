@@ -67,7 +67,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
                 Scanner scanner = new Scanner(System.in);
                 scanner.nextLine();
             }
-        } catch (Exception e) {
+        } catch (java.io.IOException | RuntimeException e) {
             // If stdin check fails, skip waiting (test environment)
         }
     }

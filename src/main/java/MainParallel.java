@@ -67,12 +67,12 @@ public class MainParallel {
         );
 
         if (configFiles == null || configFiles.length == 0) {
-            System.out.println("✗ No configuration found in " + DATA_DIR);
+            SolverLogger.info("✗ No configuration found in " + DATA_DIR);
             return configs;
         }
 
-        System.out.println("📁 Analyzing " + configFiles.length + " available configurations...");
-        System.out.println();
+        SolverLogger.info("📁 Analyzing " + configFiles.length + " available configurations...");
+        SolverLogger.info("");
 
         for (File file : configFiles) {
             try {
@@ -123,14 +123,14 @@ public class MainParallel {
             }
         }
 
-        System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-        System.out.println("║              CONFIGURATION STATISTICS                     ║");
-        System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
-        System.out.println();
-        System.out.println("  📊 Total configurations : " + configs.size());
-        System.out.println("  🆕 Never started        : " + notStarted);
-        System.out.println("  🔄 In progress          : " + inProgress);
-        System.out.println();
+        SolverLogger.info("╔═══════════════════════════════════════════════════════════════════╗");
+        SolverLogger.info("║              CONFIGURATION STATISTICS                     ║");
+        SolverLogger.info("╚═══════════════════════════════════════════════════════════════════╝");
+        SolverLogger.info("");
+        SolverLogger.info("  📊 Total configurations : " + configs.size());
+        SolverLogger.info("  🆕 Never started        : " + notStarted);
+        SolverLogger.info("  🔄 In progress          : " + inProgress);
+        SolverLogger.info("");
     }
 
     /**
@@ -348,11 +348,11 @@ public class MainParallel {
     }
 
     public static void main(String[] args) {
-        System.out.println("\n");
-        System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-        System.out.println("║          ETERNITY II - PARALLEL SOLVER                       ║");
-        System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
-        System.out.println();
+        SolverLogger.info("\n");
+        SolverLogger.info("╔═══════════════════════════════════════════════════════════════════╗");
+        SolverLogger.info("║          ETERNITY II - PARALLEL SOLVER                       ║");
+        SolverLogger.info("╚═══════════════════════════════════════════════════════════════════╝");
+        SolverLogger.info("");
 
         // Number of threads (default: number of available processors)
         int numThreads = Runtime.getRuntime().availableProcessors();
@@ -364,7 +364,7 @@ public class MainParallel {
             try {
                 numThreads = Integer.parseInt(args[0]);
             } catch (NumberFormatException e) {
-                System.err.println("⚠️  Invalid argument 1, using " + numThreads + " threads");
+                SolverLogger.warn("⚠️  Invalid argument 1, using " + numThreads + " threads");
             }
         }
 
@@ -372,13 +372,13 @@ public class MainParallel {
             try {
                 timePerConfigMinutes = Double.parseDouble(args[1]);
             } catch (NumberFormatException e) {
-                System.err.println("⚠️  Invalid argument 2, using " + timePerConfigMinutes + " minutes per config");
+                SolverLogger.warn("⚠️  Invalid argument 2, using " + timePerConfigMinutes + " minutes per config");
             }
         }
 
-        System.out.println("⚙️  Number of threads: " + numThreads);
-        System.out.println("⏱️  Duration per configuration: " + timePerConfigMinutes + " minute(s)");
-        System.out.println();
+        SolverLogger.info("⚙️  Number of threads: " + numThreads);
+        SolverLogger.info("⏱️  Duration per configuration: " + timePerConfigMinutes + " minute(s)");
+        SolverLogger.info("");
 
         try {
             // Find all configurations

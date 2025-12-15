@@ -2,6 +2,7 @@ package util;
 
 import solver.StatisticsManager;
 import com.google.gson.Gson;
+import util.SolverLogger;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -94,7 +95,7 @@ public class StatsLogger {
             writer = new BufferedWriter(new FileWriter(currentLogPath.toFile(), true));
 
         } catch (IOException e) {
-            System.err.println("Failed to initialize StatsLogger for " + puzzleName + ": " + e.getMessage());
+            SolverLogger.error("Failed to initialize StatsLogger for " + puzzleName + ": " + e.getMessage());
             writer = null;
         }
     }
@@ -169,7 +170,7 @@ public class StatsLogger {
             }
 
         } catch (IOException e) {
-            System.err.println("Failed to write stats log: " + e.getMessage());
+            SolverLogger.error("Failed to write stats log: " + e.getMessage());
         }
     }
 
@@ -182,7 +183,7 @@ public class StatsLogger {
             try {
                 writer.close();
             } catch (IOException e) {
-                System.err.println("Failed to close stats logger: " + e.getMessage());
+                SolverLogger.error("Failed to close stats logger: " + e.getMessage());
             }
             writer = null;
         }

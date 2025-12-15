@@ -4,6 +4,10 @@ import solver.heuristics.LeastConstrainingValueOrderer;
 import solver.output.PlacementOutputStrategy;
 import solver.output.VerbosePlacementOutput;
 import solver.output.QuietPlacementOutput;
+import solver.validation.PlacementValidator;
+import solver.validation.PlacementValidator.ValidationResult;
+import solver.validation.PlacementValidator.RejectionReason;
+import solver.timeout.TimeoutChecker;
 import model.Board;
 import model.Piece;
 
@@ -27,10 +31,9 @@ import java.util.List;
 public class MRVPlacementStrategy implements PlacementStrategy {
 
     private final PlacementOutputStrategy outputStrategy;
+    private final PlacementValidator validator;
+    private final TimeoutChecker timeoutChecker;
     private final LeastConstrainingValueOrderer valueOrderer;
-    private final SymmetryBreakingManager symmetryBreakingManager;
-    private final ConstraintPropagator constraintPropagator;
-    private final DomainManager domainManager;
     private String sortOrder = "ascending"; // Default sort order
 
     /**
@@ -46,10 +49,9 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                                SymmetryBreakingManager symmetryBreakingManager,
                                ConstraintPropagator constraintPropagator, DomainManager domainManager) {
         this.outputStrategy = verbose ? new VerbosePlacementOutput() : new QuietPlacementOutput();
+        this.validator = new PlacementValidator(symmetryBreakingManager, constraintPropagator, domainManager);
+        this.timeoutChecker = new TimeoutChecker();
         this.valueOrderer = valueOrderer;
-        this.symmetryBreakingManager = symmetryBreakingManager;
-        this.constraintPropagator = constraintPropagator;
-        this.domainManager = domainManager;
     }
 
     /**
@@ -119,16 +121,14 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 // Log placement attempt
                 outputStrategy.logPlacementAttempt(pid, rot, r, c, optionIndex, snapshot.size(), candidate);
 
-                // Check basic fit
-                if (!solver.fits(context.board, r, c, candidate)) {
-                    outputStrategy.logEdgeRejection();
-                    continue;
-                }
-
-                // Symmetry breaking check
-                if (symmetryBreakingManager != null &&
-                    !symmetryBreakingManager.isPlacementAllowed(context.board, r, c, pid, rot, context.piecesById)) {
-                    outputStrategy.logSymmetryRejection();
+                // Validate pre-placement constraints (basic fit + symmetry)
+                ValidationResult result = validator.validate(context, solver, r, c, pid, rot, candidate);
+                if (!result.isValid()) {
+                    if (result.getReason() == RejectionReason.EDGE_MISMATCH) {
+                        outputStrategy.logEdgeRejection();
+                    } else if (result.getReason() == RejectionReason.SYMMETRY_BREAKING) {
+                        outputStrategy.logSymmetryRejection();
+                    }
                     continue;
                 }
 
@@ -142,9 +142,8 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 solver.incrementStepCount();
                 solver.recordPlacement(r, c, pid, rot);
 
-                // AC-3 constraint propagation
-                if (!constraintPropagator.propagateAC3(context.board, r, c, pid, rot,
-                                                      context.piecesById, context.pieceUsed, context.totalPieces)) {
+                // AC-3 constraint propagation (after placement)
+                if (!validator.propagateConstraints(context, r, c, pid, rot)) {
                     // Dead end detected by AC-3
                     outputStrategy.logAC3DeadEnd(pid);
                     context.stats.deadEndsDetected++;
@@ -153,8 +152,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                     context.pieceUsed.clear(pid);
                     context.board.remove(r, c);
                     solver.removeLastPlacement();
-                    domainManager.restoreAC3Domains(context.board, r, c, context.piecesById,
-                                                   context.pieceUsed, context.totalPieces);
+                    validator.restoreDomains(context, r, c);
                     continue;
                 }
 
@@ -163,8 +161,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
 
                 // Check timeout only AFTER successful placement (not during backtracking)
                 // This ensures saved state always contains a stable configuration
-                long currentTime = System.currentTimeMillis();
-                if (currentTime - context.startTimeMs > context.maxExecutionTimeMs) {
+                if (timeoutChecker.isTimedOut(context)) {
                     outputStrategy.logTimeout(pid, r, c);
                     // Don't explore deeper, but keep this piece placed for save
                     // This prevents duplicate work on resume because:
@@ -187,8 +184,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 context.pieceUsed.clear(pid);
                 context.board.remove(r, c);
                 solver.removeLastPlacement();
-                domainManager.restoreAC3Domains(context.board, r, c, context.piecesById,
-                                               context.pieceUsed, context.totalPieces);
+                validator.restoreDomains(context, r, c);
 
                 // Update last placed tracking
                 solver.findAndSetLastPlaced(context.board);

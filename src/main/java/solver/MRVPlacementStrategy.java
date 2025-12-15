@@ -107,11 +107,11 @@ public class MRVPlacementStrategy implements PlacementStrategy {
             int availableCount = context.countAvailablePieces();
 
             SolverLogger.info("\n╔════════════════════════════════════════════════════════════════╗");
-            System.out.println("║  Step " + (solver.getStepCount() + 1) + " - Choosing next cell");
-            System.out.println("║  Cell selected: (" + r + ", " + c + ")");
-            System.out.println("║  Reason: MRV (Minimum Remaining Values) heuristic");
-            System.out.println("║  → This cell has only " + uniquePieces + " valid pieces (satisfy constraints)");
-            System.out.println("║  → Total unused pieces: " + availableCount + " (will test all, most rejected)");
+            SolverLogger.info("║  Step " + (solver.getStepCount() + 1) + " - Choosing next cell");
+            SolverLogger.info("║  Cell selected: (" + r + ", " + c + ")");
+            SolverLogger.info("║  Reason: MRV (Minimum Remaining Values) heuristic");
+            SolverLogger.info("║  → This cell has only " + uniquePieces + " valid pieces (satisfy constraints)");
+            SolverLogger.info("║  → Total unused pieces: " + availableCount + " (will test all, most rejected)");
 
             // Show required edges for this cell
             SolverLogger.info("║");
@@ -119,30 +119,30 @@ public class MRVPlacementStrategy implements PlacementStrategy {
             // North constraint
             if (r > 0 && !context.board.isEmpty(r - 1, c)) {
                 int requiredNorth = context.board.getPlacement(r - 1, c).edges[2];
-                System.out.println("║  → North edge must be: " + requiredNorth + " (match with cell above)");
+                SolverLogger.info("║  → North edge must be: " + requiredNorth + " (match with cell above)");
             } else if (r == 0) {
-                System.out.println("║  → North edge must be: 0 (border)");
+                SolverLogger.info("║  → North edge must be: 0 (border)");
             }
             // East constraint
             if (c < context.board.getCols() - 1 && !context.board.isEmpty(r, c + 1)) {
                 int requiredEast = context.board.getPlacement(r, c + 1).edges[3];
-                System.out.println("║  → East edge must be: " + requiredEast + " (match with cell on right)");
+                SolverLogger.info("║  → East edge must be: " + requiredEast + " (match with cell on right)");
             } else if (c == context.board.getCols() - 1) {
-                System.out.println("║  → East edge must be: 0 (border)");
+                SolverLogger.info("║  → East edge must be: 0 (border)");
             }
             // South constraint
             if (r < context.board.getRows() - 1 && !context.board.isEmpty(r + 1, c)) {
                 int requiredSouth = context.board.getPlacement(r + 1, c).edges[0];
-                System.out.println("║  → South edge must be: " + requiredSouth + " (match with cell below)");
+                SolverLogger.info("║  → South edge must be: " + requiredSouth + " (match with cell below)");
             } else if (r == context.board.getRows() - 1) {
-                System.out.println("║  → South edge must be: 0 (border)");
+                SolverLogger.info("║  → South edge must be: 0 (border)");
             }
             // West constraint
             if (c > 0 && !context.board.isEmpty(r, c - 1)) {
                 int requiredWest = context.board.getPlacement(r, c - 1).edges[1];
-                System.out.println("║  → West edge must be: " + requiredWest + " (match with cell on left)");
+                SolverLogger.info("║  → West edge must be: " + requiredWest + " (match with cell on left)");
             } else if (c == 0) {
-                System.out.println("║  → West edge must be: 0 (border)");
+                SolverLogger.info("║  → West edge must be: 0 (border)");
             }
             SolverLogger.info("╚════════════════════════════════════════════════════════════════╝");
 
@@ -192,9 +192,9 @@ public class MRVPlacementStrategy implements PlacementStrategy {
 
                 // Verbose output - show what we're trying
                 if (verbose) {
-                    System.out.println("\n  → Testing piece ID=" + pid + ", rotation=" + (rot * 90) +
+                    SolverLogger.info("\n  → Testing piece ID=" + pid + ", rotation=" + (rot * 90) +
                                      "° in cell (" + r + ", " + c + ") [piece " + (optionIndex + 1) + "/" + snapshot.size() + "]");
-                    System.out.println("    Edges: N=" + candidate[0] + ", E=" + candidate[1] +
+                    SolverLogger.info("    Edges: N=" + candidate[0] + ", E=" + candidate[1] +
                                      ", S=" + candidate[2] + ", W=" + candidate[3]);
                 }
 
@@ -264,10 +264,10 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 long currentTime = System.currentTimeMillis();
                 if (currentTime - context.startTimeMs > context.maxExecutionTimeMs) {
                     if (verbose) {
-                        System.out.println("\n⏱️  Timeout reached after placing piece " + pid + " at (" + r + ", " + c + ")");
+                        SolverLogger.info("\n⏱️  Timeout reached after placing piece " + pid + " at (" + r + ", " + c + ")");
                         SolverLogger.info("    → Stopping before exploring deeper");
                         SolverLogger.info("    → Current state will be saved with this piece placed");
-                        System.out.println("    → Piece order preserved: pieces 1-" + (pid-1) + " already tested");
+                        SolverLogger.info("    → Piece order preserved: pieces 1-" + (pid-1) + " already tested");
                     }
                     // Don't explore deeper, but keep this piece placed for save
                     // This prevents duplicate work on resume because:
@@ -287,7 +287,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 context.stats.backtracks++;
                 if (verbose) {
                     SolverLogger.info("\n╔════════════════════════════════════════════════════════════════╗");
-                    System.out.println("║  BACKTRACKING from cell (" + r + ", " + c + ")");
+                    SolverLogger.info("║  BACKTRACKING from cell (" + r + ", " + c + ")");
                     SolverLogger.info("║  Piece ID=" + pid + " was placed but led to no solution");
                     SolverLogger.info("║  ");
                     SolverLogger.info("║  Possible reasons:");
@@ -296,7 +296,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                     SolverLogger.info("║  → Solution found: Another thread found the solution");
                     SolverLogger.info("║  ");
                     SolverLogger.info("║  Action: Removing piece " + pid + " and trying next available piece");
-                    System.out.println("║  Total backtracks so far: " + (context.stats.backtracks + 1));
+                    SolverLogger.info("║  Total backtracks so far: " + (context.stats.backtracks + 1));
                     SolverLogger.info("╚════════════════════════════════════════════════════════════════╝");
                     waitForEnter();
                 }
@@ -318,8 +318,8 @@ public class MRVPlacementStrategy implements PlacementStrategy {
         if (verbose) {
             SolverLogger.info("\n╔════════════════════════════════════════════════════════════════╗");
             SolverLogger.info("║  EXHAUSTED ALL OPTIONS");
-            System.out.println("║  Cell (" + r + ", " + c + ") cannot be filled with any available piece");
-            System.out.println("║  → All " + snapshot.size() + " available pieces have been tried");
+            SolverLogger.info("║  Cell (" + r + ", " + c + ") cannot be filled with any available piece");
+            SolverLogger.info("║  → All " + snapshot.size() + " available pieces have been tried");
             SolverLogger.info("║  → Backtracking to previous cell");
             SolverLogger.info("╚════════════════════════════════════════════════════════════════╝");
         }

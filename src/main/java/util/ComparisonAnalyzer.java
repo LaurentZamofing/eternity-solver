@@ -50,12 +50,12 @@ public final class ComparisonAnalyzer {
         EternitySolver.Statistics stats1 = solver1.getStatistics();
 
         if (!solved1) {
-            System.out.println("⚠ No solution found (with singletons)");
+            SolverLogger.info("⚠ No solution found (with singletons)");
         }
 
         // ===== WITHOUT SINGLETONS =====
         SolverLogger.info("\n\n█████████████████████████████████████████████████████████");
-        System.out.println("█  TEST 2 : WITHOUT SINGLETON optimization (MRV only)      █");
+        SolverLogger.info("█  TEST 2 : WITHOUT SINGLETON optimization (MRV only)      █");
         SolverLogger.info("█████████████████████████████████████████████████████████\n");
 
         Board board2 = new Board(rows, cols);
@@ -66,7 +66,7 @@ public final class ComparisonAnalyzer {
         EternitySolver.Statistics stats2 = solver2.getStatistics();
 
         if (!solved2) {
-            System.out.println("⚠ No solution found (without singletons)");
+            SolverLogger.info("⚠ No solution found (without singletons)");
         }
 
         // ===== COMPARISON =====
@@ -91,10 +91,10 @@ public final class ComparisonAnalyzer {
 
         SolverLogger.info("└──────────────────────────┴─────────────────┴─────────────────┴─────────────┘\n");
 
-        System.out.println("Singletons detected (test 1) : " + stats1.singletonsFound);
-        System.out.println("Singletons placed (test 1)    : " + stats1.singletonsPlaced);
-        System.out.println("\nDead-ends (test 1) : " + stats1.deadEndsDetected);
-        System.out.println("Dead-ends (test 2) : " + stats2.deadEndsDetected);
+        SolverLogger.info("Singletons detected (test 1) : " + stats1.singletonsFound);
+        SolverLogger.info("Singletons placed (test 1)    : " + stats1.singletonsPlaced);
+        SolverLogger.info("\nDead-ends (test 1) : " + stats1.deadEndsDetected);
+        SolverLogger.info("Dead-ends (test 2) : " + stats2.deadEndsDetected);
     }
 
     /**
@@ -115,8 +115,8 @@ public final class ComparisonAnalyzer {
             gainStr = "=";
         }
 
-        System.out.printf("│ %-24s │ %15.2f │ %15.2f │ %11s │%n",
-            label, val1, val2, gainStr);
+        SolverLogger.info(String.format("│ %-24s │ %15.2f │ %15.2f │ %11s │",
+            label, val1, val2, gainStr));
     }
 
     /**

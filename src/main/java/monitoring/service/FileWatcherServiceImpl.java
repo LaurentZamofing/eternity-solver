@@ -126,7 +126,7 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
                         try {
                             processFileChangeQuick(path);
                             filesScanned.incrementAndGet();
-                        } catch (Exception e) {
+                        } catch (RuntimeException e) {
                             // File might have been deleted during scan (race condition with solver)
                             logger.debug("Skipping file during scan (might have been deleted): {}", path);
                         }
@@ -195,7 +195,7 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
 
                                 filesProcessed.incrementAndGet();
                             }
-                        } catch (Exception e) {
+                        } catch (RuntimeException e) {
                             logger.debug("Skipping file during backfill (might be invalid or deleted): {}", path);
                         }
                     });

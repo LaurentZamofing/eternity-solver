@@ -190,14 +190,14 @@ public class PuzzleConfig {
      */
     public void printInfo() {
         SolverLogger.info("╔═══════════════════════════════════════════════════════════════════╗");
-        System.out.println("║ " + String.format("%-65s", name) + " ║");
+        SolverLogger.info("║ " + String.format("%-65s", name) + " ║");
         SolverLogger.info("╠═══════════════════════════════════════════════════════════════════╣");
-        System.out.println("║ Type: " + String.format("%-59s", type) + " ║");
-        System.out.println("║ Dimensions: " + String.format("%-54s", rows + "×" + cols) + " ║");
-        System.out.println("║ Pieces: " + String.format("%-58s", pieces.size()) + " ║");
-        System.out.println("║ Difficulty: " + String.format("%-54s", difficulty) + " ║");
+        SolverLogger.info("║ Type: " + String.format("%-59s", type) + " ║");
+        SolverLogger.info("║ Dimensions: " + String.format("%-54s", rows + "×" + cols) + " ║");
+        SolverLogger.info("║ Pieces: " + String.format("%-58s", pieces.size()) + " ║");
+        SolverLogger.info("║ Difficulty: " + String.format("%-54s", difficulty) + " ║");
         if (fixedPiece != null) {
-            System.out.println("║ Fixed piece: " + String.format("%-53s", fixedPiece) + " ║");
+            SolverLogger.info("║ Fixed piece: " + String.format("%-53s", fixedPiece) + " ║");
         }
         SolverLogger.info("╚═══════════════════════════════════════════════════════════════════╝");
     }
@@ -207,10 +207,10 @@ public class PuzzleConfig {
      */
     public void printSummary(long duration, boolean solved) {
         SolverLogger.info("\n┌───────────────────────────────────────────────────────────────────┐");
-        System.out.println("│ SUMMARY: " + String.format("%-57s", name) + " │");
+        SolverLogger.info("│ SUMMARY: " + String.format("%-57s", name) + " │");
         SolverLogger.info("├───────────────────────────────────────────────────────────────────┤");
-        System.out.println("│ Result: " + String.format("%-58s", solved ? "✓ SOLVED" : "✗ NOT SOLVED") + " │");
-        System.out.println("│ Time: " + String.format("%-61s", formatDuration(duration)) + " │");
+        SolverLogger.info("│ Result: " + String.format("%-58s", solved ? "✓ SOLVED" : "✗ NOT SOLVED") + " │");
+        SolverLogger.info("│ Time: " + String.format("%-61s", formatDuration(duration)) + " │");
         SolverLogger.info("└───────────────────────────────────────────────────────────────────┘");
     }
 

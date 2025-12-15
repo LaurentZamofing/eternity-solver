@@ -208,15 +208,15 @@ public class Board {
         SolverLogger.info("╔════════════════════════════════════════════════════════╗");
         SolverLogger.info("║                    BOARD SCORE                         ║");
         SolverLogger.info("╚════════════════════════════════════════════════════════╝");
-        System.out.printf("Correct internal edges: %d / %d (%.1f%%)%n", current, max, percentage);
+        SolverLogger.info(String.format("Correct internal edges: %d / %d (%.1f%%)", current, max, percentage));
 
         // Score breakdown
         int internalH = (rows - 1) * cols;
         int internalV = rows * (cols - 1);
 
-        System.out.printf("  - Horizontal edges: %d max%n", internalH);
-        System.out.printf("  - Vertical edges: %d max%n", internalV);
-        System.out.println("  (Borders don't count in the score)");
+        SolverLogger.info(String.format("  - Horizontal edges: %d max", internalH));
+        SolverLogger.info(String.format("  - Vertical edges: %d max", internalV));
+        SolverLogger.info("  (Borders don't count in the score)");
         SolverLogger.info("");
     }
 

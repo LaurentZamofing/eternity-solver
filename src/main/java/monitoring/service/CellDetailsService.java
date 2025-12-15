@@ -57,7 +57,7 @@ public class CellDetailsService {
 
             return getCellDetailsFromMetrics(metrics, row, col);
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("Error calculating cell details for {}[{},{}]", configName, row, col, e);
             return null;
         }
@@ -98,7 +98,7 @@ public class CellDetailsService {
             return calculateCellDetailsCore(metrics.getBoardState(), board, pieceDefinitions,
                                            usedPieces, configName, row, col, rows, cols);
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("Error calculating cell details from metrics for [{},{}]", row, col, e);
             return null;
         }

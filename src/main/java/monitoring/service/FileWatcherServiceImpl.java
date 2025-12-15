@@ -17,10 +17,7 @@ import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -62,13 +59,10 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
     @Value("${monitoring.auto-save-history:true}")
     private boolean autoSaveHistory;
 
-    // Watch service and thread management
-    private WatchService watchService;
-    private ExecutorService executorService;
-    private volatile boolean running = false;
-
-    // Watch keys for each directory
-    private final Map<WatchKey, Path> watchKeys = new ConcurrentHashMap<>();
+    // Extracted components (Observer Pattern + SRP)
+    private FileSystemWatcher fileSystemWatcher;
+    private HistoricalDataBackfiller historicalDataBackfiller;
+    private StatsFileProcessor statsFileProcessor;
 
     /**
      * Initialize and start the file watcher after Spring context is ready.
@@ -79,21 +73,25 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
         logger.info("Watching directory: {}", savesDirectory);
 
         try {
-            // Create watch service
-            watchService = FileSystems.getDefault().newWatchService();
+            // Create extracted components
+            fileSystemWatcher = new FileSystemWatcher(savesDirectory);
+            historicalDataBackfiller = new HistoricalDataBackfiller(savesDirectory, parser, repository);
+            statsFileProcessor = new StatsFileProcessor(repository);
 
-            // Start executor for background processing
-            executorService = Executors.newSingleThreadExecutor(r -> {
-                Thread t = new Thread(r, "FileWatcher-Thread");
-                t.setDaemon(true);
-                return t;
-            });
+            // Set up observers for file changes (Observer Pattern)
+            fileSystemWatcher.setSaveFileObserver(this::handleSaveFileChange);
+            fileSystemWatcher.setStatsFileObserver(this::handleStatsFileChange);
 
             // Initial scan of all existing files
             performInitialScan();
 
+            // Backfill historical data from best_*.txt files
+            if (autoSaveHistory) {
+                historicalDataBackfiller.backfill();
+            }
+
             // Start watching for changes
-            startWatching();
+            fileSystemWatcher.start();
 
             logger.info("✅ FileWatcherService started successfully");
 
@@ -140,185 +138,15 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
                     e.getMessage());
             logger.info("Partial scan complete. Found {} configs in cache", cacheManager.size());
         }
-
-        // Backfill historical data from best_*.txt files
-        if (autoSaveHistory) {
-            backfillHistoricalData();
-        }
     }
 
     /**
-     * Backfill historical data from existing best_*.txt files.
-     * This allows viewing historical progression even if the backend was offline.
+     * Observer callback for save file changes (Observer Pattern).
+     * Called by FileSystemWatcher when a save file is created or modified.
+     *
+     * @param path Path to the changed save file
      */
-    private void backfillHistoricalData() {
-        logger.info("🔄 Backfilling historical data from best_*.txt files...");
-
-        File savesDir = new File(savesDirectory);
-        if (!savesDir.exists() || !savesDir.isDirectory()) {
-            logger.warn("Saves directory does not exist: {}", savesDirectory);
-            return;
-        }
-
-        AtomicInteger filesProcessed = new AtomicInteger(0);
-        AtomicInteger metricsInserted = new AtomicInteger(0);
-
-        try {
-            // Walk the directory tree and find all best_*.txt files
-            Files.walk(Paths.get(savesDirectory))
-                    .filter(Files::isRegularFile)
-                    .filter(path -> {
-                        String fileName = path.getFileName().toString();
-                        return fileName.startsWith("best_") && fileName.endsWith(".txt");
-                    })
-                    .forEach(path -> {
-                        try {
-                            // Parse the best file
-                            ConfigMetrics metrics = parser.parseSaveFile(path);
-
-                            if (metrics != null) {
-                                // Check if this milestone already exists in database
-                                // We check by configName + depth since each best_N.txt represents
-                                // a unique milestone (a config reaches depth N only once)
-                                boolean exists = repository.existsByConfigNameAndDepth(
-                                    metrics.getConfigName(),
-                                    metrics.getDepth()
-                                );
-
-                                if (!exists) {
-                                    // Save to database with original timestamp
-                                    HistoricalMetrics historical = HistoricalMetrics.fromConfigMetrics(metrics);
-                                    historical.setStatus("milestone"); // Mark as milestone from backfill
-                                    repository.save(historical);
-                                    metricsInserted.incrementAndGet();
-                                }
-
-                                filesProcessed.incrementAndGet();
-                            }
-                        } catch (RuntimeException e) {
-                            logger.debug("Skipping file during backfill (might be invalid or deleted): {}", path);
-                        }
-                    });
-
-            logger.info("✅ Backfill complete. Processed {} best files, inserted {} new historical metrics",
-                    filesProcessed.get(), metricsInserted.get());
-
-        } catch (IOException | java.io.UncheckedIOException e) {
-            logger.warn("Error during backfill (files may have been deleted during scan): {}",
-                    e.getMessage());
-            logger.info("Partial backfill complete. Processed {} files, inserted {} metrics",
-                    filesProcessed.get(), metricsInserted.get());
-        }
-    }
-
-    /**
-     * Register a directory and all subdirectories for watching.
-     */
-    private void registerDirectory(Path dir) throws IOException {
-        if (Files.isDirectory(dir)) {
-            WatchKey key = dir.register(
-                    watchService,
-                    StandardWatchEventKinds.ENTRY_CREATE,
-                    StandardWatchEventKinds.ENTRY_MODIFY
-            );
-            watchKeys.put(key, dir);
-            logger.debug("Registered watch for: {}", dir);
-
-            // Register subdirectories recursively
-            Files.list(dir)
-                    .filter(Files::isDirectory)
-                    .forEach(subDir -> {
-                        try {
-                            registerDirectory(subDir);
-                        } catch (IOException e) {
-                            logger.error("Failed to register subdirectory: {}", subDir, e);
-                        }
-                    });
-        }
-    }
-
-    /**
-     * Start the file watching loop.
-     */
-    private void startWatching() throws IOException {
-        // Register root saves directory and all subdirectories
-        Path savesPath = Paths.get(savesDirectory);
-        if (Files.exists(savesPath)) {
-            registerDirectory(savesPath);
-        }
-
-        running = true;
-
-        // Submit watch task to executor
-        executorService.submit(() -> {
-            logger.info("File watcher thread started");
-
-            while (running) {
-                try {
-                    // Wait for events (blocks until events arrive or 1 second timeout)
-                    WatchKey key = watchService.poll(1, TimeUnit.SECONDS);
-
-                    if (key == null) {
-                        continue;
-                    }
-
-                    Path dir = watchKeys.get(key);
-
-                    for (WatchEvent<?> event : key.pollEvents()) {
-                        WatchEvent.Kind<?> kind = event.kind();
-
-                        if (kind == StandardWatchEventKinds.OVERFLOW) {
-                            continue;
-                        }
-
-                        @SuppressWarnings("unchecked")
-                        WatchEvent<Path> ev = (WatchEvent<Path>) event;
-                        Path filename = ev.context();
-                        Path fullPath = dir.resolve(filename);
-
-                        // Process file change
-                        if (kind == StandardWatchEventKinds.ENTRY_CREATE ||
-                                kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-
-                            if (parser.isSaveFile(fullPath)) {
-                                logger.debug("File changed: {} ({})", fullPath, kind.name());
-                                processFileChange(fullPath);
-                            } else if (isStatsFile(fullPath)) {
-                                logger.debug("Stats file changed: {} ({})", fullPath, kind.name());
-                                processStatsFileChange(fullPath);
-                            }
-
-                            // If a new directory was created, register it
-                            if (kind == StandardWatchEventKinds.ENTRY_CREATE &&
-                                    Files.isDirectory(fullPath)) {
-                                registerDirectory(fullPath);
-                            }
-                        }
-                    }
-
-                    // Reset the key to receive further events
-                    boolean valid = key.reset();
-                    if (!valid) {
-                        watchKeys.remove(key);
-                    }
-
-                } catch (InterruptedException e) {
-                    logger.info("File watcher interrupted");
-                    break;
-                } catch (Exception e) {
-                    logger.error("Error in file watcher loop", e);
-                }
-            }
-
-            logger.info("File watcher thread stopped");
-        });
-    }
-
-    /**
-     * Process a file change event.
-     * Parses the file, updates cache, publishes to WebSocket, and saves to DB.
-     */
-    private void processFileChange(Path path) {
+    private void handleSaveFileChange(Path path) {
         try {
             // Small delay to ensure file is fully written
             Thread.sleep(MonitoringConstants.FileParsing.FILE_WRITE_DELAY_MS);
@@ -435,95 +263,13 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
     }
 
     /**
-     * Checks if a file is a stats history file (stats_history.jsonl).
+     * Observer callback for stats file changes (Observer Pattern).
+     * Called by FileSystemWatcher when a stats file is created or modified.
+     *
+     * @param path Path to the changed stats file
      */
-    private boolean isStatsFile(Path path) {
-        String fileName = path.getFileName().toString();
-        return fileName.equals("stats_history.jsonl") || fileName.matches("stats_history_\\d+\\.jsonl");
-    }
-
-    /**
-     * Process stats file change by parsing new lines and inserting into database.
-     */
-    private void processStatsFileChange(Path path) {
-        try {
-            // Extract config name from path: saves/eternity2/{configName}/stats_history.jsonl
-            String configName = path.getParent().getFileName().toString();
-
-            // Read and parse the file (only new lines since last read)
-            parseAndStoreStatsFile(path, configName);
-
-        } catch (Exception e) {
-            logger.error("Error processing stats file: {}", path, e);
-        }
-    }
-
-    /**
-     * Parse stats file and insert new entries into database.
-     * Uses file position tracking to only read new lines.
-     */
-    private void parseAndStoreStatsFile(Path path, String configName) {
-        try {
-            // For simplicity, read all lines and check if they exist in DB
-            // In production, would track last read position
-            List<String> lines = Files.readAllLines(path);
-
-            int inserted = 0;
-            for (String line : lines) {
-                if (line.trim().isEmpty()) continue;
-
-                try {
-                    // Parse JSON line
-                    com.google.gson.Gson gson = new com.google.gson.Gson();
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> data = gson.fromJson(line, Map.class);
-
-                    // Extract fields
-                    long timestamp = ((Number) data.get("ts")).longValue();
-                    int depth = ((Number) data.get("depth")).intValue();
-                    double progress = ((Number) data.get("progress")).doubleValue();
-                    long computeMs = ((Number) data.get("computeMs")).longValue();
-
-                    // Convert timestamp to LocalDateTime
-                    java.time.Instant instant = java.time.Instant.ofEpochMilli(timestamp);
-                    java.time.LocalDateTime dateTime = java.time.LocalDateTime.ofInstant(
-                        instant, java.time.ZoneId.systemDefault());
-
-                    // Check if already exists (avoid duplicates)
-                    boolean exists = repository.existsByConfigNameAndDepthAndTimestamp(
-                        configName, depth, dateTime);
-
-                    if (!exists) {
-                        // Create and save historical metrics
-                        HistoricalMetrics metrics = new HistoricalMetrics();
-                        metrics.setConfigName(configName);
-                        metrics.setTimestamp(dateTime);
-                        metrics.setDepth(depth);
-                        metrics.setProgressPercentage(progress);
-                        metrics.setTotalComputeTimeMs(computeMs);
-                        metrics.setStatus("stats_log");
-
-                        // Add performance metric
-                        if (data.containsKey("piecesPerSec")) {
-                            metrics.setPiecesPerSecond(((Number) data.get("piecesPerSec")).doubleValue());
-                        }
-
-                        repository.save(metrics);
-                        inserted++;
-                    }
-
-                } catch (Exception e) {
-                    logger.trace("Skipping invalid stats line: {}", line);
-                }
-            }
-
-            if (inserted > 0) {
-                logger.debug("Inserted {} stats entries from {} for {}", inserted, path.getFileName(), configName);
-            }
-
-        } catch (IOException e) {
-            logger.error("Failed to read stats file: {}", path, e);
-        }
+    private void handleStatsFileChange(Path path) {
+        statsFileProcessor.processStatsFile(path);
     }
 
     /**
@@ -540,27 +286,9 @@ public class FileWatcherServiceImpl implements IFileWatcherService {
     @PreDestroy
     public void shutdown() {
         logger.info("Shutting down FileWatcherService...");
-        running = false;
 
-        if (executorService != null) {
-            executorService.shutdown();
-            try {
-                if (!executorService.awaitTermination(
-                        MonitoringConstants.Time.SHUTDOWN_TIMEOUT_SECONDS,
-                        TimeUnit.SECONDS)) {
-                    executorService.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executorService.shutdownNow();
-            }
-        }
-
-        if (watchService != null) {
-            try {
-                watchService.close();
-            } catch (IOException e) {
-                logger.error("Error closing watch service", e);
-            }
+        if (fileSystemWatcher != null) {
+            fileSystemWatcher.stop(MonitoringConstants.Time.SHUTDOWN_TIMEOUT_SECONDS);
         }
 
         logger.info("✅ FileWatcherService shut down");

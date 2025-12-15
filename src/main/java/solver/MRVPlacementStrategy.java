@@ -1,8 +1,9 @@
 package solver;
 
-import util.SolverLogger;
-
 import solver.heuristics.LeastConstrainingValueOrderer;
+import solver.output.PlacementOutputStrategy;
+import solver.output.VerbosePlacementOutput;
+import solver.output.QuietPlacementOutput;
 import model.Board;
 import model.Piece;
 
@@ -10,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * Placement strategy using Minimum Remaining Values (MRV) heuristic.
@@ -26,7 +26,7 @@ import java.util.Scanner;
  */
 public class MRVPlacementStrategy implements PlacementStrategy {
 
-    private final boolean verbose;
+    private final PlacementOutputStrategy outputStrategy;
     private final LeastConstrainingValueOrderer valueOrderer;
     private final SymmetryBreakingManager symmetryBreakingManager;
     private final ConstraintPropagator constraintPropagator;
@@ -45,7 +45,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
     public MRVPlacementStrategy(boolean verbose, LeastConstrainingValueOrderer valueOrderer,
                                SymmetryBreakingManager symmetryBreakingManager,
                                ConstraintPropagator constraintPropagator, DomainManager domainManager) {
-        this.verbose = verbose;
+        this.outputStrategy = verbose ? new VerbosePlacementOutput() : new QuietPlacementOutput();
         this.valueOrderer = valueOrderer;
         this.symmetryBreakingManager = symmetryBreakingManager;
         this.constraintPropagator = constraintPropagator;
@@ -58,32 +58,6 @@ public class MRVPlacementStrategy implements PlacementStrategy {
      */
     public void setSortOrder(String sortOrder) {
         this.sortOrder = sortOrder != null ? sortOrder : "ascending";
-    }
-
-    /**
-     * Waits for user to press Enter in verbose mode.
-     * Skips waiting in test environments to prevent test hangs.
-     */
-    private void waitForEnter() {
-        // Skip waiting if:
-        // 1. System console is null (tests, background execution, redirected stdin)
-        // 2. stdin is not ready (tests with System.in redirection)
-        if (System.console() == null) {
-            return; // Non-interactive mode
-        }
-
-        try {
-            // Check if stdin is actually available
-            if (System.in.available() == 0) {
-                // Only wait if there's a real terminal
-                SolverLogger.info("\n[Press Enter to continue...]");
-                Scanner scanner = new Scanner(System.in);
-                scanner.nextLine();
-            }
-        } catch (java.io.IOException e) {
-            // If stdin check fails, skip waiting (test environment)
-            SolverLogger.debug("stdin not available: " + e.getMessage());
-        }
     }
 
     @Override
@@ -100,59 +74,11 @@ public class MRVPlacementStrategy implements PlacementStrategy {
         int r = cell[0];
         int c = cell[1];
 
-        // Verbose output
-        if (verbose) {
-            int uniquePieces = solver.countUniquePieces(context.board, r, c, context.piecesById,
-                                                       context.pieceUsed, context.totalPieces);
-            int availableCount = context.countAvailablePieces();
-
-            SolverLogger.info("\n╔════════════════════════════════════════════════════════════════╗");
-            SolverLogger.info("║  Step " + (solver.getStepCount() + 1) + " - Choosing next cell");
-            SolverLogger.info("║  Cell selected: (" + r + ", " + c + ")");
-            SolverLogger.info("║  Reason: MRV (Minimum Remaining Values) heuristic");
-            SolverLogger.info("║  → This cell has only " + uniquePieces + " valid pieces (satisfy constraints)");
-            SolverLogger.info("║  → Total unused pieces: " + availableCount + " (will test all, most rejected)");
-
-            // Show required edges for this cell
-            SolverLogger.info("║");
-            SolverLogger.info("║  Constraints for this cell:");
-            // North constraint
-            if (r > 0 && !context.board.isEmpty(r - 1, c)) {
-                int requiredNorth = context.board.getPlacement(r - 1, c).edges[2];
-                SolverLogger.info("║  → North edge must be: " + requiredNorth + " (match with cell above)");
-            } else if (r == 0) {
-                SolverLogger.info("║  → North edge must be: 0 (border)");
-            }
-            // East constraint
-            if (c < context.board.getCols() - 1 && !context.board.isEmpty(r, c + 1)) {
-                int requiredEast = context.board.getPlacement(r, c + 1).edges[3];
-                SolverLogger.info("║  → East edge must be: " + requiredEast + " (match with cell on right)");
-            } else if (c == context.board.getCols() - 1) {
-                SolverLogger.info("║  → East edge must be: 0 (border)");
-            }
-            // South constraint
-            if (r < context.board.getRows() - 1 && !context.board.isEmpty(r + 1, c)) {
-                int requiredSouth = context.board.getPlacement(r + 1, c).edges[0];
-                SolverLogger.info("║  → South edge must be: " + requiredSouth + " (match with cell below)");
-            } else if (r == context.board.getRows() - 1) {
-                SolverLogger.info("║  → South edge must be: 0 (border)");
-            }
-            // West constraint
-            if (c > 0 && !context.board.isEmpty(r, c - 1)) {
-                int requiredWest = context.board.getPlacement(r, c - 1).edges[1];
-                SolverLogger.info("║  → West edge must be: " + requiredWest + " (match with cell on left)");
-            } else if (c == 0) {
-                SolverLogger.info("║  → West edge must be: 0 (border)");
-            }
-            SolverLogger.info("╚════════════════════════════════════════════════════════════════╝");
-
-            context.stats.printCompact();
-            solver.printBoardWithCounts(context.board, context.piecesById, context.pieceUsed,
-                                       context.totalPieces, solver.getLastPlacedRow(), solver.getLastPlacedCol());
-
-            // Wait for user input before continuing
-            waitForEnter();
-        }
+        // Log cell selection with constraints
+        int uniquePieces = solver.countUniquePieces(context.board, r, c, context.piecesById,
+                                                   context.pieceUsed, context.totalPieces);
+        int availableCount = context.countAvailablePieces();
+        outputStrategy.logCellSelection(context, solver, r, c, uniquePieces, availableCount);
 
         // Build list of available pieces
         List<Integer> snapshot = new ArrayList<>();
@@ -190,37 +116,24 @@ public class MRVPlacementStrategy implements PlacementStrategy {
             for (int rot = 0; rot < 4; rot++) {
                 int[] candidate = piece.edgesRotated(rot);
 
-                // Verbose output - show what we're trying
-                if (verbose) {
-                    SolverLogger.info("\n  → Testing piece ID=" + pid + ", rotation=" + (rot * 90) +
-                                     "° in cell (" + r + ", " + c + ") [piece " + (optionIndex + 1) + "/" + snapshot.size() + "]");
-                    SolverLogger.info("    Edges: N=" + candidate[0] + ", E=" + candidate[1] +
-                                     ", S=" + candidate[2] + ", W=" + candidate[3]);
-                }
+                // Log placement attempt
+                outputStrategy.logPlacementAttempt(pid, rot, r, c, optionIndex, snapshot.size(), candidate);
 
                 // Check basic fit
                 if (!solver.fits(context.board, r, c, candidate)) {
-                    if (verbose) {
-                        SolverLogger.info("    ✗ Rejected: edges don't match constraints");
-                    }
+                    outputStrategy.logEdgeRejection();
                     continue;
                 }
 
                 // Symmetry breaking check
                 if (symmetryBreakingManager != null &&
                     !symmetryBreakingManager.isPlacementAllowed(context.board, r, c, pid, rot, context.piecesById)) {
-                    if (verbose) {
-                        SolverLogger.info("    ✗ Rejected: symmetry breaking constraint");
-                    }
+                    outputStrategy.logSymmetryRejection();
                     continue;
                 }
 
                 context.stats.placements++;
-
-                // Verbose output
-                if (verbose) {
-                    SolverLogger.info("    ✓ Constraints satisfied! Placing piece...");
-                }
+                outputStrategy.logConstraintsSatisfied();
 
                 // Place piece
                 context.board.place(r, c, piece, rot);
@@ -233,12 +146,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 if (!constraintPropagator.propagateAC3(context.board, r, c, pid, rot,
                                                       context.piecesById, context.pieceUsed, context.totalPieces)) {
                     // Dead end detected by AC-3
-                    if (verbose) {
-                        SolverLogger.info("\n    ✗ DEAD END detected by AC-3!");
-                        SolverLogger.info("    Reason: Placing this piece would make another cell unsolvable");
-                        SolverLogger.info("    → Some neighboring cell would have no valid pieces left");
-                        SolverLogger.info("    → Removing piece ID=" + pid + " and trying next option");
-                    }
+                    outputStrategy.logAC3DeadEnd(pid);
                     context.stats.deadEndsDetected++;
 
                     // Backtrack
@@ -250,25 +158,14 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                     continue;
                 }
 
-                // Verbose output
-                if (verbose) {
-                    SolverLogger.info("\n    ✓ Piece successfully placed!");
-                    SolverLogger.info("    → Continuing to next cell...");
-                    solver.printBoardWithCounts(context.board, context.piecesById, context.pieceUsed,
-                                              context.totalPieces, r, c);
-                    waitForEnter();
-                }
+                // Log successful placement
+                outputStrategy.logSuccessfulPlacement(context, solver, r, c);
 
                 // Check timeout only AFTER successful placement (not during backtracking)
                 // This ensures saved state always contains a stable configuration
                 long currentTime = System.currentTimeMillis();
                 if (currentTime - context.startTimeMs > context.maxExecutionTimeMs) {
-                    if (verbose) {
-                        SolverLogger.info("\n⏱️  Timeout reached after placing piece " + pid + " at (" + r + ", " + c + ")");
-                        SolverLogger.info("    → Stopping before exploring deeper");
-                        SolverLogger.info("    → Current state will be saved with this piece placed");
-                        SolverLogger.info("    → Piece order preserved: pieces 1-" + (pid-1) + " already tested");
-                    }
+                    outputStrategy.logTimeout(pid, r, c);
                     // Don't explore deeper, but keep this piece placed for save
                     // This prevents duplicate work on resume because:
                     // - Saved state has piece N placed → pieces 1..N-1 implicitly tested
@@ -285,21 +182,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
 
                 // Backtrack
                 context.stats.backtracks++;
-                if (verbose) {
-                    SolverLogger.info("\n╔════════════════════════════════════════════════════════════════╗");
-                    SolverLogger.info("║  BACKTRACKING from cell (" + r + ", " + c + ")");
-                    SolverLogger.info("║  Piece ID=" + pid + " was placed but led to no solution");
-                    SolverLogger.info("║  ");
-                    SolverLogger.info("║  Possible reasons:");
-                    SolverLogger.info("║  → Dead end: All subsequent cells had no valid pieces");
-                    SolverLogger.info("║  → Timeout: Time limit reached during exploration");
-                    SolverLogger.info("║  → Solution found: Another thread found the solution");
-                    SolverLogger.info("║  ");
-                    SolverLogger.info("║  Action: Removing piece " + pid + " and trying next available piece");
-                    SolverLogger.info("║  Total backtracks so far: " + (context.stats.backtracks + 1));
-                    SolverLogger.info("╚════════════════════════════════════════════════════════════════╝");
-                    waitForEnter();
-                }
+                outputStrategy.logBacktrack(pid, r, c, (int) context.stats.backtracks);
 
                 context.pieceUsed.clear(pid);
                 context.board.remove(r, c);
@@ -315,14 +198,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
         }
 
         // No solution found with any piece at this cell
-        if (verbose) {
-            SolverLogger.info("\n╔════════════════════════════════════════════════════════════════╗");
-            SolverLogger.info("║  EXHAUSTED ALL OPTIONS");
-            SolverLogger.info("║  Cell (" + r + ", " + c + ") cannot be filled with any available piece");
-            SolverLogger.info("║  → All " + snapshot.size() + " available pieces have been tried");
-            SolverLogger.info("║  → Backtracking to previous cell");
-            SolverLogger.info("╚════════════════════════════════════════════════════════════════╝");
-        }
+        outputStrategy.logExhaustedOptions(r, c, snapshot.size());
         return false;
     }
 }

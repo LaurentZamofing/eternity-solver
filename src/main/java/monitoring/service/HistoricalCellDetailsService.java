@@ -95,7 +95,7 @@ public class HistoricalCellDetailsService {
             // Use the existing CellDetailsService logic but with historical board
             return cellDetailsService.getCellDetailsFromMetrics(historicalMetrics, row, col);
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("Error generating historical cell details for {} at ({},{})",
                 configName, row, col, e);
             return null;

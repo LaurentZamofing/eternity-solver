@@ -24,7 +24,7 @@ public class SolverWithTimeout extends EternitySolver {
         Thread solverThread = new Thread(() -> {
             try {
                 solved[0] = solve(board, pieces);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 // Ignore exceptions during timeout
             }
         });

@@ -60,7 +60,7 @@ public class ShutdownManager {
                     try {
                         logger.info("Executing hook: {}", hook.getName());
                         hook.onShutdown("JVM_SHUTDOWN");
-                    } catch (Exception e) {
+                    } catch (RuntimeException e) {
                         logger.error("Error in hook {}: {}", hook.getName(), e.getMessage(), e);
                     }
                 }
@@ -68,7 +68,7 @@ public class ShutdownManager {
                 logger.info("Graceful shutdown completed");
                 logger.info("═══════════════════════════════════════════════════════");
 
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 logger.error("Error during graceful shutdown", e);
             }
         }, "ShutdownHook-Thread");

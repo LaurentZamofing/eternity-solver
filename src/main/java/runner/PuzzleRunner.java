@@ -186,7 +186,7 @@ public class PuzzleRunner {
                     logger.info("Sequential mode");
                     solved.set(solver.solve(board, pieces));
                 }
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 logger.error("Error during resolution", e);
                 solved.set(false);
             }

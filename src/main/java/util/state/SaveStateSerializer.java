@@ -5,6 +5,7 @@ import model.Piece;
 import model.Placement;
 import util.SaveStateManager.PlacementInfo;
 import util.SaveStateManager.SaveState;
+import util.SolverLogger;
 
 import java.util.*;
 
@@ -74,7 +75,7 @@ public class SaveStateSerializer {
                                              Map<Integer, Piece> allPieces) {
         // Verify dimensions
         if (board.getRows() != state.rows || board.getCols() != state.cols) {
-            System.err.println("  ⚠️  Incompatible dimensions!");
+            SolverLogger.error("  ⚠️  Incompatible dimensions!");
             return false;
         }
 
@@ -87,7 +88,7 @@ public class SaveStateSerializer {
 
             Piece piece = allPieces.get(info.pieceId);
             if (piece == null) {
-                System.err.println("  ⚠️  Piece " + info.pieceId + " not found!");
+                SolverLogger.error("  ⚠️  Piece " + info.pieceId + " not found!");
                 return false;
             }
 

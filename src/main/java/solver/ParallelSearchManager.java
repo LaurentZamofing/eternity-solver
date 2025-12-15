@@ -13,181 +13,127 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Manages parallel search execution with work-stealing, thread coordination, and diversification strategies. */
+/**
+ * Manages parallel search execution with work-stealing, thread coordination, and diversification strategies.
+ *
+ * <h2>Responsibilities</h2>
+ * <ul>
+ *   <li>Coordinate work-stealing parallelism (Fork/Join framework)</li>
+ *   <li>Manage thread pool execution</li>
+ *   <li>Apply diversification strategies for parallel search</li>
+ *   <li>Coordinate shared state across threads</li>
+ * </ul>
+ *
+ * <h2>Design</h2>
+ * Uses instance-based SharedSearchState (not static state) for thread-safe coordination.
+ * Delegates board copying and diversification to extracted services.
+ *
+ * @author Eternity Solver Team
+ * @version 1.0.0
+ */
 public class ParallelSearchManager {
 
-    // Static state for backward compatibility (deprecated - use SharedSearchState instead)
-    @Deprecated
-    private static AtomicBoolean solutionFound = new AtomicBoolean(false);
-    @Deprecated
-    private static AtomicInteger globalMaxDepth = new AtomicInteger(0);
-    @Deprecated
-    private static AtomicInteger globalBestScore = new AtomicInteger(0);
-    @Deprecated
-    private static AtomicInteger globalBestThreadId = new AtomicInteger(-1);
-    @Deprecated
-    private static AtomicReference<Board> globalBestBoard = new AtomicReference<>(null);
-    @Deprecated
-    private static AtomicReference<Map<Integer, Piece>> globalBestPieces = new AtomicReference<>(null);
-    @Deprecated
-    private static final Object lockObject = new Object();
-
-    // Work-stealing parallelism
-    @Deprecated
-    private static ForkJoinPool workStealingPool = null;
     public static final int WORK_STEALING_DEPTH_THRESHOLD = SolverConstants.WORK_STEALING_DEPTH_THRESHOLD;
-    private static final long THREAD_SAVE_INTERVAL = SolverConstants.THREAD_SAVE_INTERVAL_MS;
 
-    // Instance state (preferred approach)
+    // Default static shared state for backward compatibility
+    // TODO: Remove this and require callers to pass SharedSearchState explicitly
+    private static final SharedSearchState defaultSharedState = new SharedSearchState();
+
+    // Instance state
     private final SharedSearchState sharedState;
     private final DomainManager domainManager;
 
-    /** Creates ParallelSearchManager with required domain manager and shared state. */
+    // Extracted services
+    private final DiversificationStrategy diversificationStrategy;
+    private final BoardCopyService boardCopyService;
+
+    /**
+     * Creates ParallelSearchManager with required domain manager and shared state.
+     *
+     * @param domainManager Domain manager for constraint propagation
+     * @param sharedState Shared state for thread coordination
+     */
     public ParallelSearchManager(DomainManager domainManager, SharedSearchState sharedState) {
         this.domainManager = domainManager;
         this.sharedState = sharedState;
+        this.diversificationStrategy = new DiversificationStrategy();
+        this.boardCopyService = new BoardCopyService();
     }
 
-    /** Creates ParallelSearchManager with required domain manager (uses static state - deprecated). */
-    @Deprecated
-    public ParallelSearchManager(DomainManager domainManager) {
-        this.domainManager = domainManager;
-        this.sharedState = null; // Use static state for backward compatibility
-    }
-
-    /** Enables work-stealing parallelism with specified thread count. */
+    /**
+     * Enables work-stealing parallelism with specified thread count.
+     *
+     * @param numThreads Number of threads for work-stealing pool
+     */
     public void enableWorkStealing(int numThreads) {
-        if (sharedState != null) {
-            sharedState.enableWorkStealing(numThreads);
-        } else {
-            // Backward compatibility - use static state
-            if (workStealingPool == null || workStealingPool.isShutdown()) {
-                workStealingPool = new ForkJoinPool(numThreads);
-            }
-        }
+        sharedState.enableWorkStealing(numThreads);
     }
 
-    /** Resets global state; delegates to instance state if available, otherwise resets static state. */
+    /**
+     * Resets shared state.
+     * Call this between puzzles in sequential runs.
+     */
     public void resetState() {
-        if (sharedState != null) {
-            sharedState.reset();
-        } else {
-            resetGlobalState();
-        }
+        sharedState.reset();
     }
 
-    /** Resets all static global state variables; call between puzzles in sequential runs. */
-    @Deprecated
+    // ==================== Static Backward Compatibility Methods ====================
+    // TODO: Remove these and migrate callers to use SharedSearchState directly
+
     public static void resetGlobalState() {
-        solutionFound.set(false);
-        globalMaxDepth.set(0);
-        globalBestScore.set(0);
-        globalBestThreadId.set(-1);
-        globalBestBoard.set(null);
-        globalBestPieces.set(null);
-        if (workStealingPool != null && !workStealingPool.isShutdown()) {
-            workStealingPool.shutdown();
-            workStealingPool = null;
-        }
+        defaultSharedState.reset();
     }
 
-    /** Returns global lock object for synchronized operations. */
     public static Object getLockObject() {
-        return lockObject;
+        return defaultSharedState.getLockObject();
     }
 
-    /** Returns atomic boolean indicating solution found (backward compatibility). */
     public static AtomicBoolean getSolutionFound() {
-        return solutionFound;
+        return defaultSharedState.getSolutionFound();
     }
 
-    /** Returns work-stealing pool (backward compatibility). */
-    public static ForkJoinPool getWorkStealingPool() {
-        return workStealingPool;
-    }
-
-    /** Checks if solution has been found by any thread. */
-    public static boolean isSolutionFound() {
-        return solutionFound.get();
-    }
-
-    /** Marks that a solution has been found. */
-    public static void markSolutionFound() {
-        solutionFound.set(true);
-    }
-
-    /** Returns global max depth atomic integer (backward compatibility). */
     public static AtomicInteger getGlobalMaxDepth() {
-        return globalMaxDepth;
+        return defaultSharedState.getGlobalMaxDepth();
     }
 
-    /** Updates global max depth if new depth is greater; returns true if updated. */
-    public static boolean updateGlobalMaxDepth(int depth) {
-        int current;
-        do {
-            current = globalMaxDepth.get();
-            if (depth <= current) return false;
-        } while (!globalMaxDepth.compareAndSet(current, depth));
-        return true;
-    }
-
-    /** Returns global best score atomic integer (backward compatibility). */
     public static AtomicInteger getGlobalBestScore() {
-        return globalBestScore;
+        return defaultSharedState.getGlobalBestScore();
     }
 
-    /** Updates global best score if new score is better; returns true if updated. */
-    public static boolean updateGlobalBestScore(int score) {
-        int current;
-        do {
-            current = globalBestScore.get();
-            if (score <= current) return false;
-        } while (!globalBestScore.compareAndSet(current, score));
-        return true;
-    }
-
-    /** Returns global best thread ID atomic integer (backward compatibility). */
     public static AtomicInteger getGlobalBestThreadId() {
-        return globalBestThreadId;
+        return defaultSharedState.getGlobalBestThreadId();
     }
 
-    /** Sets the thread ID that found the best solution. */
-    public static void setGlobalBestThreadId(int threadId) {
-        globalBestThreadId.set(threadId);
-    }
-
-    /** Returns global best board atomic reference (backward compatibility). */
     public static AtomicReference<Board> getGlobalBestBoard() {
-        return globalBestBoard;
+        return defaultSharedState.getGlobalBestBoard();
     }
 
-    /** Sets the global best board. */
-    public static void setGlobalBestBoard(Board board) {
-        globalBestBoard.set(board);
-    }
-
-    /** Returns global best pieces atomic reference (backward compatibility). */
     public static AtomicReference<Map<Integer, Piece>> getGlobalBestPieces() {
-        return globalBestPieces;
+        return defaultSharedState.getGlobalBestPieces();
     }
 
-    /** Sets the global best pieces map. */
-    public static void setGlobalBestPieces(Map<Integer, Piece> pieces) {
-        globalBestPieces.set(pieces);
-    }
-
-    /** Solves puzzle using work-stealing parallelism (Fork/Join framework); creates parallel task and submits to pool. */
+    /**
+     * Solves puzzle using work-stealing parallelism (Fork/Join framework).
+     * Creates parallel task and submits to pool.
+     *
+     * @param board Initial board state
+     * @param pieces Map of all pieces
+     * @param pieceUsed BitSet of used pieces
+     * @param totalPieces Total number of pieces
+     * @param sequentialSolver Sequential solver callback
+     * @return true if solution found
+     */
     public boolean solveWithWorkStealing(Board board, Map<Integer, Piece> pieces,
                                          BitSet pieceUsed, int totalPieces,
                                          SequentialSolver sequentialSolver) {
-        ForkJoinPool pool = (sharedState != null) ? sharedState.getWorkStealingPool() : workStealingPool;
+        ForkJoinPool pool = sharedState.getWorkStealingPool();
 
         if (pool == null) {
             throw new IllegalStateException("Work-stealing pool not enabled. Call enableWorkStealing() first.");
         }
 
         ParallelSearchTask task = new ParallelSearchTask(
-            board, pieces, pieceUsed, totalPieces, 0, domainManager, sequentialSolver, sharedState
+            board, pieces, pieceUsed, totalPieces, 0, domainManager, sequentialSolver, sharedState, boardCopyService
         );
         return pool.invoke(task);
     }
@@ -197,7 +143,9 @@ public class ParallelSearchManager {
         boolean solve(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces);
     }
 
-    /** Recursive task for Fork/Join parallelism with work-stealing. */
+    /**
+     * Recursive task for Fork/Join parallelism with work-stealing.
+     */
     private static class ParallelSearchTask extends RecursiveTask<Boolean> {
         private final Board board;
         private final Map<Integer, Piece> piecesById;
@@ -206,11 +154,13 @@ public class ParallelSearchManager {
         private final int currentDepth;
         private final DomainManager domainManager;
         private final SequentialSolver sequentialSolver;
-        private final SharedSearchState sharedState; // null means use static state for backward compatibility
+        private final SharedSearchState sharedState;
+        private final BoardCopyService boardCopyService;
 
         ParallelSearchTask(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed,
                            int totalPieces, int currentDepth, DomainManager domainManager,
-                           SequentialSolver sequentialSolver, SharedSearchState sharedState) {
+                           SequentialSolver sequentialSolver, SharedSearchState sharedState,
+                           BoardCopyService boardCopyService) {
             this.board = board;
             this.piecesById = piecesById;
             this.pieceUsed = (BitSet) pieceUsed.clone();
@@ -219,18 +169,18 @@ public class ParallelSearchManager {
             this.domainManager = domainManager;
             this.sequentialSolver = sequentialSolver;
             this.sharedState = sharedState;
+            this.boardCopyService = boardCopyService;
         }
 
         @Override
         protected Boolean compute() {
             // Check if solution already found
-            boolean foundSolution = (sharedState != null) ? sharedState.isSolutionFound() : solutionFound.get();
-            if (foundSolution) {
+            if (sharedState.isSolutionFound()) {
                 return false;
             }
 
             // Get work-stealing pool reference
-            ForkJoinPool pool = (sharedState != null) ? sharedState.getWorkStealingPool() : workStealingPool;
+            ForkJoinPool pool = sharedState.getWorkStealingPool();
 
             // If depth is low enough, fork tasks
             if (currentDepth < WORK_STEALING_DEPTH_THRESHOLD && pool != null) {
@@ -252,7 +202,7 @@ public class ParallelSearchManager {
                 for (DomainManager.ValidPlacement vp : validPlacements) {
                     try {
                         // Create deep copy of board
-                        Board boardCopy = copyBoard(board, piecesById);
+                        Board boardCopy = boardCopyService.copyBoard(board, piecesById);
 
                         Piece piece = piecesById.get(vp.pieceId);
                         if (piece != null) {
@@ -262,7 +212,7 @@ public class ParallelSearchManager {
 
                             ParallelSearchTask task = new ParallelSearchTask(
                                 boardCopy, piecesById, usedCopy, totalPieces,
-                                currentDepth + 1, domainManager, sequentialSolver, sharedState
+                                currentDepth + 1, domainManager, sequentialSolver, sharedState, boardCopyService
                             );
                             tasks.add(task);
                             task.fork(); // Submit to work-stealing pool
@@ -277,14 +227,9 @@ public class ParallelSearchManager {
                 for (ParallelSearchTask task : tasks) {
                     try {
                         boolean taskFoundSolution = task.join();
-                        boolean alreadyFound = (sharedState != null) ? sharedState.isSolutionFound() : solutionFound.get();
 
-                        if (taskFoundSolution && !alreadyFound) {
-                            if (sharedState != null) {
-                                sharedState.markSolutionFound();
-                            } else {
-                                solutionFound.set(true);
-                            }
+                        if (taskFoundSolution && !sharedState.isSolutionFound()) {
+                            sharedState.markSolutionFound();
                             return true;
                         }
                     } catch (RuntimeException e) {
@@ -299,7 +244,12 @@ public class ParallelSearchManager {
             }
         }
 
-        /** Finds next empty cell in row-major order. */
+        /**
+         * Finds next empty cell in row-major order.
+         *
+         * @param board Board to search
+         * @return Array of [row, col] or null if no empty cell
+         */
         private int[] findNextEmptyCell(Board board) {
             for (int r = 0; r < board.getRows(); r++) {
                 for (int c = 0; c < board.getCols(); c++) {
@@ -309,23 +259,6 @@ public class ParallelSearchManager {
                 }
             }
             return null;
-        }
-
-        /** Creates deep copy of board. */
-        private Board copyBoard(Board original, Map<Integer, Piece> pieces) {
-            Board copy = new Board(original.getRows(), original.getCols());
-            for (int r = 0; r < original.getRows(); r++) {
-                for (int c = 0; c < original.getCols(); c++) {
-                    if (!original.isEmpty(r, c)) {
-                        Placement p = original.getPlacement(r, c);
-                        Piece piece = pieces.get(p.getPieceId());
-                        if (piece != null) {
-                            copy.place(r, c, piece, p.getRotation());
-                        }
-                    }
-                }
-            }
-            return copy;
         }
     }
 
@@ -338,13 +271,8 @@ public class ParallelSearchManager {
         SolverLogger.info("╚══════════════════════════════════════════════════════════╝\n");
 
         // Reset flags
-        if (sharedState != null) {
-            sharedState.getSolutionFound().set(false);
-            sharedState.getGlobalMaxDepth().set(0);
-        } else {
-            solutionFound.set(false);
-            globalMaxDepth.set(0);
-        }
+        sharedState.getSolutionFound().set(false);
+        sharedState.getGlobalMaxDepth().set(0);
 
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         List<Future<Boolean>> futures = new ArrayList<>();
@@ -386,13 +314,13 @@ public class ParallelSearchManager {
                             }
                         } else {
                             // Load error, start normally
-                            localBoard = copyBoard(board, allPieces);
+                            localBoard = boardCopyService.copyBoard(board, allPieces);
                             localPieces = new HashMap<>(allPieces);
                             unusedIds = new ArrayList<>(availablePieces.keySet());
                         }
                     } else {
                         // No save - create board copy for this thread
-                        localBoard = copyBoard(board, allPieces);
+                        localBoard = boardCopyService.copyBoard(board, allPieces);
                         localPieces = new HashMap<>(allPieces);
                         unusedIds = new ArrayList<>(availablePieces.keySet());
                     }
@@ -409,7 +337,7 @@ public class ParallelSearchManager {
 
                     // Diversification strategy: pre-place different corner for each thread
                     if (!loadedFromSave) {
-                        diversifySearchStrategy(threadId, localBoard, localPieces, unusedIds, pieceUsed);
+                        diversificationStrategy.diversify(threadId, localBoard, localPieces, unusedIds, pieceUsed);
                     }
 
                     // Solve with this thread's configuration
@@ -444,77 +372,5 @@ public class ParallelSearchManager {
         }
 
         return solved;
-    }
-
-    /** Applies diversification strategy by pre-placing different corner pieces so threads explore different search branches. */
-    private void diversifySearchStrategy(int threadId, Board board, Map<Integer, Piece> pieces,
-                                        List<Integer> unusedIds, BitSet pieceUsed) {
-        if (threadId >= 4 || unusedIds.size() <= 10) {
-            return; // Diversify only first 4 threads and if enough pieces
-        }
-
-        // Identify corner pieces (with 2 edges at zero)
-        List<Integer> cornerPieces = new ArrayList<>();
-        for (int pid : unusedIds) {
-            Piece p = pieces.get(pid);
-            int[] edges = p.getEdges();
-            int zeroCount = 0;
-            for (int e : edges) {
-                if (e == 0) zeroCount++;
-            }
-            if (zeroCount == 2) {
-                cornerPieces.add(pid);
-            }
-        }
-
-        if (threadId >= cornerPieces.size()) {
-            return;
-        }
-
-        int cornerPieceId = cornerPieces.get(threadId);
-        int cornerRow = -1, cornerCol = -1;
-
-        // Position based on thread ID
-        switch (threadId) {
-            case 0: cornerRow = 0; cornerCol = 0; break;      // Top-left
-            case 1: cornerRow = 0; cornerCol = 15; break;     // Top-right
-            case 2: cornerRow = 15; cornerCol = 0; break;     // Bottom-left
-            case 3: cornerRow = 15; cornerCol = 15; break;    // Bottom-right
-        }
-
-        Piece cornerPiece = pieces.get(cornerPieceId);
-        // Find rotation that places zeros on correct edges
-        for (int rot = 0; rot < 4; rot++) {
-            int[] rotEdges = cornerPiece.edgesRotated(rot);
-            boolean valid = false;
-
-            if (cornerRow == 0 && cornerCol == 0 && rotEdges[0] == 0 && rotEdges[3] == 0) valid = true;
-            if (cornerRow == 0 && cornerCol == 15 && rotEdges[0] == 0 && rotEdges[1] == 0) valid = true;
-            if (cornerRow == 15 && cornerCol == 0 && rotEdges[2] == 0 && rotEdges[3] == 0) valid = true;
-            if (cornerRow == 15 && cornerCol == 15 && rotEdges[2] == 0 && rotEdges[1] == 0) valid = true;
-
-            if (valid) {
-                board.place(cornerRow, cornerCol, cornerPiece, rot);
-                pieceUsed.set(cornerPieceId);
-                break;
-            }
-        }
-    }
-
-    /** Helper method to copy a board. */
-    private Board copyBoard(Board original, Map<Integer, Piece> pieces) {
-        Board copy = new Board(original.getRows(), original.getCols());
-        for (int r = 0; r < original.getRows(); r++) {
-            for (int c = 0; c < original.getCols(); c++) {
-                if (!original.isEmpty(r, c)) {
-                    Placement p = original.getPlacement(r, c);
-                    Piece piece = pieces.get(p.getPieceId());
-                    if (piece != null) {
-                        copy.place(r, c, piece, p.getRotation());
-                    }
-                }
-            }
-        }
-        return copy;
     }
 }

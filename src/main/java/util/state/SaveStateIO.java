@@ -175,9 +175,9 @@ public class SaveStateIO {
             // chronological order (we use row,col sorting), but it's better than an incomplete
             // order that prevents backtracking.
             if (placements.size() > fullOrder.size()) {
-                System.out.println("  ⚠️  Incomplete PlacementOrder: " + fullOrder.size() +
+                SolverLogger.info("  ⚠️  Incomplete PlacementOrder: " + fullOrder.size() +
                                  " entries vs " + placements.size() + " pieces on board");
-                System.out.println("  ✓  Reconstructing complete order (approximate row,col)...");
+                SolverLogger.info("  ✓  Reconstructing complete order (approximate row,col)...");
 
                 // Create a Set of pieces already in fullOrder
                 Set<String> existingKeys = new HashSet<>();
@@ -202,18 +202,18 @@ public class SaveStateIO {
                 }
 
                 fullOrder = reconstructed;
-                System.out.println("  ✓  Reconstructed order: " + fullOrder.size() + " pieces");
+                SolverLogger.info("  ✓  Reconstructed order: " + fullOrder.size() + " pieces");
             }
 
-            System.out.println("  📂 Save loaded: " + file.getName() + " (" + depth + " pieces)");
-            System.out.println("  📅 Date: " + DATE_FORMAT.format(new Date(timestamp)));
-            System.out.println("  📋 Placement order: " + fullOrder.size() + " placements tracked");
+            SolverLogger.info("  📂 Save loaded: " + file.getName() + " (" + depth + " pieces)");
+            SolverLogger.info("  📅 Date: " + DATE_FORMAT.format(new Date(timestamp)));
+            SolverLogger.info("  📋 Placement order: " + fullOrder.size() + " placements tracked");
 
             return new SaveState(puzzleName, rows, cols, placements, fullOrder,
                                unusedPieceIds, timestamp, depth, totalComputeTimeMs);
 
         } catch (IOException | NumberFormatException e) {
-            System.err.println("  ⚠️  Error during load: " + e.getMessage());
+            SolverLogger.error("  ⚠️  Error during load: " + e.getMessage());
             return null;
         }
     }

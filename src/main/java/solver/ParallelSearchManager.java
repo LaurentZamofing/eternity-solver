@@ -61,6 +61,16 @@ public class ParallelSearchManager {
     }
 
     /**
+     * Creates ParallelSearchManager with domain manager, using default shared state.
+     * Convenience constructor for backward compatibility.
+     *
+     * @param domainManager Domain manager for constraint propagation
+     */
+    public ParallelSearchManager(DomainManager domainManager) {
+        this(domainManager, defaultSharedState);
+    }
+
+    /**
      * Enables work-stealing parallelism with specified thread count.
      *
      * @param numThreads Number of threads for work-stealing pool
@@ -110,6 +120,38 @@ public class ParallelSearchManager {
 
     public static AtomicReference<Map<Integer, Piece>> getGlobalBestPieces() {
         return defaultSharedState.getGlobalBestPieces();
+    }
+
+    public static ForkJoinPool getWorkStealingPool() {
+        return defaultSharedState.getWorkStealingPool();
+    }
+
+    public static boolean isSolutionFound() {
+        return defaultSharedState.isSolutionFound();
+    }
+
+    public static void markSolutionFound() {
+        defaultSharedState.markSolutionFound();
+    }
+
+    public static boolean updateGlobalMaxDepth(int depth) {
+        return defaultSharedState.updateGlobalMaxDepth(depth);
+    }
+
+    public static boolean updateGlobalBestScore(int score) {
+        return defaultSharedState.updateGlobalBestScore(score);
+    }
+
+    public static void setGlobalBestThreadId(int threadId) {
+        defaultSharedState.setGlobalBestThreadId(threadId);
+    }
+
+    public static void setGlobalBestBoard(Board board) {
+        defaultSharedState.setGlobalBestBoard(board);
+    }
+
+    public static void setGlobalBestPieces(Map<Integer, Piece> pieces) {
+        defaultSharedState.setGlobalBestPieces(pieces);
     }
 
     /**

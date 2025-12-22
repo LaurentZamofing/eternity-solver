@@ -1,5 +1,7 @@
 package app;
 
+import app.parallel.ConfigurationScanner;
+import app.parallel.ConfigurationScanner.ConfigInfo;
 import config.PuzzleConfig;
 import util.SolverLogger;
 
@@ -11,7 +13,6 @@ import util.SaveStateManager;
 import util.TimeConstants;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,129 +25,28 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Parallel launcher for Eternity II
+ * Parallel launcher for Eternity II.
  * Launches multiple threads on different configurations intelligently:
  * 1. Priority to configurations never started
  * 2. Then resume oldest saves
+ *
+ * REFACTORED (Phase ULTRA): Configuration scanning extracted to ConfigurationScanner.
+ * Reduced from 459 → 310 lines (32% reduction).
+ *
+ * @see app.parallel.ConfigurationScanner
  */
 public class MainParallel {
 
     private static final String DATA_DIR = "data/";
 
-    /**
-     * Information about an available configuration
-     */
-    private static class ConfigInfo implements Comparable<ConfigInfo> {
-        final String filepath;
-        final PuzzleConfig config;
-        final File currentSave;
-        final long totalComputeTimeMs;
-        final boolean hasBeenStarted;
+    // Lock to prevent multiple threads from taking the same config
+    private static final Object configSelectionLock = new Object();
 
-        ConfigInfo(String filepath, PuzzleConfig config, File currentSave, long totalComputeTimeMs) {
-            this.filepath = filepath;
-            this.config = config;
-            this.currentSave = currentSave;
-            this.totalComputeTimeMs = totalComputeTimeMs;
-            this.hasBeenStarted = (currentSave != null);
-        }
-
-        @Override
-        public int compareTo(ConfigInfo other) {
-            // 1. Priority to never-started configs
-            if (!this.hasBeenStarted && other.hasBeenStarted) return -1;
-            if (this.hasBeenStarted && !other.hasBeenStarted) return 1;
-
-            // 2. Among started ones, sort by cumulative time (less time = priority)
-            if (this.hasBeenStarted && other.hasBeenStarted) {
-                return Long.compare(this.totalComputeTimeMs, other.totalComputeTimeMs);
-            }
-
-            // 3. Among non-started, alphabetical order
-            return this.filepath.compareTo(other.filepath);
-        }
-    }
+    // Tracker for configs currently running
+    private static final Set<String> runningConfigs = Collections.synchronizedSet(new HashSet<>());
 
     /**
-     * Finds all available Eternity II configurations
-     */
-    private static List<ConfigInfo> findAllConfigurations() throws IOException {
-        List<ConfigInfo> configs = new ArrayList<>();
-
-        File dataDir = new File(DATA_DIR + "eternity2/");
-        File[] configFiles = dataDir.listFiles((dir, name) ->
-            name.startsWith("eternity2_p") && name.endsWith(".txt")
-        );
-
-        if (configFiles == null || configFiles.length == 0) {
-            SolverLogger.info("✗ No configuration found in " + DATA_DIR);
-            return configs;
-        }
-
-        SolverLogger.info("📁 Analyzing " + configFiles.length + " available configurations...");
-        SolverLogger.info("");
-
-        for (File file : configFiles) {
-            try {
-                // Load the config
-                PuzzleConfig config = PuzzleConfig.loadFromFile(file.getAbsolutePath());
-                if (config == null) continue;
-
-                // Extract configId from file name
-                String configId = ConfigurationUtils.extractConfigId(file.getAbsolutePath());
-
-                // Chercher une sauvegarde current pour cette config
-                File currentSave = SaveStateManager.findCurrentSave(configId);
-
-                // Read total cumulative compute time
-                long totalComputeTimeMs = 0;
-                if (currentSave != null) {
-                    totalComputeTimeMs = SaveStateManager.readTotalComputeTime(configId);
-                }
-
-                configs.add(new ConfigInfo(file.getAbsolutePath(), config, currentSave, totalComputeTimeMs));
-
-            } catch (IOException | RuntimeException e) {
-                SolverLogger.warn("Error loading configuration " + file.getName() + ": " + e.getMessage());
-            }
-        }
-
-        // Sort by priority
-        Collections.sort(configs);
-
-        return configs;
-    }
-
-    // Removed: ConfigurationUtils.extractConfigId() - now using ConfigurationUtils.ConfigurationUtils.extractConfigId()
-    // Removed: ConfigurationUtils.createThreadLabel() - now using ConfigurationUtils.ConfigurationUtils.createThreadLabel()
-
-    /**
-     * Displays configuration statistics
-     */
-    private static void displayConfigStats(List<ConfigInfo> configs) {
-        int notStarted = 0;
-        int inProgress = 0;
-
-        for (ConfigInfo info : configs) {
-            if (!info.hasBeenStarted) {
-                notStarted++;
-            } else {
-                inProgress++;
-            }
-        }
-
-        SolverLogger.info("╔═══════════════════════════════════════════════════════════════════╗");
-        SolverLogger.info("║              CONFIGURATION STATISTICS                     ║");
-        SolverLogger.info("╚═══════════════════════════════════════════════════════════════════╝");
-        SolverLogger.info("");
-        SolverLogger.info("  📊 Total configurations : " + configs.size());
-        SolverLogger.info("  🆕 Never started        : " + notStarted);
-        SolverLogger.info("  🔄 In progress          : " + inProgress);
-        SolverLogger.info("");
-    }
-
-    /**
-     * Launches resolution of a configuration in a thread with timeout
+     * Launches resolution of a configuration in a thread with timeout.
      */
     private static class SolverTask implements Callable<Boolean> {
         private final ConfigInfo configInfo;
@@ -169,129 +69,109 @@ public class MainParallel {
                     long hours = totalSeconds / TimeConstants.SECONDS_PER_HOUR;
                     long minutes = (totalSeconds % TimeConstants.SECONDS_PER_HOUR) / TimeConstants.SECONDS_PER_MINUTE;
                     long seconds = totalSeconds % 60;
-                    System.out.println("   Status: RESUME (cumulative time: " +
+                    SolverLogger.info("   Status: RESUME (cumulative time: " +
                         String.format("%dh %02dm %02ds", hours, minutes, seconds) + ")");
                 } else {
                     SolverLogger.info("   Status: NEW");
                 }
                 SolverLogger.info("");
 
-                // Load the puzzle
                 PuzzleConfig config = configInfo.config;
-
-                // Create a unique ID based on file name (e.g.: eternity2_p01_ascending)
                 String configId = ConfigurationUtils.extractConfigId(configInfo.filepath);
-
-                // Look for a current save for this specific config
                 File currentSave = SaveStateManager.findCurrentSave(configId);
 
                 if (currentSave != null && currentSave.exists()) {
                     // Resume from save
-                    SaveStateManager.SaveState saveState = SaveStateManager.loadStateFromFile(currentSave, config.getType());
-
-                    if (saveState != null) {
-                        Board board = new Board(config.getRows(), config.getCols());
-                        Map<Integer, Piece> allPieces = new HashMap<>(config.getPieces());
-
-                        boolean restored = SaveStateManager.restoreState(saveState, board, allPieces);
-                        if (restored) {
-                            List<Integer> unusedIds = new ArrayList<>(saveState.unusedPieceIds);
-
-                            // Sort according to configured order
-                            if ("descending".equalsIgnoreCase(config.getSortOrder())) {
-                                Collections.sort(unusedIds, Collections.reverseOrder());
-                            } else {
-                                Collections.sort(unusedIds);
-                            }
-
-                            // Create and configure the solver
-                            EternitySolver.resetGlobalState();
-                            EternitySolver solver = new EternitySolver();
-                            solver.setDisplayConfig(config.isVerbose(), config.getMinDepthToShowRecords());
-
-                            // Use the already extracted configId
-                            solver.setPuzzleName(configId);
-                            solver.setSortOrder(config.getSortOrder());
-                            solver.setPrioritizeBorders(config.isPrioritizeBorders());
-                            solver.setNumFixedPieces(config.getFixedPieces().size());
-                            solver.setThreadLabel(ConfigurationUtils.createThreadLabel(threadId, configId));
-                            solver.setMaxExecutionTime(timeoutMs); // Configure timeout for rotation
-
-                            SolverLogger.info("   [Thread " + threadId + "] Resume: " + saveState.depth + " pieces placed");
-
-                            // Solve
-                            boolean solved = solver.solveWithHistory(board, allPieces, unusedIds,
-                                                                     new ArrayList<>(saveState.placementOrder));
-
-                            if (solved) {
-                                SolverLogger.info("✅ [Thread " + threadId + "] SOLUTION FOUND!");
-                            }
-
-                            return solved;
-                        }
-                    }
+                    return resumeFromSave(config, configId, currentSave, threadId, timeoutMs);
+                } else {
+                    // Start from scratch
+                    return solveFromScratch(config, configId, threadId, timeoutMs);
                 }
-
-                // Starting from scratch
-                SolverLogger.info("   [Thread " + threadId + "] Starting from scratch");
-
-                Board board = new Board(config.getRows(), config.getCols());
-                Map<Integer, Piece> allPieces = new HashMap<>(config.getPieces());
-
-                // Place fixed pieces
-                for (PuzzleConfig.FixedPiece fp : config.getFixedPieces()) {
-                    Piece piece = allPieces.get(fp.pieceId);
-                    if (piece != null) {
-                        board.place(fp.row, fp.col, piece, fp.rotation);
-                        allPieces.remove(fp.pieceId);  // Remove from local copy, not from original config
-                    }
-                }
-
-                // Solve
-                EternitySolver.resetGlobalState();
-                EternitySolver solver = new EternitySolver();
-                solver.setDisplayConfig(config.isVerbose(), config.getMinDepthToShowRecords());
-
-                // Use the already extracted configId
-                solver.setPuzzleName(configId);
-                solver.setSortOrder(config.getSortOrder());
-                solver.setPrioritizeBorders(config.isPrioritizeBorders());
-                solver.setThreadLabel(ConfigurationUtils.createThreadLabel(threadId, configId));
-                solver.setMaxExecutionTime(timeoutMs); // Configure timeout
-
-                SolverLogger.info("   [Thread " + threadId + "] Pieces to place: " + allPieces.size() + " pieces");
-                SolverLogger.info("   [Thread " + threadId + "] Fixed pieces on board: " + config.getFixedPieces().size());
-                SolverLogger.info("   [Thread " + threadId + "] Configured timeout: " + (timeoutMs / TimeConstants.MILLIS_PER_SECOND) + " seconds");
-                SolverLogger.info("   [Thread " + threadId + "] Starting solver...");
-
-                boolean solved = solver.solve(board, allPieces);
-
-                SolverLogger.info("   [Thread " + threadId + "] Solver finished. Result: " + (solved ? "SOLUTION FOUND" : "No solution"));
-
-                if (solved) {
-                    SolverLogger.info("✅ [Thread " + threadId + "] SOLUTION FOUND!");
-                }
-
-                return solved;
 
             } catch (RuntimeException e) {
                 SolverLogger.error("[Thread " + threadId + "] Error during solving: " + e.getMessage(), e);
                 return false;
             }
         }
+
+        private Boolean resumeFromSave(PuzzleConfig config, String configId, File saveFile, int threadId, long timeoutMs) {
+            SaveStateManager.SaveState saveState = SaveStateManager.loadStateFromFile(saveFile, config.getType());
+            if (saveState == null) return false;
+
+            Board board = new Board(config.getRows(), config.getCols());
+            Map<Integer, Piece> allPieces = new HashMap<>(config.getPieces());
+
+            boolean restored = SaveStateManager.restoreState(saveState, board, allPieces);
+            if (!restored) return false;
+
+            List<Integer> unusedIds = new ArrayList<>(saveState.unusedPieceIds);
+            if ("descending".equalsIgnoreCase(config.getSortOrder())) {
+                Collections.sort(unusedIds, Collections.reverseOrder());
+            } else {
+                Collections.sort(unusedIds);
+            }
+
+            EternitySolver solver = createSolver(config, configId, threadId, timeoutMs);
+            SolverLogger.info("   [Thread " + threadId + "] Resume: " + saveState.depth + " pieces placed");
+
+            boolean solved = solver.solveWithHistory(board, allPieces, unusedIds,
+                                                     new ArrayList<>(saveState.placementOrder));
+            if (solved) {
+                SolverLogger.info("✅ [Thread " + threadId + "] SOLUTION FOUND!");
+            }
+            return solved;
+        }
+
+        private Boolean solveFromScratch(PuzzleConfig config, String configId, int threadId, long timeoutMs) {
+            SolverLogger.info("   [Thread " + threadId + "] Starting from scratch");
+
+            Board board = new Board(config.getRows(), config.getCols());
+            Map<Integer, Piece> allPieces = new HashMap<>(config.getPieces());
+
+            // Place fixed pieces
+            for (PuzzleConfig.FixedPiece fp : config.getFixedPieces()) {
+                Piece piece = allPieces.get(fp.pieceId);
+                if (piece != null) {
+                    board.place(fp.row, fp.col, piece, fp.rotation);
+                    allPieces.remove(fp.pieceId);
+                }
+            }
+
+            EternitySolver solver = createSolver(config, configId, threadId, timeoutMs);
+
+            SolverLogger.info("   [Thread " + threadId + "] Pieces to place: " + allPieces.size() + " pieces");
+            SolverLogger.info("   [Thread " + threadId + "] Fixed pieces: " + config.getFixedPieces().size());
+            SolverLogger.info("   [Thread " + threadId + "] Timeout: " + (timeoutMs / TimeConstants.MILLIS_PER_SECOND) + "s");
+            SolverLogger.info("   [Thread " + threadId + "] Starting solver...");
+
+            boolean solved = solver.solve(board, allPieces);
+            SolverLogger.info("   [Thread " + threadId + "] Result: " + (solved ? "SOLUTION" : "No solution"));
+
+            if (solved) {
+                SolverLogger.info("✅ [Thread " + threadId + "] SOLUTION FOUND!");
+            }
+            return solved;
+        }
+
+        private EternitySolver createSolver(PuzzleConfig config, String configId, int threadId, long timeoutMs) {
+            EternitySolver.resetGlobalState();
+            EternitySolver solver = new EternitySolver();
+            solver.setDisplayConfig(config.isVerbose(), config.getMinDepthToShowRecords());
+            solver.setPuzzleName(configId);
+            solver.setSortOrder(config.getSortOrder());
+            solver.setPrioritizeBorders(config.isPrioritizeBorders());
+            solver.setNumFixedPieces(config.getFixedPieces().size());
+            solver.setThreadLabel(ConfigurationUtils.createThreadLabel(threadId, configId));
+            solver.setMaxExecutionTime(timeoutMs);
+            return solver;
+        }
     }
 
-    // Lock to prevent multiple threads from taking the same config
-    private static final Object configSelectionLock = new Object();
-
-    // Tracker for configs currently running
-    private static final Set<String> runningConfigs = Collections.synchronizedSet(new HashSet<>());
-
     /**
-     * Worker thread that loops with automatic rotation
+     * Worker thread that loops with automatic rotation.
      */
     private static void runWorkerWithRotation(int threadId, long timeoutMs,
-                                               ExecutorService executor,
+                                               ConfigurationScanner scanner,
                                                Set<String> solvedConfigs) throws Exception {
         while (true) {
             ConfigInfo nextConfig = null;
@@ -299,62 +179,52 @@ public class MainParallel {
 
             // Atomic selection of next available config
             synchronized (configSelectionLock) {
-                // Reload configuration list to get updated priorities
-                List<ConfigInfo> configs = findAllConfigurations();
+                List<ConfigInfo> configs = scanner.scanConfigurations();
 
-                // Filter already solved or currently running configs
                 for (ConfigInfo config : configs) {
                     String cid = ConfigurationUtils.extractConfigId(config.filepath);
                     if (!solvedConfigs.contains(cid) && !runningConfigs.contains(cid)) {
                         nextConfig = config;
                         configId = cid;
-                        runningConfigs.add(configId); // Reserve this config
+                        runningConfigs.add(configId);
                         break;
                     }
                 }
             }
 
             if (nextConfig == null) {
-                SolverLogger.info("🎉 [Thread " + threadId + "] All configurations are solved or in progress!");
+                SolverLogger.info("🎉 [Thread " + threadId + "] All configurations solved/in-progress!");
                 break;
             }
 
             try {
-                // Display rotation
+                // Display rotation message
                 if (nextConfig.hasBeenStarted) {
                     long totalSeconds = nextConfig.totalComputeTimeMs / TimeConstants.MILLIS_PER_SECOND;
                     long hours = totalSeconds / TimeConstants.SECONDS_PER_HOUR;
                     long minutes = (totalSeconds % TimeConstants.SECONDS_PER_HOUR) / TimeConstants.SECONDS_PER_MINUTE;
-                    System.out.println("🔄 [Thread " + threadId + "] Rotating to: " + configId +
-                        " (cumulative time: " + String.format("%dh%02dm", hours, minutes) + ")");
+                    SolverLogger.info("🔄 [Thread " + threadId + "] Rotating to: " + configId +
+                        " (time: " + String.format("%dh%02dm", hours, minutes) + ")");
                 } else {
                     SolverLogger.info("🔄 [Thread " + threadId + "] Rotating to: " + configId + " (NEW)");
                 }
 
-                // Launch resolution directly (not via executor to avoid deadlock)
                 SolverTask task = new SolverTask(nextConfig, threadId, timeoutMs);
+                Boolean solved = task.call();
 
-                try {
-                    // Execute directly in current thread
-                    Boolean solved = task.call();
-
-                    if (solved != null && solved) {
-                        SolverLogger.info("✅ [Thread " + threadId + "] SOLUTION FOUND for " + configId);
-                        solvedConfigs.add(configId);
-                    } else {
-                        SolverLogger.info("⏱️  [Thread " + threadId + "] Timeout reached for " + configId + " - rotation");
-                    }
-
-                } catch (Exception e) {
-                    SolverLogger.error("[Thread " + threadId + "] Error during execution: " + e.getMessage(), e);
+                if (solved != null && solved) {
+                    SolverLogger.info("✅ [Thread " + threadId + "] SOLUTION for " + configId);
+                    solvedConfigs.add(configId);
+                } else {
+                    SolverLogger.info("⏱️  [Thread " + threadId + "] Timeout for " + configId + " - rotating");
                 }
 
+            } catch (Exception e) {
+                SolverLogger.error("[Thread " + threadId + "] Error: " + e.getMessage(), e);
             } finally {
-                // Release config for other threads
                 runningConfigs.remove(configId);
             }
 
-            // Small pause before next iteration
             Thread.sleep(TimeConstants.DEFAULT_THREAD_SLEEP_MS);
         }
     }
@@ -366,17 +236,14 @@ public class MainParallel {
         SolverLogger.info("╚═══════════════════════════════════════════════════════════════════╝");
         SolverLogger.info("");
 
-        // Number of threads (default: number of available processors)
         int numThreads = Runtime.getRuntime().availableProcessors();
-
-        // Duration per configuration in minutes (default: 1 minute for quick rotation)
         double timePerConfigMinutes = 1.0;
 
         if (args.length > 0) {
             try {
                 numThreads = Integer.parseInt(args[0]);
             } catch (NumberFormatException e) {
-                SolverLogger.warn("⚠️  Invalid argument 1, using " + numThreads + " threads");
+                SolverLogger.error("⚠️  Invalid threads arg, using " + numThreads);
             }
         }
 
@@ -384,71 +251,64 @@ public class MainParallel {
             try {
                 timePerConfigMinutes = Double.parseDouble(args[1]);
             } catch (NumberFormatException e) {
-                SolverLogger.warn("⚠️  Invalid argument 2, using " + timePerConfigMinutes + " minutes per config");
+                SolverLogger.error("⚠️  Invalid time arg, using " + timePerConfigMinutes + " min");
             }
         }
 
-        SolverLogger.info("⚙️  Number of threads: " + numThreads);
-        SolverLogger.info("⏱️  Duration per configuration: " + timePerConfigMinutes + " minute(s)");
+        SolverLogger.info("⚙️  Threads: " + numThreads);
+        SolverLogger.info("⏱️  Time per config: " + timePerConfigMinutes + " min");
         SolverLogger.info("");
 
         try {
-            // Find all configurations
-            List<ConfigInfo> configs = findAllConfigurations();
+            ConfigurationScanner scanner = new ConfigurationScanner(DATA_DIR);
+            List<ConfigInfo> configs = scanner.scanConfigurations();
 
             if (configs.isEmpty()) {
-                SolverLogger.info("✗ No configuration available");
+                SolverLogger.info("✗ No configurations found");
                 return;
             }
 
-            // Display statistics
-            displayConfigStats(configs);
+            scanner.displayStatistics(configs);
 
-            // Create thread pool
             ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 
             SolverLogger.info("╔═══════════════════════════════════════════════════════════════════╗");
             SolverLogger.info("║              LAUNCHING THREADS WITH ROTATION                 ║");
             SolverLogger.info("╚═══════════════════════════════════════════════════════════════════╝");
             SolverLogger.info("");
-            SolverLogger.info("📋 Rotation strategy:");
-            SolverLogger.info("   1. Each thread works " + timePerConfigMinutes + " min on a configuration");
-            SolverLogger.info("   2. After timeout, thread moves to least advanced config");
-            SolverLogger.info("   3. Continuous rotation to advance all configs");
+            SolverLogger.info("📋 Strategy:");
+            SolverLogger.info("   1. Each thread: " + timePerConfigMinutes + " min per config");
+            SolverLogger.info("   2. Timeout → rotate to least advanced");
+            SolverLogger.info("   3. Continuous rotation");
             SolverLogger.info("");
-            SolverLogger.info("📋 Priority order:");
-            SolverLogger.info("   1. Never-started configurations");
-            SolverLogger.info("   2. Saves with least cumulative time");
+            SolverLogger.info("📋 Priority:");
+            SolverLogger.info("   1. Never-started configs");
+            SolverLogger.info("   2. Least cumulative time");
             SolverLogger.info("");
 
-            // Tracker for finished configs (solution found)
             Set<String> solvedConfigs = Collections.synchronizedSet(new HashSet<>());
-
-            // Launch threads with rotation
             long timeoutMs = (long)(timePerConfigMinutes * TimeConstants.SECONDS_PER_MINUTE * TimeConstants.MILLIS_PER_SECOND);
 
-            SolverLogger.info("✓ Starting " + numThreads + " thread(s) with automatic rotation");
+            SolverLogger.info("✓ Starting " + numThreads + " threads with rotation");
             SolverLogger.info("");
             SolverLogger.info("═".repeat(70));
             SolverLogger.info("");
 
-            // Launch initial threads
             for (int threadId = 1; threadId <= numThreads; threadId++) {
                 final int tid = threadId;
                 executor.submit(() -> {
                     try {
-                        runWorkerWithRotation(tid, timeoutMs, executor, solvedConfigs);
+                        runWorkerWithRotation(tid, timeoutMs, scanner, solvedConfigs);
                     } catch (Exception e) {
-                        SolverLogger.error("✗ [Thread " + tid + "] Fatal error: " + e.getMessage());
+                        SolverLogger.error("✗ [Thread " + tid + "] Fatal: " + e.getMessage());
                         SolverLogger.error("Error occurred", e);
                     }
                 });
             }
 
-            SolverLogger.info("⏳ Threads working with automatic rotation... (Ctrl+C to stop)");
+            SolverLogger.info("⏳ Threads working... (Ctrl+C to stop)");
             SolverLogger.info("");
 
-            // Wait indefinitely (threads rotate continuously)
             Thread.sleep(Long.MAX_VALUE);
 
         } catch (Exception e) {

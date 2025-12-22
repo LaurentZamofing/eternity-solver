@@ -226,8 +226,8 @@ class HistoricalSolverTest {
         List<Integer> unusedIds = List.of(1, 2, 3, 4);
         List<SaveStateManager.PlacementInfo> emptyHistory = new ArrayList<>();
 
-        solver.configBuilder.build().setPuzzleName("test_puzzle");
-        solver.configBuilder.build().setThreadLabel("[Test Thread]");
+        solver.configBuilder.puzzleName("test_puzzle");
+        solver.configBuilder.threadLabel("[Test Thread]");
 
         // Act
         historicalSolver.solveWithHistory(board, allPieces, unusedIds, emptyHistory);

@@ -30,19 +30,18 @@ class BacktrackingSolverTest {
 
     private EternitySolver solver;
     private StatisticsManager stats;
-    private ConfigurationManager configManager;
+    private SolverConfiguration config;
     private AtomicBoolean solutionFound;
 
     @BeforeEach
     void setUp() {
         solver = new EternitySolver();
         stats = new StatisticsManager();
-        configManager = SolverConfiguration.builder().build();
+        config = SolverConfiguration.builder()
+            .verbose(false)
+            .maxExecutionTimeMs(10000) // 10 seconds default
+            .build();
         solutionFound = new AtomicBoolean(false);
-
-        // Set reasonable defaults
-        configManager.setVerbose(false);
-        configManager.setMaxExecutionTime(10000); // 10 seconds default
     }
 
     /**
@@ -66,7 +65,7 @@ class BacktrackingSolverTest {
                 solver,
                 stats,
                 solutionFound,
-                configManager,
+                config,
                 null, // recordManager is optional
                 null, // autoSaveManager is optional
                 singletonStrategy,
@@ -82,7 +81,7 @@ class BacktrackingSolverTest {
     @DisplayName("Should enforce timeout correctly")
     void testTimeoutEnforcement() {
         // Arrange
-        configManager.setMaxExecutionTime(100); // 100ms timeout
+        config = SolverConfiguration.builder().maxExecutionTimeMs(100).build(); // 100ms timeout
         Board board = new Board(4, 4);
         Map<Integer, Piece> pieces = createSimplePuzzle(16);
         BitSet pieceUsed = new BitSet(17);
@@ -97,7 +96,7 @@ class BacktrackingSolverTest {
             solver,
             stats,
             solutionFound,
-            configManager,
+            config,
             null, // no recordManager
             null, // no autoSaveManager
             singletonStrategy,
@@ -136,7 +135,7 @@ class BacktrackingSolverTest {
             solver,
             stats,
             sharedFlag, // shared atomic flag
-            configManager,
+            config,
             null,
             null,
             singletonStrategy,
@@ -173,7 +172,7 @@ class BacktrackingSolverTest {
             solver,
             stats,
             solutionFound,
-            configManager,
+            config,
             null, // null RecordManager - should not crash
             null,
             singletonStrategy,
@@ -207,7 +206,7 @@ class BacktrackingSolverTest {
             solver,
             stats,
             solutionFound,
-            configManager,
+            config,
             null,
             null, // null AutoSaveManager - should not crash
             singletonStrategy,
@@ -241,7 +240,7 @@ class BacktrackingSolverTest {
             solver,
             stats,
             solutionFound,
-            configManager,
+            config,
             null,
             null,
             singletonStrategy,
@@ -277,7 +276,7 @@ class BacktrackingSolverTest {
             solver,
             stats,
             sharedFlag, // pre-set to true (solution found by another thread)
-            configManager,
+            config,
             null,
             null,
             singletonStrategy,
@@ -330,7 +329,7 @@ class BacktrackingSolverTest {
             solver,
             stats,
             solutionFound,
-            configManager,
+            config,
             recordManager, // RecordManager present
             testAutoSave, // Track auto-save calls
             singletonStrategy,
@@ -379,7 +378,7 @@ class BacktrackingSolverTest {
             solver,
             stats,
             solutionFound,
-            configManager,
+            config,
             recordManager,
             testAutoSave, // Track if saveRecord was called
             singletonStrategy,
@@ -417,7 +416,7 @@ class BacktrackingSolverTest {
             solver,
             stats,
             solutionFound,
-            configManager,
+            config,
             null,
             null,
             singletonStrategy,
@@ -437,7 +436,7 @@ class BacktrackingSolverTest {
     @DisplayName("Should handle thread state save errors gracefully in verbose mode")
     void testThreadStateSaveErrorHandling() {
         // Arrange
-        configManager.setVerbose(true); // Enable verbose to test error logging
+        config = SolverConfiguration.builder().verbose(true).build(); // Enable verbose to test error logging
 
         Board board = new Board(2, 2);
         Map<Integer, Piece> pieces = createSimplePuzzle(4);
@@ -453,7 +452,7 @@ class BacktrackingSolverTest {
             solver,
             stats,
             solutionFound,
-            configManager,
+            config,
             null,
             null,
             singletonStrategy,
@@ -489,7 +488,7 @@ class BacktrackingSolverTest {
             solver,
             stats,
             solutionFound,
-            configManager,
+            config,
             null,
             null,
             singletonStrategy,

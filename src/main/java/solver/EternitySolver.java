@@ -30,13 +30,17 @@ public class EternitySolver {
     /** Type alias for backward compatibility - delegates to StatisticsManager. */
     public static class Statistics extends StatisticsManager { }
 
-    private SolverStateManager stateManager = new SolverStateManager();
     Statistics stats = new Statistics();
     long startTimeMs = 0;  // Package-private for HistoricalSolver access
 
     /** Gets start time for timeout checking */
     public long getStartTimeMs() {
         return startTimeMs;
+    }
+
+    /** Gets statistics manager for tracking solver metrics */
+    public Statistics getStats() {
+        return stats;
     }
 
     private boolean useAC3 = true;
@@ -58,15 +62,33 @@ public class EternitySolver {
     PlacementOrderTracker placementOrderTracker;
     private SymmetryBreakingManager symmetryBreakingManager;
     ConfigurationManager configManager = new ConfigurationManager();
+    private SharedSearchState sharedState = new SharedSearchState();
     private SingletonPlacementStrategy singletonStrategy;
     private MRVPlacementStrategy mrvStrategy;
     private CellConstraints[][] cellConstraints;
     Random random = new Random();
     int threadId = -1;
 
-    /** Delegates to {@link ParallelSearchManager#resetGlobalState} */
+    /** Resets shared search state between puzzle solving sessions. */
     public static void resetGlobalState() {
-        ParallelSearchManager.resetGlobalState();
+        // Keep for backward compatibility but recommend using instance method
+        // TODO: Migrate callers to use resetSharedState() on instance
+        new SharedSearchState().reset();
+    }
+
+    /** Resets shared search state. Recommended over static resetGlobalState(). */
+    public void resetSharedState() {
+        sharedState.reset();
+    }
+
+    /** Gets shared search state for this solver instance. */
+    public SharedSearchState getSharedState() {
+        return sharedState;
+    }
+
+    /** Sets shared search state (useful for sharing state across multiple solvers). */
+    public void setSharedState(SharedSearchState sharedState) {
+        this.sharedState = sharedState;
     }
 
     /** Delegates to {@link ConfigurationManager#setDisplayConfig} */
@@ -124,12 +146,12 @@ public class EternitySolver {
     }
 
     // State management delegates
-    public int getStepCount() { return stateManager.getStepCount(); }
-    public void incrementStepCount() { stateManager.incrementStepCount(); }
-    public void setLastPlaced(int row, int col) { stateManager.setLastPlaced(row, col); }
-    public int getLastPlacedRow() { return stateManager.getLastPlacedRow(); }
-    public int getLastPlacedCol() { return stateManager.getLastPlacedCol(); }
-    public void findAndSetLastPlaced(Board board) { stateManager.findAndSetLastPlaced(board); }
+    public int getStepCount() { return stats.getStepCount(); }
+    public void incrementStepCount() { stats.incrementStepCount(); }
+    public void setLastPlaced(int row, int col) { stats.setLastPlaced(row, col); }
+    public int getLastPlacedRow() { return stats.getLastPlacedRow(); }
+    public int getLastPlacedCol() { return stats.getLastPlacedCol(); }
+    public void findAndSetLastPlaced(Board board) { stats.findAndSetLastPlaced(board); }
 
     /** Assigns initialized components to instance fields. */
     private void assignSolverComponents(SolverInitializer.InitializedComponents components) {
@@ -166,12 +188,12 @@ public class EternitySolver {
 
         configManager.setThreadId(threadId);
         this.recordManager = configManager.createRecordManager(
-            ParallelSearchManager.getLockObject(),
-            ParallelSearchManager.getGlobalMaxDepth(),
-            ParallelSearchManager.getGlobalBestScore(),
-            ParallelSearchManager.getGlobalBestThreadId(),
-            ParallelSearchManager.getGlobalBestBoard(),
-            ParallelSearchManager.getGlobalBestPieces());
+            sharedState.getLockObject(),
+            sharedState.getGlobalMaxDepth(),
+            sharedState.getGlobalBestScore(),
+            sharedState.getGlobalBestThreadId(),
+            sharedState.getGlobalBestBoard(),
+            sharedState.getGlobalBestPieces());
     }
 
     /** Initializes solver components. Package-private for {@link HistoricalSolver}. */
@@ -231,7 +253,7 @@ public class EternitySolver {
     /** Delegates to {@link BacktrackingSolver#solve} */
     public boolean solveBacktracking(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         return new BacktrackingSolver(
-            this, stats, ParallelSearchManager.getSolutionFound(), configManager,
+            this, stats, sharedState.getSolutionFound(), configManager,
             recordManager, autoSaveManager, singletonStrategy, mrvStrategy,
             threadId, randomSeed, startTimeMs
         ).solve(board, piecesById, pieceUsed, totalPieces);
@@ -327,7 +349,7 @@ public class EternitySolver {
     /** Resets solver state and statistics. */
     public void reset() {
         stats = new Statistics();
-        stateManager.reset();
+        // Note: stats already has resetState() called in its constructor
     }
 
     /** Delegates to {@link ParallelSolverOrchestrator#solve} */

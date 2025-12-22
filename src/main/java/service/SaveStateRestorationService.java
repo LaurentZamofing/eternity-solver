@@ -1,3 +1,7 @@
+package service;
+
+import config.PuzzleConfig;
+
 // SaveStateRestorationService.java (moved to default package for PuzzleConfig access)
 import model.Board;
 import model.Piece;

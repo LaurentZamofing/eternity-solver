@@ -34,8 +34,14 @@ import java.util.Set;
  * Refactored using Strategy and Template Method patterns.
  * Result: 6 extracted components, 12 testable classes, facade reduced to ~50 lines.
  *
+ * <h3>Phase 5 Consolidation (2025)</h3>
+ * This class remains for backward compatibility.
+ * New code should use {@link solver.display.BoardDisplayService} which provides
+ * a simpler, more unified API for all visualization needs.
+ *
  * @author Eternity Solver Team
  * @version 2.0.0
+ * @see solver.display.BoardDisplayService
  */
 public class BoardDisplayManager {
 

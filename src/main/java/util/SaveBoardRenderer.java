@@ -15,7 +15,11 @@ import java.util.Map;
  *
  * @author Eternity Solver Team
  * @version 1.0.0
+ * @deprecated Use {@link solver.display.BoardDisplayService} for unified visualization API.
+ *             This class is maintained for backward compatibility.
+ * @see solver.display.BoardDisplayService
  */
+@Deprecated
 public class SaveBoardRenderer {
 
     /**

@@ -1,3 +1,4 @@
+import config.PuzzleConfig;
 import java.io.*;
 
 /**

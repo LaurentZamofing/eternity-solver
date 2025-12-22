@@ -1,232 +1,205 @@
 package solver;
 
-import util.SolverLogger;
-
 import model.Board;
 import model.Piece;
-import model.Placement;
 import util.SaveStateManager;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Manages all solver configuration: flags, puzzle metadata, fixed pieces detection, and manager initialization. */
+/**
+ * DEPRECATED: Legacy facade for solver configuration.
+ *
+ * This class has been refactored into:
+ * - {@link SolverConfiguration} - Immutable configuration data (use Builder pattern)
+ * - {@link FixedPieceDetector} - Fixed piece detection logic
+ * - Manager creation moved to managers themselves
+ *
+ * This class remains for backward compatibility but delegates to the new classes.
+ * New code should use SolverConfiguration.builder() instead.
+ *
+ * @deprecated Use {@link SolverConfiguration} and {@link FixedPieceDetector} instead
+ */
+@Deprecated
 public class ConfigurationManager {
 
-    // Main configuration flags
-    private boolean useSingletons = true;
-    private boolean verbose = true;
-    private boolean useAC3 = true;
-    private boolean useDomainCache = true;
-    private boolean prioritizeBorders = false;
-
-    // Display and logging configuration
-    private int minDepthToShowRecords = 0;
-
-    // Timeout configuration
-    private long maxExecutionTimeMs = Long.MAX_VALUE;
-
-    // Puzzle metadata
-    private String puzzleName = "eternity2";
-    private String threadLabel = "";
-    private String sortOrder = "ascending";
-    private int threadId = -1;
-
-    // Fixed pieces state
-    private int numFixedPieces = 0;
-    private Set<String> fixedPositions = new HashSet<>();
-    private List<SaveStateManager.PlacementInfo> initialFixedPieces = new ArrayList<>();
-
-    // Thread management and saving
-    private long randomSeed = 0;
-    private static final long THREAD_SAVE_INTERVAL = SolverConstants.THREAD_SAVE_INTERVAL_MS;
+    private final SolverConfiguration.Builder configBuilder;
+    private final FixedPieceDetector fixedPieceDetector;
 
     public ConfigurationManager() {
+        this.configBuilder = SolverConfiguration.builder();
+        this.fixedPieceDetector = new FixedPieceDetector();
     }
 
-    // ============ Configuration Setters ============
+    // ============ Configuration Setters (delegate to builder) ============
 
     public void setDisplayConfig(boolean verbose, int minDepth) {
-        this.verbose = verbose;
-        this.minDepthToShowRecords = minDepth;
+        configBuilder.verbose(verbose).minDepthToShowRecords(minDepth);
     }
 
     public void setMinDepthToShowRecords(int minDepth) {
-        this.minDepthToShowRecords = minDepth;
+        configBuilder.minDepthToShowRecords(minDepth);
     }
 
     public void setPuzzleName(String name) {
-        this.puzzleName = name;
+        configBuilder.puzzleName(name);
     }
 
     public void setSortOrder(String order) {
-        this.sortOrder = order;
+        configBuilder.sortOrder(order);
     }
 
     public void setNumFixedPieces(int num) {
-        this.numFixedPieces = num;
+        configBuilder.numFixedPieces(num);
     }
 
     public void setMaxExecutionTime(long timeMs) {
-        this.maxExecutionTimeMs = timeMs;
+        configBuilder.maxExecutionTimeMs(timeMs);
     }
 
     public void setThreadLabel(String label) {
-        this.threadLabel = label;
+        configBuilder.threadLabel(label);
     }
 
     public void setThreadId(int id) {
-        this.threadId = id;
+        configBuilder.threadId(id);
     }
 
     public void setUseSingletons(boolean enabled) {
-        this.useSingletons = enabled;
+        configBuilder.useSingletons(enabled);
     }
 
     public void setPrioritizeBorders(boolean enabled) {
-        this.prioritizeBorders = enabled;
-        if (verbose && enabled) {
-            SolverLogger.info("  🔲 Border prioritization enabled - borders will be filled first");
-        }
+        configBuilder.prioritizeBorders(enabled);
     }
 
     public void setVerbose(boolean enabled) {
-        this.verbose = enabled;
+        configBuilder.verbose(enabled);
     }
 
     public void setUseAC3(boolean enabled) {
-        this.useAC3 = enabled;
+        configBuilder.useAC3(enabled);
     }
 
     public void setUseDomainCache(boolean enabled) {
-        this.useDomainCache = enabled;
+        configBuilder.useDomainCache(enabled);
     }
 
     public void setRandomSeed(long seed) {
-        this.randomSeed = seed;
+        configBuilder.randomSeed(seed);
     }
 
-    // ============ Configuration Getters ============
+    // ============ Configuration Getters (build and delegate) ============
+
+    private SolverConfiguration getConfig() {
+        return configBuilder.build();
+    }
 
     public boolean isUseSingletons() {
-        return useSingletons;
+        return getConfig().isUseSingletons();
     }
 
     public boolean isVerbose() {
-        return verbose;
+        return getConfig().isVerbose();
     }
 
     public boolean isUseAC3() {
-        return useAC3;
+        return getConfig().isUseAC3();
     }
 
     public boolean isUseDomainCache() {
-        return useDomainCache;
+        return getConfig().isUseDomainCache();
     }
 
     public boolean isPrioritizeBorders() {
-        return prioritizeBorders;
+        return getConfig().isPrioritizeBorders();
     }
 
     public int getMinDepthToShowRecords() {
-        return minDepthToShowRecords;
+        return getConfig().getMinDepthToShowRecords();
     }
 
     public long getMaxExecutionTimeMs() {
-        return maxExecutionTimeMs;
+        return getConfig().getMaxExecutionTimeMs();
     }
 
     public String getPuzzleName() {
-        return puzzleName;
+        return getConfig().getPuzzleName();
     }
 
     public String getThreadLabel() {
-        return threadLabel;
+        return getConfig().getThreadLabel();
     }
 
     public String getSortOrder() {
-        return sortOrder;
+        return getConfig().getSortOrder();
     }
 
     public int getThreadId() {
-        return threadId;
+        return getConfig().getThreadId();
     }
 
     public int getNumFixedPieces() {
-        return numFixedPieces;
+        return getConfig().getNumFixedPieces();
     }
 
     public Set<String> getFixedPositions() {
-        return new HashSet<>(fixedPositions);
+        return getConfig().getFixedPositions();
     }
 
     public List<SaveStateManager.PlacementInfo> getInitialFixedPieces() {
-        return new ArrayList<>(initialFixedPieces);
+        return getConfig().getInitialFixedPieces();
     }
 
     public long getRandomSeed() {
-        return randomSeed;
+        return getConfig().getRandomSeed();
     }
 
     public static long getThreadSaveInterval() {
-        return THREAD_SAVE_INTERVAL;
+        return SolverConfiguration.getThreadSaveInterval();
     }
 
-    // ============ Fixed Pieces Detection ============
+    // ============ Fixed Pieces Detection (delegate to detector) ============
 
-    /** Detects and initializes fixed pieces from board state; used when starting with pre-placed pieces.
-     * @return List of fixed piece placements found on the board
+    /**
+     * Detects and initializes fixed pieces from board state.
+     * @deprecated Use {@link FixedPieceDetector#detectFromBoard} instead
      */
+    @Deprecated
     public List<SaveStateManager.PlacementInfo> detectFixedPiecesFromBoard(Board board, BitSet pieceUsed) {
-        fixedPositions.clear();
-        numFixedPieces = 0;
-        initialFixedPieces.clear();
-        List<SaveStateManager.PlacementInfo> fixedPiecesList = new ArrayList<>();
+        FixedPieceDetector.FixedPieceInfo info = fixedPieceDetector.detectFromBoard(board, pieceUsed);
 
-        for (int r = 0; r < board.getRows(); r++) {
-            for (int c = 0; c < board.getCols(); c++) {
-                if (!board.isEmpty(r, c)) {
-                    fixedPositions.add(r + "," + c);
-                    numFixedPieces++;
+        // Update internal state
+        configBuilder.numFixedPieces(info.numFixedPieces);
+        configBuilder.fixedPositions(info.fixedPositions);
+        configBuilder.initialFixedPieces(info.fixedPiecesList);
 
-                    Placement placement = board.getPlacement(r, c);
-                    int placedPieceId = placement.getPieceId();
-                    int placedRotation = placement.getRotation();
-                    pieceUsed.set(placedPieceId);
-
-                    SaveStateManager.PlacementInfo fixedPiece =
-                        new SaveStateManager.PlacementInfo(r, c, placedPieceId, placedRotation);
-                    initialFixedPieces.add(fixedPiece);
-                    fixedPiecesList.add(fixedPiece);
-                }
-            }
-        }
-
-        return fixedPiecesList;
+        return info.fixedPiecesList;
     }
 
-    /** Calculates number of fixed pieces based on puzzle name; used when resuming from saved state. */
+    /**
+     * Calculates number of fixed pieces based on puzzle name.
+     * @deprecated Use {@link FixedPieceDetector#calculateNumFixedPieces} instead
+     */
+    @Deprecated
     public int calculateNumFixedPieces(String puzzleName) {
-        if (puzzleName.startsWith("eternity2")) {
-            return 9; // 4 corners + 5 hints for Eternity II
-        } else if (puzzleName.startsWith("indice")) {
-            return 0; // No fixed pieces for hint puzzles
-        } else {
-            return 0; // Default: no fixed pieces
-        }
+        return fixedPieceDetector.calculateNumFixedPieces(puzzleName);
     }
 
-    /** Builds initial fixed pieces list from preloaded placement order; used when resuming from saved state. */
+    /**
+     * Builds initial fixed pieces list from preloaded placement order.
+     * @deprecated Use {@link FixedPieceDetector#buildFromPreloadedOrder} instead
+     */
+    @Deprecated
     public void buildInitialFixedPieces(List<SaveStateManager.PlacementInfo> preloadedOrder,
                                        int numFixedPieces) {
-        this.fixedPositions = new HashSet<>();
-        this.numFixedPieces = numFixedPieces;
-        this.initialFixedPieces.clear();
+        FixedPieceDetector.FixedPieceInfo info =
+            fixedPieceDetector.buildFromPreloadedOrder(preloadedOrder, numFixedPieces);
 
-        for (int i = 0; i < Math.min(numFixedPieces, preloadedOrder.size()); i++) {
-            initialFixedPieces.add(preloadedOrder.get(i));
-        }
+        configBuilder.numFixedPieces(info.numFixedPieces);
+        configBuilder.fixedPositions(info.fixedPositions);
+        configBuilder.initialFixedPieces(info.fixedPiecesList);
     }
 
     // ============ Manager Initialization ============
@@ -236,10 +209,11 @@ public class ConfigurationManager {
             PlacementOrderTracker placementOrderTracker,
             Map<Integer, Piece> allPieces) {
 
+        SolverConfiguration config = getConfig();
         AutoSaveManager manager = new AutoSaveManager(
-            puzzleName,
-            numFixedPieces,
-            initialFixedPieces,
+            config.getPuzzleName(),
+            config.getNumFixedPieces(),
+            config.getInitialFixedPieces(),
             placementOrderTracker
         );
         manager.initializePiecesMap(allPieces);
@@ -255,10 +229,11 @@ public class ConfigurationManager {
             AtomicReference<Board> globalBestBoard,
             AtomicReference<Map<Integer, Piece>> globalBestPieces) {
 
+        SolverConfiguration config = getConfig();
         return new RecordManager(
-            puzzleName,
-            threadId,
-            minDepthToShowRecords,
+            config.getPuzzleName(),
+            config.getThreadId(),
+            config.getMinDepthToShowRecords(),
             lockObject,
             globalMaxDepth,
             globalBestScore,
@@ -270,17 +245,14 @@ public class ConfigurationManager {
 
     /** Logs current configuration parameters if verbose enabled. */
     public void logConfiguration() {
-        if (verbose) {
-            SolverLogger.info("\n═══════════════════════════════════════");
-            SolverLogger.info("  Configuration:");
-            SolverLogger.info("  - Puzzle: " + puzzleName);
-            SolverLogger.info("  - Thread: " + threadLabel);
-            System.out.println("  - Singletons: " + (useSingletons ? "✓" : "✗"));
-            System.out.println("  - AC-3: " + (useAC3 ? "✓" : "✗"));
-            System.out.println("  - Domain Cache: " + (useDomainCache ? "✓" : "✗"));
-            System.out.println("  - Prioritize Borders: " + (prioritizeBorders ? "✓" : "✗"));
-            SolverLogger.info("  - Fixed Pieces: " + numFixedPieces);
-            SolverLogger.info("═══════════════════════════════════════\n");
-        }
+        getConfig().logConfiguration();
+    }
+
+    /**
+     * Get the immutable configuration.
+     * Recommended way to access configuration in new code.
+     */
+    public SolverConfiguration toConfiguration() {
+        return getConfig();
     }
 }

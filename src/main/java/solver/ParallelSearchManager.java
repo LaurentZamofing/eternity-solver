@@ -1,35 +1,36 @@
 package solver;
 
-import util.SolverLogger;
-
 import model.Board;
 import model.Piece;
-import model.Placement;
-import util.SaveManager;
+import solver.parallel.ParallelExecutionCoordinator;
+import solver.parallel.WorkStealingExecutor;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Manages parallel search execution with work-stealing, thread coordination, and diversification strategies.
+ * Facade for parallel search execution with work-stealing and thread coordination.
  *
- * <h2>Responsibilities</h2>
+ * <h2>Responsibilities (Phase 4 Refactoring)</h2>
  * <ul>
- *   <li>Coordinate work-stealing parallelism (Fork/Join framework)</li>
- *   <li>Manage thread pool execution</li>
- *   <li>Apply diversification strategies for parallel search</li>
- *   <li>Coordinate shared state across threads</li>
+ *   <li>Provides unified interface for parallel solving strategies</li>
+ *   <li>Delegates to {@link WorkStealingExecutor} for Fork/Join parallelism</li>
+ *   <li>Delegates to {@link ParallelExecutionCoordinator} for thread pool execution</li>
+ *   <li>Maintains backward compatibility via deprecated static methods</li>
  * </ul>
  *
  * <h2>Design</h2>
- * Uses instance-based SharedSearchState (not static state) for thread-safe coordination.
- * Delegates board copying and diversification to extracted services.
+ * <ul>
+ *   <li>Uses instance-based {@link SharedSearchState} for thread coordination</li>
+ *   <li>Delegates to extracted parallel coordination components</li>
+ *   <li>Provides clean separation between parallel strategies</li>
+ * </ul>
  *
  * @author Eternity Solver Team
- * @version 1.0.0
+ * @version 2.0.0 (Phase 4 extraction)
  */
 public class ParallelSearchManager {
 
@@ -42,6 +43,10 @@ public class ParallelSearchManager {
     // Instance state
     private final SharedSearchState sharedState;
     private final DomainManager domainManager;
+
+    // Extracted parallel execution components
+    private final WorkStealingExecutor workStealingExecutor;
+    private final ParallelExecutionCoordinator parallelCoordinator;
 
     // Extracted services
     private final DiversificationStrategy diversificationStrategy;
@@ -58,6 +63,14 @@ public class ParallelSearchManager {
         this.sharedState = sharedState;
         this.diversificationStrategy = new DiversificationStrategy();
         this.boardCopyService = new BoardCopyService();
+
+        // Initialize extracted parallel execution components
+        this.workStealingExecutor = new WorkStealingExecutor(
+            sharedState, domainManager, boardCopyService
+        );
+        this.parallelCoordinator = new ParallelExecutionCoordinator(
+            sharedState, boardCopyService, diversificationStrategy
+        );
     }
 
     /**
@@ -88,75 +101,141 @@ public class ParallelSearchManager {
     }
 
     // ==================== Static Backward Compatibility Methods ====================
-    // TODO: Remove these and migrate callers to use SharedSearchState directly
+    // DEPRECATED: These methods use static state and should be migrated to instance-based SharedSearchState
+    // Use EternitySolver.getSharedState() or create your own SharedSearchState instance
 
+    /**
+     * @deprecated Use {@link SharedSearchState#reset()} on an instance instead.
+     * Access via {@link EternitySolver#getSharedState()}.
+     */
+    @Deprecated
     public static void resetGlobalState() {
         defaultSharedState.reset();
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#getLockObject()} on an instance instead.
+     */
+    @Deprecated
     public static Object getLockObject() {
         return defaultSharedState.getLockObject();
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#getSolutionFound()} on an instance instead.
+     */
+    @Deprecated
     public static AtomicBoolean getSolutionFound() {
         return defaultSharedState.getSolutionFound();
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#getGlobalMaxDepth()} on an instance instead.
+     */
+    @Deprecated
     public static AtomicInteger getGlobalMaxDepth() {
         return defaultSharedState.getGlobalMaxDepth();
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#getGlobalBestScore()} on an instance instead.
+     */
+    @Deprecated
     public static AtomicInteger getGlobalBestScore() {
         return defaultSharedState.getGlobalBestScore();
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#getGlobalBestThreadId()} on an instance instead.
+     */
+    @Deprecated
     public static AtomicInteger getGlobalBestThreadId() {
         return defaultSharedState.getGlobalBestThreadId();
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#getGlobalBestBoard()} on an instance instead.
+     */
+    @Deprecated
     public static AtomicReference<Board> getGlobalBestBoard() {
         return defaultSharedState.getGlobalBestBoard();
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#getGlobalBestPieces()} on an instance instead.
+     */
+    @Deprecated
     public static AtomicReference<Map<Integer, Piece>> getGlobalBestPieces() {
         return defaultSharedState.getGlobalBestPieces();
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#getWorkStealingPool()} on an instance instead.
+     */
+    @Deprecated
     public static ForkJoinPool getWorkStealingPool() {
         return defaultSharedState.getWorkStealingPool();
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#isSolutionFound()} on an instance instead.
+     */
+    @Deprecated
     public static boolean isSolutionFound() {
         return defaultSharedState.isSolutionFound();
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#markSolutionFound()} on an instance instead.
+     */
+    @Deprecated
     public static void markSolutionFound() {
         defaultSharedState.markSolutionFound();
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#updateGlobalMaxDepth(int)} on an instance instead.
+     */
+    @Deprecated
     public static boolean updateGlobalMaxDepth(int depth) {
         return defaultSharedState.updateGlobalMaxDepth(depth);
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#updateGlobalBestScore(int)} on an instance instead.
+     */
+    @Deprecated
     public static boolean updateGlobalBestScore(int score) {
         return defaultSharedState.updateGlobalBestScore(score);
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#setGlobalBestThreadId(int)} on an instance instead.
+     */
+    @Deprecated
     public static void setGlobalBestThreadId(int threadId) {
         defaultSharedState.setGlobalBestThreadId(threadId);
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#setGlobalBestBoard(Board)} on an instance instead.
+     */
+    @Deprecated
     public static void setGlobalBestBoard(Board board) {
         defaultSharedState.setGlobalBestBoard(board);
     }
 
+    /**
+     * @deprecated Use {@link SharedSearchState#setGlobalBestPieces(Map)} on an instance instead.
+     */
+    @Deprecated
     public static void setGlobalBestPieces(Map<Integer, Piece> pieces) {
         defaultSharedState.setGlobalBestPieces(pieces);
     }
 
     /**
      * Solves puzzle using work-stealing parallelism (Fork/Join framework).
-     * Creates parallel task and submits to pool.
+     * Delegates to {@link WorkStealingExecutor}.
      *
      * @param board Initial board state
      * @param pieces Map of all pieces
@@ -164,255 +243,44 @@ public class ParallelSearchManager {
      * @param totalPieces Total number of pieces
      * @param sequentialSolver Sequential solver callback
      * @return true if solution found
+     * @throws IllegalStateException if work-stealing pool not enabled
      */
     public boolean solveWithWorkStealing(Board board, Map<Integer, Piece> pieces,
                                          BitSet pieceUsed, int totalPieces,
                                          SequentialSolver sequentialSolver) {
-        ForkJoinPool pool = sharedState.getWorkStealingPool();
-
-        if (pool == null) {
-            throw new IllegalStateException("Work-stealing pool not enabled. Call enableWorkStealing() first.");
-        }
-
-        ParallelSearchTask task = new ParallelSearchTask(
-            board, pieces, pieceUsed, totalPieces, 0, domainManager, sequentialSolver, sharedState, boardCopyService
-        );
-        return pool.invoke(task);
+        // Convert to WorkStealingExecutor.SequentialSolver
+        WorkStealingExecutor.SequentialSolver executor = sequentialSolver::solve;
+        return workStealingExecutor.solve(board, pieces, pieceUsed, totalPieces, executor);
     }
 
-    /** Callback interface for sequential solver. */
+    /**
+     * Callback interface for sequential solver.
+     * Maintained for backward compatibility.
+     */
     public interface SequentialSolver {
         boolean solve(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces);
     }
 
     /**
-     * Recursive task for Fork/Join parallelism with work-stealing.
+     * Solves puzzle with multiple parallel threads.
+     * Delegates to {@link ParallelExecutionCoordinator}.
+     * Each thread explores independently with own board copy.
+     *
+     * @param board Initial board state
+     * @param allPieces All pieces in puzzle
+     * @param availablePieces Pieces not yet placed
+     * @param numThreads Number of parallel threads
+     * @param puzzleName Puzzle identifier for save/load
+     * @param sequentialSolver Solver each thread uses
+     * @return true if any thread found solution
      */
-    private static class ParallelSearchTask extends RecursiveTask<Boolean> {
-        private final Board board;
-        private final Map<Integer, Piece> piecesById;
-        private final BitSet pieceUsed;
-        private final int totalPieces;
-        private final int currentDepth;
-        private final DomainManager domainManager;
-        private final SequentialSolver sequentialSolver;
-        private final SharedSearchState sharedState;
-        private final BoardCopyService boardCopyService;
-
-        ParallelSearchTask(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed,
-                           int totalPieces, int currentDepth, DomainManager domainManager,
-                           SequentialSolver sequentialSolver, SharedSearchState sharedState,
-                           BoardCopyService boardCopyService) {
-            this.board = board;
-            this.piecesById = piecesById;
-            this.pieceUsed = (BitSet) pieceUsed.clone();
-            this.totalPieces = totalPieces;
-            this.currentDepth = currentDepth;
-            this.domainManager = domainManager;
-            this.sequentialSolver = sequentialSolver;
-            this.sharedState = sharedState;
-            this.boardCopyService = boardCopyService;
-        }
-
-        @Override
-        protected Boolean compute() {
-            // Check if solution already found
-            if (sharedState.isSolutionFound()) {
-                return false;
-            }
-
-            // Get work-stealing pool reference
-            ForkJoinPool pool = sharedState.getWorkStealingPool();
-
-            // If depth is low enough, fork tasks
-            if (currentDepth < WORK_STEALING_DEPTH_THRESHOLD && pool != null) {
-                // Find next empty cell with MRV heuristic (simplified version)
-                int[] cell = findNextEmptyCell(board);
-
-                // If no cell found, check if board is complete
-                if (cell == null) {
-                    int usedCount = pieceUsed.cardinality();
-                    return usedCount == totalPieces;
-                }
-
-                int r = cell[0], c = cell[1];
-                List<DomainManager.ValidPlacement> validPlacements =
-                    domainManager.computeDomain(board, r, c, piecesById, pieceUsed, totalPieces);
-
-                // Create parallel tasks for different piece placements
-                List<ParallelSearchTask> tasks = new ArrayList<>();
-                for (DomainManager.ValidPlacement vp : validPlacements) {
-                    try {
-                        // Create deep copy of board
-                        Board boardCopy = boardCopyService.copyBoard(board, piecesById);
-
-                        Piece piece = piecesById.get(vp.pieceId);
-                        if (piece != null) {
-                            boardCopy.place(r, c, piece, vp.rotation);
-                            BitSet usedCopy = (BitSet) pieceUsed.clone();
-                            usedCopy.set(vp.pieceId);
-
-                            ParallelSearchTask task = new ParallelSearchTask(
-                                boardCopy, piecesById, usedCopy, totalPieces,
-                                currentDepth + 1, domainManager, sequentialSolver, sharedState, boardCopyService
-                            );
-                            tasks.add(task);
-                            task.fork(); // Submit to work-stealing pool
-                        }
-                    } catch (RuntimeException e) {
-                        // Continue with next placement if copy fails
-                        SolverLogger.debug("Failed to create parallel task: " + e.getMessage());
-                    }
-                }
-
-                // Wait for task to find solution
-                for (ParallelSearchTask task : tasks) {
-                    try {
-                        boolean taskFoundSolution = task.join();
-
-                        if (taskFoundSolution && !sharedState.isSolutionFound()) {
-                            sharedState.markSolutionFound();
-                            return true;
-                        }
-                    } catch (RuntimeException e) {
-                        // Continue with next task
-                        SolverLogger.debug("Task join failed: " + e.getMessage());
-                    }
-                }
-                return false;
-            } else {
-                // Deep enough - use sequential search
-                return sequentialSolver.solve(board, piecesById, pieceUsed, totalPieces);
-            }
-        }
-
-        /**
-         * Finds next empty cell in row-major order.
-         *
-         * @param board Board to search
-         * @return Array of [row, col] or null if no empty cell
-         */
-        private int[] findNextEmptyCell(Board board) {
-            for (int r = 0; r < board.getRows(); r++) {
-                for (int c = 0; c < board.getCols(); c++) {
-                    if (board.isEmpty(r, c)) {
-                        return new int[]{r, c};
-                    }
-                }
-            }
-            return null;
-        }
-    }
-
-    /** Solves puzzle with multiple parallel threads (thread pool); each thread explores independently with own board copy. */
     public boolean solveParallel(Board board, Map<Integer, Piece> allPieces,
                                 Map<Integer, Piece> availablePieces, int numThreads,
                                 String puzzleName, SequentialSolver sequentialSolver) {
-        SolverLogger.info("\n╔══════════════════════════════════════════════════════════╗");
-        SolverLogger.info("║           PARALLEL SEARCH WITH " + numThreads + " THREADS            ║");
-        SolverLogger.info("╚══════════════════════════════════════════════════════════╝\n");
-
-        // Reset flags
-        sharedState.getSolutionFound().set(false);
-        sharedState.getGlobalMaxDepth().set(0);
-
-        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        List<Future<Boolean>> futures = new ArrayList<>();
-
-        // Launch numThreads workers with different seeds
-        for (int i = 0; i < numThreads; i++) {
-            final int threadId = i;
-
-            Future<Boolean> future = executor.submit(() -> {
-                try {
-                    Board localBoard;
-                    Map<Integer, Piece> localPieces;
-                    List<Integer> unusedIds;
-                    long seed = System.currentTimeMillis() + threadId * SolverConstants.THREAD_SEED_OFFSET_MS;
-                    boolean loadedFromSave = false;
-
-                    // Check if this thread has saved state
-                    if (SaveManager.hasThreadState(threadId)) {
-                        Object[] savedState = SaveManager.loadThreadState(threadId, allPieces);
-                        if (savedState != null) {
-                            localBoard = (Board) savedState[0];
-                            @SuppressWarnings("unchecked")
-                            Set<Integer> usedPieceIds = (Set<Integer>) savedState[1];
-                            int savedDepth = (int) savedState[2];
-                            seed = (long) savedState[3];
-
-                            localPieces = new HashMap<>(allPieces);
-                            unusedIds = new ArrayList<>();
-                            for (int pid : allPieces.keySet()) {
-                                if (!usedPieceIds.contains(pid)) {
-                                    unusedIds.add(pid);
-                                }
-                            }
-
-                            loadedFromSave = true;
-                            synchronized (System.out) {
-                                System.out.println("📂 Thread " + threadId + " restored from save: "
-                                    + savedDepth + " pieces placed");
-                            }
-                        } else {
-                            // Load error, start normally
-                            localBoard = boardCopyService.copyBoard(board, allPieces);
-                            localPieces = new HashMap<>(allPieces);
-                            unusedIds = new ArrayList<>(availablePieces.keySet());
-                        }
-                    } else {
-                        // No save - create board copy for this thread
-                        localBoard = boardCopyService.copyBoard(board, allPieces);
-                        localPieces = new HashMap<>(allPieces);
-                        unusedIds = new ArrayList<>(availablePieces.keySet());
-                    }
-
-                    // Create BitSet pieceUsed
-                    int totalPieces = localPieces.size();
-                    int maxPieceId = localPieces.keySet().stream().max(Integer::compareTo).orElse(totalPieces);
-                    BitSet pieceUsed = new BitSet(maxPieceId + 1);
-                    for (int pid : localPieces.keySet()) {
-                        if (!unusedIds.contains(pid)) {
-                            pieceUsed.set(pid);
-                        }
-                    }
-
-                    // Diversification strategy: pre-place different corner for each thread
-                    if (!loadedFromSave) {
-                        diversificationStrategy.diversify(threadId, localBoard, localPieces, unusedIds, pieceUsed);
-                    }
-
-                    // Solve with this thread's configuration
-                    return sequentialSolver.solve(localBoard, localPieces, pieceUsed, totalPieces);
-
-                } catch (RuntimeException e) {
-                    SolverLogger.error("Error during parallel search execution: " + e.getMessage(), e);
-                    return false;
-                }
-            });
-
-            futures.add(future);
-        }
-
-        // Wait for all threads and check if one found solution
-        boolean solved = false;
-        for (Future<Boolean> future : futures) {
-            try {
-                if (future.get()) {
-                    solved = true;
-                }
-            } catch (Exception e) {
-                SolverLogger.error("Error occurred", e);
-            }
-        }
-
-        executor.shutdown();
-        try {
-            executor.awaitTermination(1, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        return solved;
+        // Convert to ParallelExecutionCoordinator.SequentialSolver
+        ParallelExecutionCoordinator.SequentialSolver executor = sequentialSolver::solve;
+        return parallelCoordinator.solveParallel(
+            board, allPieces, availablePieces, numThreads, puzzleName, executor
+        );
     }
 }

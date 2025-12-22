@@ -1,3 +1,7 @@
+package service;
+
+import config.PuzzleConfig;
+
 // SolutionDisplayService.java (moved to default package for MainSequential access)
 
 import model.Board;

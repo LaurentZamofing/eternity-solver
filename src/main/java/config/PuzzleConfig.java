@@ -1,3 +1,5 @@
+package config;
+
 import model.Piece;
 import util.SolverLogger;
 import util.TimeConstants;

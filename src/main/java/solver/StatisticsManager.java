@@ -1,5 +1,6 @@
 package solver;
 
+import model.Board;
 import util.SolverLogger;
 
 import util.TimeConstants;
@@ -10,6 +11,8 @@ import java.util.Map;
 /**
  * Manages statistics and progress tracking for puzzle solving.
  * Extracted from EternitySolver for better code organization.
+ *
+ * Merged with SolverStateManager (Phase 8 refactoring) to reduce manager count.
  */
 public class StatisticsManager {
 
@@ -24,6 +27,11 @@ public class StatisticsManager {
     public long deadEndsDetected = 0;
     public long fitChecks = 0;
     public long forwardCheckRejects = 0;
+
+    // Solver state (merged from SolverStateManager)
+    private int stepCount = 0;
+    private int lastPlacedRow = -1;
+    private int lastPlacedCol = -1;
 
     // Progress tracking (for % estimation)
     private Map<Integer, ProgressTracker> depthTrackers = new HashMap<>();
@@ -125,5 +133,89 @@ public class StatisticsManager {
     public void printCompact() {
         System.out.printf("Stats: Recursive=%d | Placements=%d | Backtracks=%d | Singletons=%d/%d | Dead-ends=%d | Time=%.1fs\n",
                 recursiveCalls, placements, backtracks, singletonsPlaced, singletonsFound, deadEndsDetected, getElapsedTimeSec());
+    }
+
+    // ==================== Solver State Methods (merged from SolverStateManager) ====================
+
+    /**
+     * Gets the current step count.
+     * @return number of steps taken
+     */
+    public int getStepCount() {
+        return stepCount;
+    }
+
+    /**
+     * Increments the step count by 1.
+     */
+    public void incrementStepCount() {
+        stepCount++;
+    }
+
+    /**
+     * Resets the step count to 0.
+     */
+    public void resetStepCount() {
+        stepCount = 0;
+    }
+
+    /**
+     * Sets the last placed position.
+     * @param row row index
+     * @param col column index
+     */
+    public void setLastPlaced(int row, int col) {
+        this.lastPlacedRow = row;
+        this.lastPlacedCol = col;
+    }
+
+    /**
+     * Gets the row of the last placed piece.
+     * @return row index, or -1 if none placed
+     */
+    public int getLastPlacedRow() {
+        return lastPlacedRow;
+    }
+
+    /**
+     * Gets the column of the last placed piece.
+     * @return column index, or -1 if none placed
+     */
+    public int getLastPlacedCol() {
+        return lastPlacedCol;
+    }
+
+    /**
+     * Scans the board to find and set the last placed position.
+     * Useful after loading from a saved state.
+     *
+     * @param board Board to scan
+     */
+    public void findAndSetLastPlaced(Board board) {
+        int rows = board.getRows();
+        int cols = board.getCols();
+
+        // Scan from bottom-right to top-left to find last placed piece
+        for (int r = rows - 1; r >= 0; r--) {
+            for (int c = cols - 1; c >= 0; c--) {
+                if (!board.isEmpty(r, c)) {
+                    setLastPlaced(r, c);
+                    return;
+                }
+            }
+        }
+
+        // No pieces found - reset to -1
+        setLastPlaced(-1, -1);
+    }
+
+    /**
+     * Resets solver state (step count and last placed position).
+     * Note: Does not reset statistics counters - use this for state-specific resets.
+     */
+    public void resetState() {
+        stepCount = 0;
+        lastPlacedRow = -1;
+        lastPlacedCol = -1;
     }
 }

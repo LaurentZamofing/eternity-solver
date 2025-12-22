@@ -1,5 +1,5 @@
 import config.PuzzleConfig;
-import java.io.*;
+import java.io.IOException;
 
 /**
  * Test pour vérifier le chargement des nouvelles configurations avec SortOrder

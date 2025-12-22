@@ -1,8 +1,11 @@
 import model.Board;
 import model.Piece;
 import util.SaveStateManager;
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Tests pour le système de backtracking automatique avec placement order

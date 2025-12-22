@@ -6,7 +6,12 @@ import model.Board;
 import model.Piece;
 import util.SaveStateManager;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /** Manages historical backtracking through pre-loaded states with full backtracking capability; tries alternative rotations before deeper backtracking when resuming from saved games. */
 public class BacktrackingHistoryManager {

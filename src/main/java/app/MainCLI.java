@@ -1,8 +1,5 @@
 package app;
 
-import config.PuzzleConfig;
-import service.*;
-
 import cli.CommandLineInterface;
 import model.Board;
 import model.Piece;

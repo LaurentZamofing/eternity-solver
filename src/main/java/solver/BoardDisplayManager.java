@@ -2,7 +2,9 @@ package solver;
 
 import model.Board;
 import model.Piece;
-import solver.display.*;
+import solver.display.ComparisonBoardRenderer;
+import solver.display.LabeledBoardRenderer;
+import solver.display.ValidPieceCounter;
 
 import java.util.List;
 import java.util.Map;

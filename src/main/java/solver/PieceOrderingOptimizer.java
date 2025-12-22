@@ -3,7 +3,13 @@ package solver;
 import model.Board;
 import model.Piece;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /** Optimizes piece ordering and selection using edge compatibility, LCV heuristic, difficulty ordering, and corner piece selection for efficient puzzle solving. */
 public class PieceOrderingOptimizer {

@@ -2,7 +2,11 @@ import model.Board;
 import model.Piece;
 import model.Placement;
 import solver.EternitySolver;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Test de régression pour vérifier qu'aucun gap ne se crée sur les bords

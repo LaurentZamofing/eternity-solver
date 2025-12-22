@@ -3,7 +3,10 @@ package solver;
 import util.SaveStateManager;
 import util.SolverLogger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Immutable configuration for the Eternity solver.

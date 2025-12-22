@@ -2,7 +2,12 @@ package solver;
 
 import model.Board;
 import model.Piece;
-import solver.visualization.*;
+import solver.visualization.BoardFormatter;
+import solver.visualization.CompactBoardFormatter;
+import solver.visualization.ComparisonBoardFormatter;
+import solver.visualization.DetailedBoardFormatter;
+import solver.visualization.FormatterContext;
+import solver.visualization.LabeledBoardFormatter;
 
 import java.util.BitSet;
 import java.util.List;

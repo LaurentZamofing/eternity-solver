@@ -1,7 +1,8 @@
 import model.Board;
 import model.Piece;
 import util.SaveStateManager;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Tests pour valider la logique de profondeur de backtracking

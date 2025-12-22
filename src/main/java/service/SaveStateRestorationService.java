@@ -10,7 +10,10 @@ import util.SaveStateManager;
 import util.SolverLogger;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Service for loading and restoring puzzle save states.

@@ -99,8 +99,8 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
         if (verbose) {
             int availableCount = context.countAvailablePieces();
             SolverLogger.info("\n╔════════════════════════════════════════╗");
-            System.out.println("║  Step " + (solver.getStepCount() + 1) + " - FORCED SINGLETON");
-            System.out.println("║  Piece " + pid + " → Cell (" + r + ", " + c + ")");
+            SolverLogger.info("║  Step " + (solver.getStepCount() + 1) + " - FORCED SINGLETON");
+            SolverLogger.info("║  Piece " + pid + " → Cell (" + r + ", " + c + ")");
             SolverLogger.info("║  Available pieces: " + availableCount);
             SolverLogger.info("╚════════════════════════════════════════╝");
             context.stats.printCompact();
@@ -130,7 +130,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
                                                context.piecesById, context.pieceUsed, context.totalPieces)) {
             // Dead end detected by AC-3 for singleton
             if (verbose) {
-                System.out.println("✗ AC-3 dead-end detected for singleton: ID=" + pid + " at (" + r + ", " + c + ")");
+                SolverLogger.info("✗ AC-3 dead-end detected for singleton: ID=" + pid + " at (" + r + ", " + c + ")");
             }
             // Backtrack immediately
             context.pieceUsed.clear(pid);
@@ -160,7 +160,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
         // Backtrack singleton
         context.stats.backtracks++;
         if (verbose) {
-            System.out.println("✗ Singleton BACKTRACK: Removing piece ID=" + pid + " at (" + r + ", " + c + ")");
+            SolverLogger.info("✗ Singleton BACKTRACK: Removing piece ID=" + pid + " at (" + r + ", " + c + ")");
             waitForEnter();
         }
 

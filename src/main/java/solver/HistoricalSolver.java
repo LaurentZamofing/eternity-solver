@@ -110,7 +110,7 @@ public class HistoricalSolver {
             solver.getStartTimeMs(),
             solver.configManager.getMaxExecutionTimeMs());
 
-        System.out.println("  → Resuming with " + preloadedOrder.size() + " pre-loaded pieces");
+        SolverLogger.info("  → Resuming with " + preloadedOrder.size() + " pre-loaded pieces");
         SolverLogger.info("  → Backtracking can go back through ALL pieces");
 
         // Try to solve with current state

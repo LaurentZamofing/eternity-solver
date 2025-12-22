@@ -44,7 +44,7 @@ public class SymmetryBreakingManager {
         if (enableLexicographicOrdering) {
             if (!checkLexicographicOrdering(board, row, col, pieceId)) {
                 if (verbose) {
-                    System.out.println("  ⛔ Symmetry: Rejecting piece " + pieceId + " at (" + row + "," + col + ") - violates lexicographic ordering");
+                    SolverLogger.info("  ⛔ Symmetry: Rejecting piece " + pieceId + " at (" + row + "," + col + ") - violates lexicographic ordering");
                 }
                 return false;
             }
@@ -54,7 +54,7 @@ public class SymmetryBreakingManager {
         if (enableRotationalFixing) {
             if (!checkRotationFixing(board, row, col, rotation)) {
                 if (verbose) {
-                    System.out.println("  ⛔ Symmetry: Rejecting rotation " + rotation + " at (" + row + "," + col + ") - violates rotation fixing");
+                    SolverLogger.info("  ⛔ Symmetry: Rejecting rotation " + rotation + " at (" + row + "," + col + ") - violates rotation fixing");
                 }
                 return false;
             }
@@ -148,9 +148,9 @@ public class SymmetryBreakingManager {
     public void logConfiguration() {
         if (verbose) {
             SolverLogger.info("  🔄 Symmetry breaking:");
-            System.out.println("     - Lexicographic ordering: " + (enableLexicographicOrdering ? "✓" : "✗"));
-            System.out.println("     - Rotation fixing: " + (enableRotationalFixing ? "✓" : "✗"));
-            System.out.println("     - Reflection pruning: " + (enableReflectionPruning ? "✓" : "✗"));
+            SolverLogger.info("     - Lexicographic ordering: " + (enableLexicographicOrdering ? "✓" : "✗"));
+            SolverLogger.info("     - Rotation fixing: " + (enableRotationalFixing ? "✓" : "✗"));
+            SolverLogger.info("     - Reflection pruning: " + (enableReflectionPruning ? "✓" : "✗"));
         }
     }
 

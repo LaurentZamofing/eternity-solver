@@ -302,7 +302,7 @@ public class ParallelSolverOrchestrator {
             }
 
         } catch (InterruptedException e) {
-            System.err.println("Interrupted: " + e.getMessage());
+            SolverLogger.error("Interrupted: " + e.getMessage());
             executor.shutdownNow();
         }
 
@@ -312,9 +312,9 @@ public class ParallelSolverOrchestrator {
     /** Handles solution found by thread, updating global state. */
     private void handleSolutionFound(int threadId, Board board, Map<Integer, Piece> pieces) {
         synchronized (System.out) {
-            System.out.println("\n" + "=".repeat(60));
+            SolverLogger.info("\n" + "=".repeat(60));
             SolverLogger.info("🎉 Thread " + threadId + " found SOLUTION! 🎉");
-            System.out.println("=".repeat(60));
+            SolverLogger.info("=".repeat(60));
         }
 
         synchronized (lockObject) {
@@ -382,7 +382,7 @@ public class ParallelSolverOrchestrator {
                                  ") - Fixed corner: piece " + state.cornerPieceId +
                                  " at (" + state.cornerRow + "," + state.cornerCol + ")");
             } else {
-                System.out.println("🚀 Thread " + threadId + " started (seed=" + state.seed + ")");
+                SolverLogger.info("🚀 Thread " + threadId + " started (seed=" + state.seed + ")");
             }
         }
     }
@@ -395,7 +395,7 @@ public class ParallelSolverOrchestrator {
 
     private void printThreadError(int threadId, Exception e) {
         synchronized (System.err) {
-            System.err.println("✗ Thread " + threadId + " error: " + e.getMessage());
+            SolverLogger.error("✗ Thread " + threadId + " error: " + e.getMessage());
             SolverLogger.error("Error occurred", e);
         }
     }

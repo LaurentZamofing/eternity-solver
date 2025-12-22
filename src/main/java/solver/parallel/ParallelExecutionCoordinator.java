@@ -228,7 +228,7 @@ public class ParallelExecutionCoordinator {
             }
         }
 
-        System.out.println("🚀 Thread " + threadId + " started (seed=" + seed + ")");
+        SolverLogger.info("🚀 Thread " + threadId + " started (seed=" + seed + ")");
 
         return new ThreadState(localBoard, localPieces, unusedIds,
                               pieceUsed, totalPieces, seed, loadedFromSave);

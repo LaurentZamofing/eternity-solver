@@ -118,7 +118,7 @@ public class StatisticsManager {
 
     public void print() {
         SolverLogger.info("\n╔════════════════ STATISTICS ═════════════════════╗");
-        System.out.println("║ Elapsed time       : " + String.format("%.2f", getElapsedTimeSec()) + " seconds");
+        SolverLogger.info("║ Elapsed time       : " + String.format("%.2f", getElapsedTimeSec()) + " seconds");
         SolverLogger.info("║ Recursive calls    : " + recursiveCalls);
         SolverLogger.info("║ Placements tested  : " + placements);
         SolverLogger.info("║ Backtracks         : " + backtracks);

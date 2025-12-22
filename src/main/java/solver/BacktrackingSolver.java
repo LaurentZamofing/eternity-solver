@@ -51,7 +51,7 @@ public class BacktrackingSolver {
     private final EternitySolver solver;
     private final StatisticsManager stats;
     private final AtomicBoolean solutionFound;
-    private final ConfigurationManager configManager;
+    private final SolverConfiguration config;
 
     // Optional managers (can be null)
     private final RecordManager recordManager;
@@ -78,7 +78,7 @@ public class BacktrackingSolver {
      * @param solver reference to EternitySolver for callback methods
      * @param stats statistics tracker
      * @param solutionFound atomic flag for multi-threaded solution signaling
-     * @param configManager configuration manager (single source of truth)
+     * @param config solver configuration (immutable)
      * @param recordManager record manager (can be null)
      * @param autoSaveManager auto-save manager (can be null)
      * @param singletonStrategy singleton placement strategy
@@ -91,7 +91,7 @@ public class BacktrackingSolver {
             EternitySolver solver,
             StatisticsManager stats,
             AtomicBoolean solutionFound,
-            ConfigurationManager configManager,
+            SolverConfiguration config,
             RecordManager recordManager,
             AutoSaveManager autoSaveManager,
             SingletonPlacementStrategy singletonStrategy,
@@ -110,8 +110,8 @@ public class BacktrackingSolver {
         if (solutionFound == null) {
             throw new IllegalArgumentException("solutionFound cannot be null");
         }
-        if (configManager == null) {
-            throw new IllegalArgumentException("configManager cannot be null");
+        if (config == null) {
+            throw new IllegalArgumentException("config cannot be null");
         }
         if (singletonStrategy == null) {
             throw new IllegalArgumentException("singletonStrategy cannot be null");
@@ -124,7 +124,7 @@ public class BacktrackingSolver {
         this.solver = solver;
         this.stats = stats;
         this.solutionFound = solutionFound;
-        this.configManager = configManager;
+        this.config = config;
         this.recordManager = recordManager;
         this.autoSaveManager = autoSaveManager;
         this.singletonStrategy = singletonStrategy;
@@ -163,7 +163,7 @@ public class BacktrackingSolver {
         // IMPORTANT: exclude fixed pieces from calculation (count only pieces placed by backtracking)
         // Optimization: Use BitSet.cardinality() instead of manual loop (O(1) vs O(n))
         int usedCount = pieceUsed.cardinality();
-        int currentDepth = usedCount - configManager.getNumFixedPieces();
+        int currentDepth = usedCount - config.getNumFixedPieces();
 
         // Check and update records using RecordManager
         if (recordManager != null) {
@@ -217,7 +217,7 @@ public class BacktrackingSolver {
             // No empty cells -> solution found
             solutionFound.set(true); // Signal to other threads
             stats.end();
-            if (configManager.isVerbose()) {
+            if (config.isVerbose()) {
                 SolverLogger.info("\n========================================");
                 SolverLogger.info("SOLUTION FOUND!");
                 SolverLogger.info("========================================");
@@ -227,8 +227,8 @@ public class BacktrackingSolver {
 
         // Create backtracking context for strategies
         BacktrackingContext context = new BacktrackingContext(
-            board, piecesById, pieceUsed, totalPieces, stats, configManager.getNumFixedPieces(),
-            startTimeMs, configManager.getMaxExecutionTimeMs()
+            board, piecesById, pieceUsed, totalPieces, stats, config.getNumFixedPieces(),
+            startTimeMs, config.getMaxExecutionTimeMs()
         );
 
         // STEP 1: Try singleton placement strategy first (most constrained)

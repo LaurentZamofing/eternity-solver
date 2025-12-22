@@ -63,7 +63,8 @@ public class EternitySolver {
 
     PlacementOrderTracker placementOrderTracker;
     private SymmetryBreakingManager symmetryBreakingManager;
-    ConfigurationManager configManager = new ConfigurationManager();
+    SolverConfiguration.Builder configBuilder = SolverConfiguration.builder();  // Package-private for HistoricalSolver
+    FixedPieceDetector fixedPieceDetector = new FixedPieceDetector();  // Package-private for HistoricalSolver
     private SharedSearchState sharedState = new SharedSearchState();
     private SingletonPlacementStrategy singletonStrategy;
     private MRVPlacementStrategy mrvStrategy;
@@ -93,34 +94,34 @@ public class EternitySolver {
         this.sharedState = sharedState;
     }
 
-    /** Delegates to {@link ConfigurationManager#setDisplayConfig} */
+    /** Sets display configuration */
     public void setDisplayConfig(boolean verbose, int minDepth) {
-        configManager.setDisplayConfig(verbose, minDepth);
+        configBuilder.verbose(verbose).minDepthToShowRecords(minDepth);
     }
 
-    /** Delegates to {@link ConfigurationManager#setPuzzleName} */
+    /** Sets puzzle name */
     public void setPuzzleName(String name) {
-        configManager.setPuzzleName(name);
+        configBuilder.puzzleName(name);
     }
 
-    /** Delegates to {@link ConfigurationManager#setSortOrder} */
+    /** Sets sort order */
     public void setSortOrder(String order) {
-        configManager.setSortOrder(order);
+        configBuilder.sortOrder(order);
     }
 
-    /** Delegates to {@link ConfigurationManager#setNumFixedPieces} */
+    /** Sets number of fixed pieces */
     public void setNumFixedPieces(int num) {
-        configManager.setNumFixedPieces(num);
+        configBuilder.numFixedPieces(num);
     }
 
-    /** Delegates to {@link ConfigurationManager#setMaxExecutionTime} */
+    /** Sets maximum execution time */
     public void setMaxExecutionTime(long timeMs) {
-        configManager.setMaxExecutionTime(timeMs);
+        configBuilder.maxExecutionTimeMs(timeMs);
     }
 
-    /** Delegates to {@link ConfigurationManager#setThreadLabel} */
+    /** Sets thread label */
     public void setThreadLabel(String label) {
-        configManager.setThreadLabel(label);
+        configBuilder.threadLabel(label);
     }
 
     long randomSeed = 0;
@@ -171,37 +172,50 @@ public class EternitySolver {
 
     /** Initializes placement strategies. Package-private for {@link HistoricalSolver}. */
     void initializePlacementStrategies() {
+        SolverConfiguration config = configBuilder.build();
         this.singletonStrategy = new SingletonPlacementStrategy(
-            singletonDetector, configManager.isUseSingletons(), configManager.isVerbose(),
+            singletonDetector, config.isUseSingletons(), config.isVerbose(),
             symmetryBreakingManager, constraintPropagator, domainManager
         );
         this.mrvStrategy = new MRVPlacementStrategy(
-            configManager.isVerbose(), valueOrderer, symmetryBreakingManager,
+            config.isVerbose(), valueOrderer, symmetryBreakingManager,
             constraintPropagator, domainManager
         );
-        this.mrvStrategy.setSortOrder(configManager.getSortOrder());
+        this.mrvStrategy.setSortOrder(config.getSortOrder());
     }
 
     /** Initializes managers. Package-private for {@link HistoricalSolver}. */
     void initializeManagers(Map<Integer, Piece> pieces) {
-        this.autoSaveManager = configManager.createAutoSaveManager(
-            placementOrderTracker,
-            pieces);
+        SolverConfiguration config = configBuilder.build();
 
-        configManager.setThreadId(threadId);
-        this.recordManager = configManager.createRecordManager(
+        this.autoSaveManager = new AutoSaveManager(
+            config.getPuzzleName(),
+            config.getNumFixedPieces(),
+            config.getInitialFixedPieces(),
+            placementOrderTracker
+        );
+        this.autoSaveManager.initializePiecesMap(pieces);
+
+        configBuilder.threadId(threadId);
+        SolverConfiguration configWithThread = configBuilder.build();
+        this.recordManager = new RecordManager(
+            configWithThread.getPuzzleName(),
+            configWithThread.getThreadId(),
+            configWithThread.getMinDepthToShowRecords(),
             sharedState.getLockObject(),
             sharedState.getGlobalMaxDepth(),
             sharedState.getGlobalBestScore(),
             sharedState.getGlobalBestThreadId(),
             sharedState.getGlobalBestBoard(),
-            sharedState.getGlobalBestPieces());
+            sharedState.getGlobalBestPieces()
+        );
     }
 
     /** Initializes solver components. Package-private for {@link HistoricalSolver}. */
     void initializeComponents(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
-        SolverInitializer initializer = new SolverInitializer(this, stats, configManager.getSortOrder(), configManager.isVerbose(),
-            configManager.isPrioritizeBorders(), configManager.getFixedPositions());
+        SolverConfiguration config = configBuilder.build();
+        SolverInitializer initializer = new SolverInitializer(this, stats, config.getSortOrder(), config.isVerbose(),
+            config.isPrioritizeBorders(), config.getFixedPositions());
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
             board, pieces, pieceUsed, totalPieces);
         assignSolverComponents(components);
@@ -255,7 +269,7 @@ public class EternitySolver {
     /** Delegates to {@link BacktrackingSolver#solve} */
     public boolean solveBacktracking(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         return new BacktrackingSolver(
-            this, stats, sharedState.getSolutionFound(), configManager,
+            this, stats, sharedState.getSolutionFound(), configBuilder.build(),
             recordManager, autoSaveManager, singletonStrategy, mrvStrategy,
             threadId, randomSeed, startTimeMs
         ).solve(board, piecesById, pieceUsed, totalPieces);
@@ -286,8 +300,11 @@ public class EternitySolver {
         BitSet pieceUsed = createPieceUsedBitSet(pieces);
 
         // Detect fixed pieces and initialize tracker with them
-        List<SaveStateManager.PlacementInfo> fixedPieces = configManager.detectFixedPiecesFromBoard(board, pieceUsed);
-        placementOrderTracker.initializeWithFixedPieces(fixedPieces);
+        FixedPieceDetector.FixedPieceInfo fixedPieceInfo = fixedPieceDetector.detectFromBoard(board, pieceUsed);
+        configBuilder.numFixedPieces(fixedPieceInfo.numFixedPieces)
+                    .fixedPositions(fixedPieceInfo.fixedPositions)
+                    .initialFixedPieces(fixedPieceInfo.fixedPiecesList);
+        placementOrderTracker.initializeWithFixedPieces(fixedPieceInfo.fixedPiecesList);
 
         initializeManagers(pieces);
         initializeComponents(board, pieces, pieceUsed, totalPieces);
@@ -299,7 +316,7 @@ public class EternitySolver {
 
         if (!solved) {
             stats.end();
-            if (configManager.isVerbose()) {
+            if (configBuilder.build().isVerbose()) {
                 SolverLogger.info("\n========================================");
                 SolverLogger.info("PAS DE SOLUTION TROUVÉE");
                 SolverLogger.info("========================================");
@@ -323,7 +340,7 @@ public class EternitySolver {
         this.symmetryBreakingManager = new SymmetryBreakingManager(
             board.getRows(),
             board.getCols(),
-            configManager.isVerbose()
+            configBuilder.build().isVerbose()
         );
         symmetryBreakingManager.logConfiguration();
     }
@@ -333,19 +350,19 @@ public class EternitySolver {
         return stats;
     }
 
-    /** Delegates to {@link ConfigurationManager#setUseSingletons} */
+    /** Sets whether to use singletons */
     public void setUseSingletons(boolean enabled) {
-        configManager.setUseSingletons(enabled);
+        configBuilder.useSingletons(enabled);
     }
 
-    /** Delegates to {@link ConfigurationManager#setPrioritizeBorders} */
+    /** Sets whether to prioritize borders */
     public void setPrioritizeBorders(boolean enabled) {
-        configManager.setPrioritizeBorders(enabled);
+        configBuilder.prioritizeBorders(enabled);
     }
 
-    /** Delegates to {@link ConfigurationManager#setVerbose} */
+    /** Sets verbose mode */
     public void setVerbose(boolean enabled) {
-        configManager.setVerbose(enabled);
+        configBuilder.verbose(enabled);
     }
 
     /** Resets solver state and statistics. */
@@ -359,7 +376,7 @@ public class EternitySolver {
         ParallelSolverOrchestrator orchestrator = new ParallelSolverOrchestrator(
             this,
             allPieces,
-            configManager.getPuzzleName(),
+            configBuilder.build().getPuzzleName(),
             useDomainCache,
             ParallelSearchManager.getSolutionFound(),
             ParallelSearchManager.getGlobalMaxDepth(),

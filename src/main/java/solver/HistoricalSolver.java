@@ -65,7 +65,8 @@ public class HistoricalSolver {
                                      List<Integer> unusedIds,
                                      List<SaveStateManager.PlacementInfo> preloadedOrder) {
         // Retrieve time already accumulated from previous saves
-        long previousComputeTime = SaveStateManager.readTotalComputeTime(solver.configManager.getPuzzleName());
+        SolverConfiguration currentConfig = solver.configBuilder.build();
+        long previousComputeTime = SaveStateManager.readTotalComputeTime(currentConfig.getPuzzleName());
         solver.stats.start(previousComputeTime);
 
         // IMPORTANT: Reset startTimeMs to NOW for timeout calculation
@@ -80,8 +81,11 @@ public class HistoricalSolver {
         // For now, no position is truly "fixed" - we can backtrack everything
 
         // Initialize numFixedPieces and initialFixedPieces from configuration file
-        int numFixed = solver.configManager.calculateNumFixedPieces(solver.configManager.getPuzzleName());
-        solver.configManager.buildInitialFixedPieces(preloadedOrder, numFixed);
+        int numFixed = solver.fixedPieceDetector.calculateNumFixedPieces(currentConfig.getPuzzleName());
+        FixedPieceDetector.FixedPieceInfo fixedInfo = solver.fixedPieceDetector.buildFromPreloadedOrder(preloadedOrder, numFixed);
+        solver.configBuilder.numFixedPieces(fixedInfo.numFixedPieces)
+                           .fixedPositions(fixedInfo.fixedPositions)
+                           .initialFixedPieces(fixedInfo.fixedPiecesList);
 
         // Create pieceUsed array from unusedIds
         int totalPieces = allPieces.size();
@@ -100,15 +104,16 @@ public class HistoricalSolver {
         solver.initializePlacementStrategies();
 
         // Now create BacktrackingHistoryManager with valid validator (no redundant creation)
+        SolverConfiguration config = solver.configBuilder.build();
         BacktrackingHistoryManager backtrackingHistoryManager = new BacktrackingHistoryManager(
             solver.validator,  // validator is now properly initialized
-            solver.configManager.getThreadLabel(),
+            config.getThreadLabel(),
             solver.stats);
 
         // Configure timeout for backtracking
         backtrackingHistoryManager.setTimeoutConfig(
             solver.getStartTimeMs(),
-            solver.configManager.getMaxExecutionTimeMs());
+            config.getMaxExecutionTimeMs());
 
         SolverLogger.info("  → Resuming with " + preloadedOrder.size() + " pre-loaded pieces");
         SolverLogger.info("  → Backtracking can go back through ALL pieces");

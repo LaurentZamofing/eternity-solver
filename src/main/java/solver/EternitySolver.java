@@ -378,13 +378,13 @@ public class EternitySolver {
             allPieces,
             configBuilder.build().getPuzzleName(),
             useDomainCache,
-            ParallelSearchManager.getSolutionFound(),
-            ParallelSearchManager.getGlobalMaxDepth(),
-            ParallelSearchManager.getGlobalBestScore(),
-            ParallelSearchManager.getGlobalBestThreadId(),
-            ParallelSearchManager.getGlobalBestBoard(),
-            ParallelSearchManager.getGlobalBestPieces(),
-            ParallelSearchManager.getLockObject()
+            sharedState.getSolutionFound(),
+            sharedState.getGlobalMaxDepth(),
+            sharedState.getGlobalBestScore(),
+            sharedState.getGlobalBestThreadId(),
+            sharedState.getGlobalBestBoard(),
+            sharedState.getGlobalBestPieces(),
+            sharedState.getLockObject()
         );
         return orchestrator.solve(board, availablePieces, numThreads);
     }

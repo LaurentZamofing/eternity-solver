@@ -24,13 +24,14 @@ class ParallelSearchManagerTest {
 
     private ParallelSearchManager manager;
     private DomainManager domainManager;
+    private SharedSearchState sharedState;
     private Board testBoard;
     private Map<Integer, Piece> testPieces;
 
     @BeforeEach
     void setUp() {
-        // Reset global state before each test
-        ParallelSearchManager.resetGlobalState();
+        // Create shared state instance for each test
+        sharedState = new SharedSearchState();
 
         // Create test fixtures
         testBoard = new Board(3, 3);
@@ -39,22 +40,23 @@ class ParallelSearchManagerTest {
         // Create simple FitChecker for testing
         DomainManager.FitChecker fitChecker = (board, r, c, candidateEdges) -> true;
         domainManager = new DomainManager(fitChecker);
-        manager = new ParallelSearchManager(domainManager);
+        manager = new ParallelSearchManager(domainManager, sharedState);
     }
 
     @AfterEach
     void tearDown() {
-        // Clean up global state
-        ParallelSearchManager.resetGlobalState();
+        // Clean up shared state
+        sharedState.reset();
     }
 
     // ==================== Constructor Tests ====================
 
     @Test
     @Order(1)
-    @DisplayName("Should create manager with domain manager")
+    @DisplayName("Should create manager with domain manager and shared state")
     void testConstructor() {
-        ParallelSearchManager manager = new ParallelSearchManager(domainManager);
+        SharedSearchState state = new SharedSearchState();
+        ParallelSearchManager manager = new ParallelSearchManager(domainManager, state);
         assertNotNull(manager, "Manager should be created");
     }
 
@@ -63,7 +65,8 @@ class ParallelSearchManagerTest {
     @DisplayName("Should accept null domain manager without immediate error")
     void testConstructorWithNullDomainManager() {
         // Constructor doesn't validate, may fail later during use
-        assertDoesNotThrow(() -> new ParallelSearchManager(null));
+        SharedSearchState state = new SharedSearchState();
+        assertDoesNotThrow(() -> new ParallelSearchManager(null, state));
     }
 
     // ==================== Work-Stealing Pool Tests ====================
@@ -74,7 +77,7 @@ class ParallelSearchManagerTest {
     void testEnableWorkStealing() {
         manager.enableWorkStealing(4);
 
-        ForkJoinPool pool = ParallelSearchManager.getWorkStealingPool();
+        ForkJoinPool pool = sharedState.getWorkStealingPool();
         assertNotNull(pool, "Work-stealing pool should be created");
         assertFalse(pool.isShutdown(), "Pool should not be shut down");
     }
@@ -84,10 +87,10 @@ class ParallelSearchManagerTest {
     @DisplayName("Should not recreate pool if already enabled")
     void testEnableWorkStealingIdempotent() {
         manager.enableWorkStealing(4);
-        ForkJoinPool firstPool = ParallelSearchManager.getWorkStealingPool();
+        ForkJoinPool firstPool = sharedState.getWorkStealingPool();
 
         manager.enableWorkStealing(4);
-        ForkJoinPool secondPool = ParallelSearchManager.getWorkStealingPool();
+        ForkJoinPool secondPool = sharedState.getWorkStealingPool();
 
         assertSame(firstPool, secondPool, "Should reuse existing pool");
     }
@@ -97,12 +100,12 @@ class ParallelSearchManagerTest {
     @DisplayName("Should recreate pool after shutdown")
     void testEnableWorkStealingAfterShutdown() {
         manager.enableWorkStealing(4);
-        ForkJoinPool firstPool = ParallelSearchManager.getWorkStealingPool();
+        ForkJoinPool firstPool = sharedState.getWorkStealingPool();
 
-        ParallelSearchManager.resetGlobalState(); // Shuts down pool
+        sharedState.reset(); // Shuts down pool
 
         manager.enableWorkStealing(4);
-        ForkJoinPool secondPool = ParallelSearchManager.getWorkStealingPool();
+        ForkJoinPool secondPool = sharedState.getWorkStealingPool();
 
         assertNotSame(firstPool, secondPool, "Should create new pool after shutdown");
         assertTrue(firstPool.isShutdown(), "First pool should be shut down");
@@ -115,26 +118,26 @@ class ParallelSearchManagerTest {
     @DisplayName("Should reset all global state")
     void testResetGlobalState() {
         // Set some state
-        ParallelSearchManager.markSolutionFound();
-        ParallelSearchManager.updateGlobalMaxDepth(42);
-        ParallelSearchManager.updateGlobalBestScore(100);
-        ParallelSearchManager.setGlobalBestThreadId(3);
-        ParallelSearchManager.setGlobalBestBoard(testBoard);
-        ParallelSearchManager.setGlobalBestPieces(testPieces);
+        sharedState.markSolutionFound();
+        sharedState.updateGlobalMaxDepth(42);
+        sharedState.updateGlobalBestScore(100);
+        sharedState.setGlobalBestThreadId(3);
+        sharedState.setGlobalBestBoard(testBoard);
+        sharedState.setGlobalBestPieces(testPieces);
         manager.enableWorkStealing(4);
 
         // Reset
-        ParallelSearchManager.resetGlobalState();
+        sharedState.reset();
 
         // Verify all reset
-        assertFalse(ParallelSearchManager.isSolutionFound(), "Solution flag should be reset");
-        assertEquals(0, ParallelSearchManager.getGlobalMaxDepth().get(), "Max depth should be reset");
-        assertEquals(0, ParallelSearchManager.getGlobalBestScore().get(), "Best score should be reset");
-        assertEquals(-1, ParallelSearchManager.getGlobalBestThreadId().get(), "Thread ID should be reset");
-        assertNull(ParallelSearchManager.getGlobalBestBoard().get(), "Best board should be null");
-        assertNull(ParallelSearchManager.getGlobalBestPieces().get(), "Best pieces should be null");
+        assertFalse(sharedState.isSolutionFound(), "Solution flag should be reset");
+        assertEquals(0, sharedState.getGlobalMaxDepth().get(), "Max depth should be reset");
+        assertEquals(0, sharedState.getGlobalBestScore().get(), "Best score should be reset");
+        assertEquals(-1, sharedState.getGlobalBestThreadId().get(), "Thread ID should be reset");
+        assertNull(sharedState.getGlobalBestBoard().get(), "Best board should be null");
+        assertNull(sharedState.getGlobalBestPieces().get(), "Best pieces should be null");
 
-        ForkJoinPool pool = ParallelSearchManager.getWorkStealingPool();
+        ForkJoinPool pool = sharedState.getWorkStealingPool();
         assertTrue(pool == null || pool.isShutdown(), "Pool should be shut down");
     }
 
@@ -142,12 +145,12 @@ class ParallelSearchManagerTest {
     @Order(7)
     @DisplayName("Should get and set solution found flag")
     void testSolutionFoundFlag() {
-        assertFalse(ParallelSearchManager.isSolutionFound(), "Initially false");
+        assertFalse(sharedState.isSolutionFound(), "Initially false");
 
-        ParallelSearchManager.markSolutionFound();
-        assertTrue(ParallelSearchManager.isSolutionFound(), "Should be true after marking");
+        sharedState.markSolutionFound();
+        assertTrue(sharedState.isSolutionFound(), "Should be true after marking");
 
-        AtomicBoolean flag = ParallelSearchManager.getSolutionFound();
+        AtomicBoolean flag = sharedState.getSolutionFound();
         assertTrue(flag.get(), "Atomic boolean should be true");
     }
 
@@ -155,42 +158,42 @@ class ParallelSearchManagerTest {
     @Order(8)
     @DisplayName("Should update global max depth with CAS")
     void testUpdateGlobalMaxDepth() {
-        assertEquals(0, ParallelSearchManager.getGlobalMaxDepth().get(), "Initially 0");
+        assertEquals(0, sharedState.getGlobalMaxDepth().get(), "Initially 0");
 
         // Update to higher value
-        boolean updated1 = ParallelSearchManager.updateGlobalMaxDepth(10);
+        boolean updated1 = sharedState.updateGlobalMaxDepth(10);
         assertTrue(updated1, "Should update from 0 to 10");
-        assertEquals(10, ParallelSearchManager.getGlobalMaxDepth().get());
+        assertEquals(10, sharedState.getGlobalMaxDepth().get());
 
         // Update to even higher value
-        boolean updated2 = ParallelSearchManager.updateGlobalMaxDepth(20);
+        boolean updated2 = sharedState.updateGlobalMaxDepth(20);
         assertTrue(updated2, "Should update from 10 to 20");
-        assertEquals(20, ParallelSearchManager.getGlobalMaxDepth().get());
+        assertEquals(20, sharedState.getGlobalMaxDepth().get());
 
         // Try to update to lower value
-        boolean updated3 = ParallelSearchManager.updateGlobalMaxDepth(15);
+        boolean updated3 = sharedState.updateGlobalMaxDepth(15);
         assertFalse(updated3, "Should not update to lower value");
-        assertEquals(20, ParallelSearchManager.getGlobalMaxDepth().get(), "Should remain 20");
+        assertEquals(20, sharedState.getGlobalMaxDepth().get(), "Should remain 20");
     }
 
     @Test
     @Order(9)
     @DisplayName("Should update global best score with CAS")
     void testUpdateGlobalBestScore() {
-        assertEquals(0, ParallelSearchManager.getGlobalBestScore().get(), "Initially 0");
+        assertEquals(0, sharedState.getGlobalBestScore().get(), "Initially 0");
 
         // Update to higher value
-        boolean updated1 = ParallelSearchManager.updateGlobalBestScore(50);
+        boolean updated1 = sharedState.updateGlobalBestScore(50);
         assertTrue(updated1, "Should update from 0 to 50");
-        assertEquals(50, ParallelSearchManager.getGlobalBestScore().get());
+        assertEquals(50, sharedState.getGlobalBestScore().get());
 
         // Try to update to lower value
-        boolean updated2 = ParallelSearchManager.updateGlobalBestScore(30);
+        boolean updated2 = sharedState.updateGlobalBestScore(30);
         assertFalse(updated2, "Should not update to lower value");
-        assertEquals(50, ParallelSearchManager.getGlobalBestScore().get(), "Should remain 50");
+        assertEquals(50, sharedState.getGlobalBestScore().get(), "Should remain 50");
 
         // Update to equal value
-        boolean updated3 = ParallelSearchManager.updateGlobalBestScore(50);
+        boolean updated3 = sharedState.updateGlobalBestScore(50);
         assertFalse(updated3, "Should not update to equal value");
     }
 
@@ -198,12 +201,12 @@ class ParallelSearchManagerTest {
     @Order(10)
     @DisplayName("Should set and get global best thread ID")
     void testGlobalBestThreadId() {
-        assertEquals(-1, ParallelSearchManager.getGlobalBestThreadId().get(), "Initially -1");
+        assertEquals(-1, sharedState.getGlobalBestThreadId().get(), "Initially -1");
 
-        ParallelSearchManager.setGlobalBestThreadId(5);
-        assertEquals(5, ParallelSearchManager.getGlobalBestThreadId().get());
+        sharedState.setGlobalBestThreadId(5);
+        assertEquals(5, sharedState.getGlobalBestThreadId().get());
 
-        AtomicInteger threadId = ParallelSearchManager.getGlobalBestThreadId();
+        AtomicInteger threadId = sharedState.getGlobalBestThreadId();
         assertEquals(5, threadId.get());
     }
 
@@ -211,34 +214,34 @@ class ParallelSearchManagerTest {
     @Order(11)
     @DisplayName("Should set and get global best board")
     void testGlobalBestBoard() {
-        assertNull(ParallelSearchManager.getGlobalBestBoard().get(), "Initially null");
+        assertNull(sharedState.getGlobalBestBoard().get(), "Initially null");
 
         Board board = new Board(4, 4);
-        ParallelSearchManager.setGlobalBestBoard(board);
+        sharedState.setGlobalBestBoard(board);
 
-        assertSame(board, ParallelSearchManager.getGlobalBestBoard().get());
+        assertSame(board, sharedState.getGlobalBestBoard().get());
     }
 
     @Test
     @Order(12)
     @DisplayName("Should set and get global best pieces")
     void testGlobalBestPieces() {
-        assertNull(ParallelSearchManager.getGlobalBestPieces().get(), "Initially null");
+        assertNull(sharedState.getGlobalBestPieces().get(), "Initially null");
 
         Map<Integer, Piece> pieces = createTestPieces();
-        ParallelSearchManager.setGlobalBestPieces(pieces);
+        sharedState.setGlobalBestPieces(pieces);
 
-        assertSame(pieces, ParallelSearchManager.getGlobalBestPieces().get());
+        assertSame(pieces, sharedState.getGlobalBestPieces().get());
     }
 
     @Test
     @Order(13)
     @DisplayName("Should get lock object")
     void testGetLockObject() {
-        Object lock = ParallelSearchManager.getLockObject();
+        Object lock = sharedState.getLockObject();
         assertNotNull(lock, "Lock object should not be null");
 
-        Object lock2 = ParallelSearchManager.getLockObject();
+        Object lock2 = sharedState.getLockObject();
         assertSame(lock, lock2, "Should return same lock object");
     }
 
@@ -308,7 +311,7 @@ class ParallelSearchManagerTest {
         for (int i = 0; i < numThreads; i++) {
             final int depth = (i + 1) * 10;
             threads[i] = new Thread(() -> {
-                ParallelSearchManager.updateGlobalMaxDepth(depth);
+                sharedState.updateGlobalMaxDepth(depth);
             });
             threads[i].start();
         }
@@ -319,7 +322,7 @@ class ParallelSearchManagerTest {
         }
 
         // Final depth should be the maximum
-        int finalDepth = ParallelSearchManager.getGlobalMaxDepth().get();
+        int finalDepth = sharedState.getGlobalMaxDepth().get();
         assertEquals(100, finalDepth, "Should be maximum depth from all threads");
     }
 
@@ -333,7 +336,7 @@ class ParallelSearchManagerTest {
         for (int i = 0; i < numThreads; i++) {
             final int score = (i + 1) * 5;
             threads[i] = new Thread(() -> {
-                ParallelSearchManager.updateGlobalBestScore(score);
+                sharedState.updateGlobalBestScore(score);
             });
             threads[i].start();
         }
@@ -344,7 +347,7 @@ class ParallelSearchManagerTest {
         }
 
         // Final score should be the maximum
-        int finalScore = ParallelSearchManager.getGlobalBestScore().get();
+        int finalScore = sharedState.getGlobalBestScore().get();
         assertEquals(50, finalScore, "Should be maximum score from all threads");
     }
 
@@ -357,8 +360,8 @@ class ParallelSearchManagerTest {
 
         for (int i = 0; i < numThreads; i++) {
             threads[i] = new Thread(() -> {
-                if (!ParallelSearchManager.isSolutionFound()) {
-                    ParallelSearchManager.markSolutionFound();
+                if (!sharedState.isSolutionFound()) {
+                    sharedState.markSolutionFound();
                 }
             });
             threads[i].start();
@@ -370,7 +373,7 @@ class ParallelSearchManagerTest {
         }
 
         // Solution should be marked as found
-        assertTrue(ParallelSearchManager.isSolutionFound(),
+        assertTrue(sharedState.isSolutionFound(),
                   "Solution should be marked found by one of the threads");
     }
 
@@ -381,12 +384,12 @@ class ParallelSearchManagerTest {
     @DisplayName("Should handle multiple resets")
     void testMultipleResets() {
         assertDoesNotThrow(() -> {
-            ParallelSearchManager.resetGlobalState();
-            ParallelSearchManager.resetGlobalState();
-            ParallelSearchManager.resetGlobalState();
+            sharedState.reset();
+            sharedState.reset();
+            sharedState.reset();
         }, "Multiple resets should not cause errors");
 
-        assertFalse(ParallelSearchManager.isSolutionFound());
+        assertFalse(sharedState.isSolutionFound());
     }
 
     @Test

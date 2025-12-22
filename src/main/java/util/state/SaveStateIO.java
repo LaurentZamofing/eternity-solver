@@ -263,7 +263,7 @@ public class SaveStateIO {
                       " pieces: " + fixedCount + " fixed + " + depth + " backtracking)");
         writer.println("# ═══════════════════════════════════════════════════════════");
         writer.println("#");
-        SaveBoardRenderer.generateBoardVisual(writer, board);
+        solver.display.BoardDisplayService.writeToSaveFile(writer, board);
         writer.println("#");
         writer.println("# ═══════════════════════════════════════════════════════════");
         writer.println();

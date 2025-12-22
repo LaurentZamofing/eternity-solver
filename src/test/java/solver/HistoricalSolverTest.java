@@ -226,15 +226,15 @@ class HistoricalSolverTest {
         List<Integer> unusedIds = List.of(1, 2, 3, 4);
         List<SaveStateManager.PlacementInfo> emptyHistory = new ArrayList<>();
 
-        solver.configManager.setPuzzleName("test_puzzle");
-        solver.configManager.setThreadLabel("[Test Thread]");
+        solver.configBuilder.build().setPuzzleName("test_puzzle");
+        solver.configBuilder.build().setThreadLabel("[Test Thread]");
 
         // Act
         historicalSolver.solveWithHistory(board, allPieces, unusedIds, emptyHistory);
 
         // Assert - ConfigurationManager should retain settings
-        assertEquals("test_puzzle", solver.configManager.getPuzzleName());
-        assertEquals("[Test Thread]", solver.configManager.getThreadLabel());
+        assertEquals("test_puzzle", solver.configBuilder.build().getPuzzleName());
+        assertEquals("[Test Thread]", solver.configBuilder.build().getThreadLabel());
     }
 
     @Test

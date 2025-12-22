@@ -37,7 +37,7 @@ class BacktrackingSolverTest {
     void setUp() {
         solver = new EternitySolver();
         stats = new StatisticsManager();
-        configManager = new ConfigurationManager();
+        configManager = SolverConfiguration.builder().build();
         solutionFound = new AtomicBoolean(false);
 
         // Set reasonable defaults

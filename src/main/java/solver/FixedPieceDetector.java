@@ -4,10 +4,13 @@ import model.Board;
 import model.Placement;
 import util.SaveStateManager;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -17,8 +20,30 @@ import java.util.Set;
  * This class provides two approaches:
  * 1. Detecting fixed pieces from an existing board state
  * 2. Building fixed pieces from saved state during resume
+ *
+ * Configuration is loaded from puzzle-definitions.properties (Phase 7.1).
  */
 public class FixedPieceDetector {
+
+    private static final Properties puzzleConfig = loadPuzzleConfig();
+
+    /**
+     * Loads puzzle configuration from properties file.
+     * @return Properties object with puzzle definitions
+     */
+    private static Properties loadPuzzleConfig() {
+        Properties props = new Properties();
+        try (InputStream input = FixedPieceDetector.class.getClassLoader()
+                .getResourceAsStream("puzzle-definitions.properties")) {
+            if (input != null) {
+                props.load(input);
+            }
+        } catch (IOException e) {
+            // Fallback to defaults if config file not found
+            util.SolverLogger.error("Failed to load puzzle-definitions.properties, using defaults");
+        }
+        return props;
+    }
 
     /**
      * Result of fixed piece detection, containing all necessary information.
@@ -72,19 +97,41 @@ public class FixedPieceDetector {
 
     /**
      * Calculates number of fixed pieces based on puzzle name.
-     * Used when resuming from saved state.
+     * Loads configuration from puzzle-definitions.properties (Phase 7.1).
      *
      * @param puzzleName The name of the puzzle
      * @return Expected number of fixed pieces for this puzzle
      */
     public int calculateNumFixedPieces(String puzzleName) {
-        if (puzzleName.startsWith("eternity2")) {
-            return 9; // 4 corners + 5 hints for Eternity II
-        } else if (puzzleName.startsWith("indice")) {
-            return 0; // No fixed pieces for hint puzzles
-        } else {
-            return 0; // Default: no fixed pieces
+        // Try exact match first
+        String key = "puzzle." + puzzleName + ".fixedPieces";
+        String value = puzzleConfig.getProperty(key);
+
+        if (value != null) {
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                util.SolverLogger.error("Invalid fixed pieces config for " + puzzleName + ": " + value);
+            }
         }
+
+        // Try prefix match (e.g., "eternity2_p01" matches "eternity2")
+        for (String prop : puzzleConfig.stringPropertyNames()) {
+            if (prop.startsWith("puzzle.") && prop.endsWith(".fixedPieces")) {
+                String prefix = prop.substring(7, prop.indexOf(".fixedPieces"));
+                if (puzzleName.startsWith(prefix)) {
+                    try {
+                        return Integer.parseInt(puzzleConfig.getProperty(prop));
+                    } catch (NumberFormatException e) {
+                        // Continue to next
+                    }
+                }
+            }
+        }
+
+        // Default fallback
+        String defaultValue = puzzleConfig.getProperty("puzzle.default.fixedPieces", "0");
+        return Integer.parseInt(defaultValue);
     }
 
     /**

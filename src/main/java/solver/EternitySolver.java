@@ -5,7 +5,9 @@ import util.SolverLogger;
 import model.Board;
 import model.Piece;
 import solver.BoardVisualizer;
-import solver.heuristics.*;
+import solver.heuristics.HeuristicStrategy;
+import solver.heuristics.LeastConstrainingValueOrderer;
+import solver.heuristics.MRVCellSelector;
 import util.SaveStateManager;
 
 import java.util.ArrayList;

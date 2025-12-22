@@ -2,7 +2,8 @@ package solver;
 
 import model.Board;
 import model.Piece;
-import solver.heuristics.*;
+import solver.heuristics.LeastConstrainingValueOrderer;
+import solver.heuristics.MRVCellSelector;
 import util.SaveStateManager;
 
 import java.util.BitSet;

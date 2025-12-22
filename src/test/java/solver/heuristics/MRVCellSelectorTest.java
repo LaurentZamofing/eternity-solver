@@ -2,7 +2,12 @@ package solver.heuristics;
 
 import model.Board;
 import model.Piece;
-import solver.*;
+import solver.CellConstraints;
+import solver.DomainManager;
+import solver.EdgeCompatibilityIndex;
+import solver.EternitySolver;
+import solver.NeighborAnalyzer;
+import solver.PlacementValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;

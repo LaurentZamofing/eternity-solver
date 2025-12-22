@@ -1,8 +1,13 @@
 import model.Board;
 import model.Piece;
 import util.SaveStateManager;
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Tests complets pour le système de sauvegarde dual (current + best)

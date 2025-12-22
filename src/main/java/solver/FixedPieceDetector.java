@@ -4,7 +4,11 @@ import model.Board;
 import model.Placement;
 import util.SaveStateManager;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Detects and manages fixed pieces for puzzle solving.

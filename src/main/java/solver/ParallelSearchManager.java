@@ -5,7 +5,8 @@ import model.Piece;
 import solver.parallel.ParallelExecutionCoordinator;
 import solver.parallel.WorkStealingExecutor;
 
-import java.util.*;
+import java.util.BitSet;
+import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;

@@ -6,7 +6,11 @@ import util.SaveStateManager.PlacementInfo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Test de création des sous-répertoires et de l'affichage visuel

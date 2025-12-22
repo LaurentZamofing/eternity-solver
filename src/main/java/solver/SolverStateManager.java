@@ -12,7 +12,10 @@ import model.Placement;
  *
  * @author Eternity Solver Team
  * @version 1.0.0
+ * @deprecated Merged into {@link StatisticsManager} (Phase 8 refactoring).
+ *             Use StatisticsManager methods directly instead.
  */
+@Deprecated
 public class SolverStateManager {
 
     private int stepCount = 0;

@@ -1,4 +1,8 @@
-// PuzzleSolverOrchestrator and TimeoutExecutor are in default package
+package app;
+
+import config.PuzzleConfig;
+import service.PuzzleSolverOrchestrator;
+import service.TimeoutExecutor;
 import util.SolverLogger;
 import util.TimeConstants;
 

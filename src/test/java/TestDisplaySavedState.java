@@ -1,3 +1,4 @@
+import config.PuzzleConfig;
 import model.Board;
 import model.Piece;
 import solver.EternitySolver;

@@ -1,3 +1,8 @@
+package app;
+
+import config.PuzzleConfig;
+import service.*;
+
 /**
  * Main entry point for the Eternity Puzzle Solver.
  *

@@ -1,5 +1,6 @@
 package solver.display;
 
+import util.SolverLogger;
 import model.Board;
 import model.Piece;
 
@@ -49,7 +50,7 @@ public class BoardDisplayService {
      * @param board Board to display
      */
     public void displayBoard(Board board) {
-        System.out.println(formatBoardSimple(board));
+        SolverLogger.info(formatBoardSimple(board));
     }
 
     /**
@@ -98,19 +99,19 @@ public class BoardDisplayService {
         int width = board.getCols() * 6 + 2;
         String border = "═".repeat(Math.max(0, width));
 
-        System.out.println("\n╔" + border + "╗");
-        System.out.println("║ " + centerText(title, width - 2) + " ║");
-        System.out.println("╠" + border + "╣");
+        SolverLogger.info("\n╔" + border + "╗");
+        SolverLogger.info("║ " + centerText(title, width - 2) + " ║");
+        SolverLogger.info("╠" + border + "╣");
 
         String boardStr = formatBoardSimple(board);
 
         for (String line : boardStr.split("\n")) {
             if (!line.trim().isEmpty()) {
-                System.out.println("║ " + line);
+                SolverLogger.info("║ " + line);
             }
         }
 
-        System.out.println("╚" + border + "╝\n");
+        SolverLogger.info("╚" + border + "╝\n");
     }
 
     /**

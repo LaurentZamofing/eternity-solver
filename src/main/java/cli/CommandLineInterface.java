@@ -1,5 +1,6 @@
 package cli;
 
+import util.SolverLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -179,60 +180,60 @@ public class CommandLineInterface {
      * Displays the help message
      */
     public void printHelp() {
-        System.out.println("╔═══════════════════════════════════════════════════════════╗");
-        System.out.println("║           ETERNITY PUZZLE SOLVER - HELP                   ║");
-        System.out.println("╚═══════════════════════════════════════════════════════════╝");
-        System.out.println();
-        System.out.println("USAGE:");
-        System.out.println("  java -jar eternity-solver.jar [OPTIONS] [PUZZLE_NAME]");
-        System.out.println();
-        System.out.println("OPTIONS:");
-        System.out.println("  -h, --help              Display this help message");
-        System.out.println("  --version               Display program version");
-        System.out.println("  -v, --verbose           Enable verbose mode (details)");
-        System.out.println("  -q, --quiet             Quiet mode (errors only)");
-        System.out.println("  -p, --parallel          Enable parallel search");
-        System.out.println("  --no-singletons         Disable singleton optimization");
-        System.out.println();
-        System.out.println("  --puzzle <name>         Puzzle name to solve");
-        System.out.println("  -t, --threads <n>       Number of threads (default: auto)");
-        System.out.println("  --timeout <seconds>     Timeout in seconds (default: unlimited)");
-        System.out.println("  --min-depth <n>         Minimum depth to display records");
-        System.out.println();
-        System.out.println("EXAMPLES:");
-        System.out.println("  # Solve 6x12 puzzle in verbose mode");
-        System.out.println("  java -jar eternity-solver.jar --puzzle puzzle_6x12 --verbose");
-        System.out.println();
-        System.out.println("  # Parallel search with 8 threads");
-        System.out.println("  java -jar eternity-solver.jar -p --threads 8 eternity2_p1");
-        System.out.println();
-        System.out.println("  # Quiet mode with 1 hour timeout");
-        System.out.println("  java -jar eternity-solver.jar -q --timeout 3600 puzzle_16x16");
-        System.out.println();
-        System.out.println("AVAILABLE PUZZLES:");
-        System.out.println("  - puzzle_6x12       Puzzle 6×12 (72 pieces)");
-        System.out.println("  - puzzle_16x16      Puzzle 16×16 (256 pieces)");
-        System.out.println("  - validation_6x6    Test puzzle 6×6 (36 pieces)");
-        System.out.println("  - eternity2_p*      Eternity II configurations");
-        System.out.println("  - example_3x3       Simple example 3×3 (9 pieces)");
-        System.out.println("  - example_4x4       Example 4×4 (16 pieces)");
-        System.out.println();
+        SolverLogger.info("╔═══════════════════════════════════════════════════════════╗");
+        SolverLogger.info("║           ETERNITY PUZZLE SOLVER - HELP                   ║");
+        SolverLogger.info("╚═══════════════════════════════════════════════════════════╝");
+        SolverLogger.info("");
+        SolverLogger.info("USAGE:");
+        SolverLogger.info("  java -jar eternity-solver.jar [OPTIONS] [PUZZLE_NAME]");
+        SolverLogger.info("");
+        SolverLogger.info("OPTIONS:");
+        SolverLogger.info("  -h, --help              Display this help message");
+        SolverLogger.info("  --version               Display program version");
+        SolverLogger.info("  -v, --verbose           Enable verbose mode (details)");
+        SolverLogger.info("  -q, --quiet             Quiet mode (errors only)");
+        SolverLogger.info("  -p, --parallel          Enable parallel search");
+        SolverLogger.info("  --no-singletons         Disable singleton optimization");
+        SolverLogger.info("");
+        SolverLogger.info("  --puzzle <name>         Puzzle name to solve");
+        SolverLogger.info("  -t, --threads <n>       Number of threads (default: auto)");
+        SolverLogger.info("  --timeout <seconds>     Timeout in seconds (default: unlimited)");
+        SolverLogger.info("  --min-depth <n>         Minimum depth to display records");
+        SolverLogger.info("");
+        SolverLogger.info("EXAMPLES:");
+        SolverLogger.info("  # Solve 6x12 puzzle in verbose mode");
+        SolverLogger.info("  java -jar eternity-solver.jar --puzzle puzzle_6x12 --verbose");
+        SolverLogger.info("");
+        SolverLogger.info("  # Parallel search with 8 threads");
+        SolverLogger.info("  java -jar eternity-solver.jar -p --threads 8 eternity2_p1");
+        SolverLogger.info("");
+        SolverLogger.info("  # Quiet mode with 1 hour timeout");
+        SolverLogger.info("  java -jar eternity-solver.jar -q --timeout 3600 puzzle_16x16");
+        SolverLogger.info("");
+        SolverLogger.info("AVAILABLE PUZZLES:");
+        SolverLogger.info("  - puzzle_6x12       Puzzle 6×12 (72 pieces)");
+        SolverLogger.info("  - puzzle_16x16      Puzzle 16×16 (256 pieces)");
+        SolverLogger.info("  - validation_6x6    Test puzzle 6×6 (36 pieces)");
+        SolverLogger.info("  - eternity2_p*      Eternity II configurations");
+        SolverLogger.info("  - example_3x3       Simple example 3×3 (9 pieces)");
+        SolverLogger.info("  - example_4x4       Example 4×4 (16 pieces)");
+        SolverLogger.info("");
     }
 
     /**
      * Displays the program version
      */
     public void printVersion() {
-        System.out.println("Eternity Puzzle Solver v1.0.0");
-        System.out.println("Edge-matching puzzle solver with optimized backtracking");
-        System.out.println();
-        System.out.println("Features:");
-        System.out.println("  - MRV heuristic (Minimum Remaining Values)");
-        System.out.println("  - Singleton detection (forced moves)");
-        System.out.println("  - AC-3 constraint propagation");
-        System.out.println("  - Multi-threaded parallel search");
-        System.out.println("  - Automatic save/resume");
-        System.out.println();
+        SolverLogger.info("Eternity Puzzle Solver v1.0.0");
+        SolverLogger.info("Edge-matching puzzle solver with optimized backtracking");
+        SolverLogger.info("");
+        SolverLogger.info("Features:");
+        SolverLogger.info("  - MRV heuristic (Minimum Remaining Values)");
+        SolverLogger.info("  - Singleton detection (forced moves)");
+        SolverLogger.info("  - AC-3 constraint propagation");
+        SolverLogger.info("  - Multi-threaded parallel search");
+        SolverLogger.info("  - Automatic save/resume");
+        SolverLogger.info("");
     }
 
     // ===== Getters =====

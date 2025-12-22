@@ -145,7 +145,7 @@ public class ShutdownManager {
         SolverLogger.info("═══════════════════════════════════════════════════════");
         SolverLogger.info("FINAL STATISTICS");
         SolverLogger.info("═══════════════════════════════════════════════════════");
-        System.out.println(stats.toString());
+        SolverLogger.info(stats.toString());
         SolverLogger.info("═══════════════════════════════════════════════════════");
         SolverLogger.info("");
     }

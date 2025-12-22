@@ -19,13 +19,13 @@ public class TestP02 {
 
     public static void main(String[] args) {
         try {
-            System.out.println("Loading eternity2_p02_descending_border...");
+            SolverLogger.info("Loading eternity2_p02_descending_border...");
 
             // Load the configuration
             PuzzleConfig config = PuzzleConfig.loadFromFile("data/eternity2/eternity2_p02_descending_border.txt");
 
             if (config == null) {
-                System.err.println("Failed to load configuration");
+                SolverLogger.error("Failed to load configuration");
                 System.exit(1);
             }
 
@@ -41,18 +41,18 @@ public class TestP02 {
                 }
             }
 
-            System.out.println("Configuration loaded successfully");
-            System.out.println("Board size: " + board.getRows() + "x" + board.getCols());
-            System.out.println("Pieces: " + pieces.size());
-            System.out.println("Fixed pieces: " + config.getFixedPieces().size());
-            System.out.println();
+            SolverLogger.info("Configuration loaded successfully");
+            SolverLogger.info("Board size: " + board.getRows() + "x" + board.getCols());
+            SolverLogger.info("Pieces: " + pieces.size());
+            SolverLogger.info("Fixed pieces: " + config.getFixedPieces().size());
+            SolverLogger.info("");
 
             // Create solver with AC-3
             EternitySolver solver = new EternitySolver();
             solver.setUseSingletons(true);
 
-            System.out.println("Starting solver (will run for 30 seconds max)...");
-            System.out.println();
+            SolverLogger.info("Starting solver (will run for 30 seconds max)...");
+            SolverLogger.info("");
 
             long startTime = System.currentTimeMillis();
 
@@ -61,23 +61,23 @@ public class TestP02 {
 
             long duration = System.currentTimeMillis() - startTime;
 
-            System.out.println();
-            System.out.println("═══════════════════════════════════════");
-            System.out.println("Solver finished");
-            System.out.println("Time: " + (duration / (double)TimeConstants.MILLIS_PER_SECOND) + " seconds");
-            System.out.println("Solved: " + solved);
+            SolverLogger.info("");
+            SolverLogger.info("═══════════════════════════════════════");
+            SolverLogger.info("Solver finished");
+            SolverLogger.info("Time: " + (duration / (double)TimeConstants.MILLIS_PER_SECOND) + " seconds");
+            SolverLogger.info("Solved: " + solved);
 
             EternitySolver.Statistics stats = solver.getStatistics();
-            System.out.println();
-            System.out.println("Statistics:");
-            System.out.println("  Recursive calls: " + stats.recursiveCalls);
-            System.out.println("  Placements: " + stats.placements);
-            System.out.println("  Backtracks: " + stats.backtracks);
-            System.out.println("  Dead ends detected: " + stats.deadEndsDetected);
-            System.out.println("═══════════════════════════════════════");
+            SolverLogger.info("");
+            SolverLogger.info("Statistics:");
+            SolverLogger.info("  Recursive calls: " + stats.recursiveCalls);
+            SolverLogger.info("  Placements: " + stats.placements);
+            SolverLogger.info("  Backtracks: " + stats.backtracks);
+            SolverLogger.info("  Dead ends detected: " + stats.deadEndsDetected);
+            SolverLogger.info("═══════════════════════════════════════");
 
         } catch (IOException e) {
-            System.err.println("Error: " + e.getMessage());
+            SolverLogger.error("Error: " + e.getMessage());
             SolverLogger.error("Error occurred", e);
             System.exit(1);
         }

@@ -1,5 +1,8 @@
 package util;
 
+import util.SolverLogger;
+
+
 /**
  * Utility methods for formatting output across Main classes.
  * Provides consistent formatting for durations, headers, and visual elements.
@@ -78,9 +81,9 @@ public class FormattingUtils {
 
         String middle = VERTICAL_LINE + " ".repeat(padding) + title + " ".repeat(rightPadding) + VERTICAL_LINE;
 
-        System.out.println(top);
-        System.out.println(middle);
-        System.out.println(bottom);
+        SolverLogger.info(top);
+        SolverLogger.info(middle);
+        SolverLogger.info(bottom);
     }
 
     /**
@@ -98,7 +101,7 @@ public class FormattingUtils {
      * @param width Width of the separator
      */
     public static void printSeparator(int width) {
-        System.out.println(HORIZONTAL_LINE.repeat(width));
+        SolverLogger.info(HORIZONTAL_LINE.repeat(width));
     }
 
     /**
@@ -130,12 +133,12 @@ public class FormattingUtils {
         String top = TOP_LEFT + HORIZONTAL_LINE.repeat(width - 2) + TOP_RIGHT;
         String bottom = BOTTOM_LEFT + HORIZONTAL_LINE.repeat(width - 2) + BOTTOM_RIGHT;
 
-        System.out.println(top);
+        SolverLogger.info(top);
         for (String line : lines) {
             int rightPadding = maxLength - line.length();
-            System.out.println(VERTICAL_LINE + "  " + line + " ".repeat(rightPadding) + "  " + VERTICAL_LINE);
+            SolverLogger.info(VERTICAL_LINE + "  " + line + " ".repeat(rightPadding) + "  " + VERTICAL_LINE);
         }
-        System.out.println(bottom);
+        SolverLogger.info(bottom);
     }
 
     /**

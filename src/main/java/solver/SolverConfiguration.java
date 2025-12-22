@@ -142,10 +142,10 @@ public class SolverConfiguration {
             SolverLogger.info("  Configuration:");
             SolverLogger.info("  - Puzzle: " + puzzleName);
             SolverLogger.info("  - Thread: " + threadLabel);
-            System.out.println("  - Singletons: " + (useSingletons ? "✓" : "✗"));
-            System.out.println("  - AC-3: " + (useAC3 ? "✓" : "✗"));
-            System.out.println("  - Domain Cache: " + (useDomainCache ? "✓" : "✗"));
-            System.out.println("  - Prioritize Borders: " + (prioritizeBorders ? "✓" : "✗"));
+            SolverLogger.info("  - Singletons: " + (useSingletons ? "✓" : "✗"));
+            SolverLogger.info("  - AC-3: " + (useAC3 ? "✓" : "✗"));
+            SolverLogger.info("  - Domain Cache: " + (useDomainCache ? "✓" : "✗"));
+            SolverLogger.info("  - Prioritize Borders: " + (prioritizeBorders ? "✓" : "✗"));
             SolverLogger.info("  - Fixed Pieces: " + numFixedPieces);
             SolverLogger.info("═══════════════════════════════════════\n");
         }

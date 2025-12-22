@@ -58,7 +58,7 @@ public class EdgeCompatibilityIndex {
 
         if (verbose) {
             SolverLogger.info("✓ Edge compatibility tables built:");
-            System.out.println("  - Unique edge values: ~" + northEdgeCompatible.size());
+            SolverLogger.info("  - Unique edge values: ~" + northEdgeCompatible.size());
         }
     }
 

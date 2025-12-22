@@ -142,7 +142,7 @@ public class SingletonDetector {
                         String rotInfo = possiblePositions.size() == 1 ?
                             " with rotation " + (pos[2] * 90) + "°" :
                             " with " + possiblePositions.size() + " possible rotations";
-                        System.out.println("🎯 SINGLETON found! Piece " + pid + " can only go at (" + pos[0] + ", " + pos[1] + ")" + rotInfo);
+                        SolverLogger.info("🎯 SINGLETON found! Piece " + pid + " can only go at (" + pos[0] + ", " + pos[1] + ")" + rotInfo);
                     }
                     return new SingletonInfo(pid, pos[0], pos[1], pos[2]);
                 }

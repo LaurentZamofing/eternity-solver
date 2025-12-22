@@ -1,5 +1,6 @@
 package app;
 
+import util.SolverLogger;
 import cli.CommandLineInterface;
 import model.Board;
 import model.Piece;
@@ -26,8 +27,8 @@ public class MainCLI {
 
         // Parse arguments
         if (!cli.parse(args)) {
-            System.err.println("Error: " + cli.getErrorMessage());
-            System.err.println();
+            SolverLogger.error("Error: " + cli.getErrorMessage());
+            SolverLogger.error("");
             cli.printHelp();
             System.exit(1);
         }
@@ -47,8 +48,8 @@ public class MainCLI {
         // Check that a puzzle was specified
         String puzzleName = cli.getPuzzleName();
         if (puzzleName == null) {
-            System.err.println("Error: No puzzle specified");
-            System.err.println();
+            SolverLogger.error("Error: No puzzle specified");
+            SolverLogger.error("");
             cli.printHelp();
             System.exit(1);
         }
@@ -61,12 +62,12 @@ public class MainCLI {
         // Create the puzzle according to name
         PuzzleInfo puzzleInfo = createPuzzle(puzzleName);
         if (puzzleInfo == null) {
-            System.err.println("Error: Unknown puzzle: " + puzzleName);
-            System.err.println();
-            System.err.println("Available puzzles:");
-            System.err.println("  - puzzle_6x12, puzzle_16x16, validation_6x6");
-            System.err.println("  - example_3x3, example_4x4, example_4x4_easy");
-            System.err.println("  - eternity2_p* (voir data/eternity2/)");
+            SolverLogger.error("Error: Unknown puzzle: " + puzzleName);
+            SolverLogger.error("");
+            SolverLogger.error("Available puzzles:");
+            SolverLogger.error("  - puzzle_6x12, puzzle_16x16, validation_6x6");
+            SolverLogger.error("  - example_3x3, example_4x4, example_4x4_easy");
+            SolverLogger.error("  - eternity2_p* (voir data/eternity2/)");
             System.exit(1);
         }
 
@@ -95,15 +96,15 @@ public class MainCLI {
         PuzzleResult result = runner.run();
 
         // Display result
-        System.out.println();
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("RESULT");
-        System.out.println("═══════════════════════════════════════════════════════");
+        SolverLogger.info("");
+        SolverLogger.info("═══════════════════════════════════════════════════════");
+        SolverLogger.info("RESULT");
+        SolverLogger.info("═══════════════════════════════════════════════════════");
 
         if (result.isSolved()) {
-            System.out.println("✓ PUZZLE SOLVED!");
-            System.out.println("Time: " + String.format("%.2f", result.getDurationSeconds()) + " seconds");
-            System.out.println();
+            SolverLogger.info("✓ PUZZLE SOLVED!");
+            SolverLogger.info("Time: " + String.format("%.2f", result.getDurationSeconds()) + " seconds");
+            SolverLogger.info("");
 
             if (!cli.isQuiet()) {
                 result.getBoard().prettyPrint(puzzleInfo.pieces);
@@ -111,8 +112,8 @@ public class MainCLI {
             }
             System.exit(0);
         } else {
-            System.out.println("✗ No solution found");
-            System.out.println("Time: " + String.format("%.2f", result.getDurationSeconds()) + " seconds");
+            SolverLogger.info("✗ No solution found");
+            SolverLogger.info("Time: " + String.format("%.2f", result.getDurationSeconds()) + " seconds");
             System.exit(1);
         }
     }
@@ -121,13 +122,13 @@ public class MainCLI {
      * Displays the program header
      */
     private static void printHeader(String puzzleName, int rows, int cols, int numPieces) {
-        System.out.println("╔═══════════════════════════════════════════════════════╗");
-        System.out.println("║          ETERNITY PUZZLE SOLVER                       ║");
-        System.out.println("╚═══════════════════════════════════════════════════════╝");
-        System.out.println();
-        System.out.println("Puzzle: " + puzzleName);
-        System.out.println("Size: " + rows + "×" + cols + " (" + numPieces + " pieces)");
-        System.out.println();
+        SolverLogger.info("╔═══════════════════════════════════════════════════════╗");
+        SolverLogger.info("║          ETERNITY PUZZLE SOLVER                       ║");
+        SolverLogger.info("╚═══════════════════════════════════════════════════════╝");
+        SolverLogger.info("");
+        SolverLogger.info("Puzzle: " + puzzleName);
+        SolverLogger.info("Size: " + rows + "×" + cols + " (" + numPieces + " pieces)");
+        SolverLogger.info("");
     }
 
     /**

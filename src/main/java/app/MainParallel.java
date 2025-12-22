@@ -162,8 +162,8 @@ public class MainParallel {
         @Override
         public Boolean call() {
             try {
-                System.out.println("🚀 [Thread " + threadId + "] Starting: " + configInfo.config.getName());
-                System.out.println("   File: " + new File(configInfo.filepath).getName());
+                SolverLogger.info("🚀 [Thread " + threadId + "] Starting: " + configInfo.config.getName());
+                SolverLogger.info("   File: " + new File(configInfo.filepath).getName());
                 if (configInfo.hasBeenStarted) {
                     long totalSeconds = configInfo.totalComputeTimeMs / TimeConstants.MILLIS_PER_SECOND;
                     long hours = totalSeconds / TimeConstants.SECONDS_PER_HOUR;
@@ -172,9 +172,9 @@ public class MainParallel {
                     System.out.println("   Status: RESUME (cumulative time: " +
                         String.format("%dh %02dm %02ds", hours, minutes, seconds) + ")");
                 } else {
-                    System.out.println("   Status: NEW");
+                    SolverLogger.info("   Status: NEW");
                 }
-                System.out.println();
+                SolverLogger.info("");
 
                 // Load the puzzle
                 PuzzleConfig config = configInfo.config;
@@ -217,14 +217,14 @@ public class MainParallel {
                             solver.setThreadLabel(ConfigurationUtils.createThreadLabel(threadId, configId));
                             solver.setMaxExecutionTime(timeoutMs); // Configure timeout for rotation
 
-                            System.out.println("   [Thread " + threadId + "] Resume: " + saveState.depth + " pieces placed");
+                            SolverLogger.info("   [Thread " + threadId + "] Resume: " + saveState.depth + " pieces placed");
 
                             // Solve
                             boolean solved = solver.solveWithHistory(board, allPieces, unusedIds,
                                                                      new ArrayList<>(saveState.placementOrder));
 
                             if (solved) {
-                                System.out.println("✅ [Thread " + threadId + "] SOLUTION FOUND!");
+                                SolverLogger.info("✅ [Thread " + threadId + "] SOLUTION FOUND!");
                             }
 
                             return solved;
@@ -233,7 +233,7 @@ public class MainParallel {
                 }
 
                 // Starting from scratch
-                System.out.println("   [Thread " + threadId + "] Starting from scratch");
+                SolverLogger.info("   [Thread " + threadId + "] Starting from scratch");
 
                 Board board = new Board(config.getRows(), config.getCols());
                 Map<Integer, Piece> allPieces = new HashMap<>(config.getPieces());
@@ -259,17 +259,17 @@ public class MainParallel {
                 solver.setThreadLabel(ConfigurationUtils.createThreadLabel(threadId, configId));
                 solver.setMaxExecutionTime(timeoutMs); // Configure timeout
 
-                System.out.println("   [Thread " + threadId + "] Pieces to place: " + allPieces.size() + " pieces");
-                System.out.println("   [Thread " + threadId + "] Fixed pieces on board: " + config.getFixedPieces().size());
-                System.out.println("   [Thread " + threadId + "] Configured timeout: " + (timeoutMs / TimeConstants.MILLIS_PER_SECOND) + " seconds");
-                System.out.println("   [Thread " + threadId + "] Starting solver...");
+                SolverLogger.info("   [Thread " + threadId + "] Pieces to place: " + allPieces.size() + " pieces");
+                SolverLogger.info("   [Thread " + threadId + "] Fixed pieces on board: " + config.getFixedPieces().size());
+                SolverLogger.info("   [Thread " + threadId + "] Configured timeout: " + (timeoutMs / TimeConstants.MILLIS_PER_SECOND) + " seconds");
+                SolverLogger.info("   [Thread " + threadId + "] Starting solver...");
 
                 boolean solved = solver.solve(board, allPieces);
 
-                System.out.println("   [Thread " + threadId + "] Solver finished. Result: " + (solved ? "SOLUTION FOUND" : "No solution"));
+                SolverLogger.info("   [Thread " + threadId + "] Solver finished. Result: " + (solved ? "SOLUTION FOUND" : "No solution"));
 
                 if (solved) {
-                    System.out.println("✅ [Thread " + threadId + "] SOLUTION FOUND!");
+                    SolverLogger.info("✅ [Thread " + threadId + "] SOLUTION FOUND!");
                 }
 
                 return solved;
@@ -315,7 +315,7 @@ public class MainParallel {
             }
 
             if (nextConfig == null) {
-                System.out.println("🎉 [Thread " + threadId + "] All configurations are solved or in progress!");
+                SolverLogger.info("🎉 [Thread " + threadId + "] All configurations are solved or in progress!");
                 break;
             }
 
@@ -328,7 +328,7 @@ public class MainParallel {
                     System.out.println("🔄 [Thread " + threadId + "] Rotating to: " + configId +
                         " (cumulative time: " + String.format("%dh%02dm", hours, minutes) + ")");
                 } else {
-                    System.out.println("🔄 [Thread " + threadId + "] Rotating to: " + configId + " (NEW)");
+                    SolverLogger.info("🔄 [Thread " + threadId + "] Rotating to: " + configId + " (NEW)");
                 }
 
                 // Launch resolution directly (not via executor to avoid deadlock)
@@ -339,10 +339,10 @@ public class MainParallel {
                     Boolean solved = task.call();
 
                     if (solved != null && solved) {
-                        System.out.println("✅ [Thread " + threadId + "] SOLUTION FOUND for " + configId);
+                        SolverLogger.info("✅ [Thread " + threadId + "] SOLUTION FOUND for " + configId);
                         solvedConfigs.add(configId);
                     } else {
-                        System.out.println("⏱️  [Thread " + threadId + "] Timeout reached for " + configId + " - rotation");
+                        SolverLogger.info("⏱️  [Thread " + threadId + "] Timeout reached for " + configId + " - rotation");
                     }
 
                 } catch (Exception e) {
@@ -397,7 +397,7 @@ public class MainParallel {
             List<ConfigInfo> configs = findAllConfigurations();
 
             if (configs.isEmpty()) {
-                System.out.println("✗ No configuration available");
+                SolverLogger.info("✗ No configuration available");
                 return;
             }
 
@@ -407,19 +407,19 @@ public class MainParallel {
             // Create thread pool
             ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 
-            System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-            System.out.println("║              LAUNCHING THREADS WITH ROTATION                 ║");
-            System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
-            System.out.println();
-            System.out.println("📋 Rotation strategy:");
-            System.out.println("   1. Each thread works " + timePerConfigMinutes + " min on a configuration");
-            System.out.println("   2. After timeout, thread moves to least advanced config");
-            System.out.println("   3. Continuous rotation to advance all configs");
-            System.out.println();
-            System.out.println("📋 Priority order:");
-            System.out.println("   1. Never-started configurations");
-            System.out.println("   2. Saves with least cumulative time");
-            System.out.println();
+            SolverLogger.info("╔═══════════════════════════════════════════════════════════════════╗");
+            SolverLogger.info("║              LAUNCHING THREADS WITH ROTATION                 ║");
+            SolverLogger.info("╚═══════════════════════════════════════════════════════════════════╝");
+            SolverLogger.info("");
+            SolverLogger.info("📋 Rotation strategy:");
+            SolverLogger.info("   1. Each thread works " + timePerConfigMinutes + " min on a configuration");
+            SolverLogger.info("   2. After timeout, thread moves to least advanced config");
+            SolverLogger.info("   3. Continuous rotation to advance all configs");
+            SolverLogger.info("");
+            SolverLogger.info("📋 Priority order:");
+            SolverLogger.info("   1. Never-started configurations");
+            SolverLogger.info("   2. Saves with least cumulative time");
+            SolverLogger.info("");
 
             // Tracker for finished configs (solution found)
             Set<String> solvedConfigs = Collections.synchronizedSet(new HashSet<>());
@@ -427,10 +427,10 @@ public class MainParallel {
             // Launch threads with rotation
             long timeoutMs = (long)(timePerConfigMinutes * TimeConstants.SECONDS_PER_MINUTE * TimeConstants.MILLIS_PER_SECOND);
 
-            System.out.println("✓ Starting " + numThreads + " thread(s) with automatic rotation");
-            System.out.println();
-            System.out.println("═".repeat(70));
-            System.out.println();
+            SolverLogger.info("✓ Starting " + numThreads + " thread(s) with automatic rotation");
+            SolverLogger.info("");
+            SolverLogger.info("═".repeat(70));
+            SolverLogger.info("");
 
             // Launch initial threads
             for (int threadId = 1; threadId <= numThreads; threadId++) {
@@ -439,20 +439,20 @@ public class MainParallel {
                     try {
                         runWorkerWithRotation(tid, timeoutMs, executor, solvedConfigs);
                     } catch (Exception e) {
-                        System.err.println("✗ [Thread " + tid + "] Fatal error: " + e.getMessage());
+                        SolverLogger.error("✗ [Thread " + tid + "] Fatal error: " + e.getMessage());
                         SolverLogger.error("Error occurred", e);
                     }
                 });
             }
 
-            System.out.println("⏳ Threads working with automatic rotation... (Ctrl+C to stop)");
-            System.out.println();
+            SolverLogger.info("⏳ Threads working with automatic rotation... (Ctrl+C to stop)");
+            SolverLogger.info("");
 
             // Wait indefinitely (threads rotate continuously)
             Thread.sleep(Long.MAX_VALUE);
 
         } catch (Exception e) {
-            System.err.println("✗ Fatal error: " + e.getMessage());
+            SolverLogger.error("✗ Fatal error: " + e.getMessage());
             SolverLogger.error("Error occurred", e);
         }
     }

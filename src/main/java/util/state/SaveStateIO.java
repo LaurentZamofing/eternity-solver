@@ -3,7 +3,6 @@ package util.state;
 import util.SolverLogger;
 
 import model.Board;
-import util.SaveBoardRenderer;
 import util.SaveStateManager.PlacementInfo;
 import util.SaveStateManager.SaveState;
 import util.TimeConstants;

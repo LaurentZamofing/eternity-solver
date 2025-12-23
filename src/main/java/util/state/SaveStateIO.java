@@ -269,7 +269,8 @@ public class SaveStateIO {
         writer.println("# ═══════════════════════════════════════════════════════════");
         writer.println("#");
         if (allPieces != null && !allPieces.isEmpty()) {
-            solver.display.BoardDisplayService.writeToSaveFileDetailed(writer, board, allPieces);
+            // Use detailed display with AC-3 domains if available (null = estimation mode)
+            solver.display.BoardDisplayService.writeToSaveFileDetailed(writer, board, allPieces, null);
         } else {
             solver.display.BoardDisplayService.writeToSaveFile(writer, board);
         }

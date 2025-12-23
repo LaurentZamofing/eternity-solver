@@ -271,7 +271,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <mainClass>MainCLI</mainClass>
+                    <mainClass>app.MainParallel</mainClass>
                 </configuration>
             </plugin>
 

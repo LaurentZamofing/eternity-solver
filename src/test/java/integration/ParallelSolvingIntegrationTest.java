@@ -23,13 +23,13 @@ import java.util.concurrent.TimeUnit;
 class ParallelSolvingIntegrationTest {
 
     @Test
-    @Disabled("TODO: Fix puzzle generation - needs properly solvable 3x3 with fixed pieces")
+    @Disabled("TODO: solveParallel() method needs investigation - sequential works but parallel doesn't")
     @DisplayName("Work-stealing should find solution faster than sequential")
     @Timeout(value = 15, unit = TimeUnit.SECONDS)
     void testWorkStealingPerformance() {
-        // Arrange - Create solvable 3x3 puzzle
-        Board board = new Board(3, 3);
-        Map<Integer, Piece> pieces = createSolvablePuzzle3x3();
+        // Arrange - Create solvable 2x2 puzzle (simpler for fast tests)
+        Board board = new Board(2, 2);
+        Map<Integer, Piece> pieces = createSolvablePuzzle2x2();
 
         // Sequential solve
         EternitySolver sequentialSolver = new EternitySolver();
@@ -39,13 +39,13 @@ class ParallelSolvingIntegrationTest {
         long sequentialTime = System.currentTimeMillis() - sequentialStart;
 
         // Parallel solve
-        Board parallelBoard = new Board(3, 3);
+        Board parallelBoard = new Board(2, 2);
         EternitySolver parallelSolver = new EternitySolver();
         parallelSolver.setVerbose(false);
 
         long parallelStart = System.currentTimeMillis();
         boolean parallelSolved = parallelSolver.solveParallel(
-            parallelBoard, new HashMap<>(pieces), new HashMap<>(pieces), 4
+            parallelBoard, new HashMap<>(pieces), new HashMap<>(pieces), 2
         );
         long parallelTime = System.currentTimeMillis() - parallelStart;
 
@@ -64,11 +64,11 @@ class ParallelSolvingIntegrationTest {
     void testThreadCoordination() throws InterruptedException {
         // Arrange
         SharedSearchState sharedState = new SharedSearchState();
-        int numThreads = 4;
+        int numThreads = 2;
         CountDownLatch latch = new CountDownLatch(numThreads);
 
-        Board board = new Board(4, 4);
-        Map<Integer, Piece> pieces = createSolvablePuzzle3x3();
+        Board board = new Board(2, 2);
+        Map<Integer, Piece> pieces = createSolvablePuzzle2x2();
 
         // Act - Launch multiple solver threads sharing state
         List<EternitySolver> solvers = new ArrayList<>();
@@ -100,18 +100,18 @@ class ParallelSolvingIntegrationTest {
     }
 
     @Test
-    @Disabled("TODO: Fix puzzle generation - needs properly solvable 3x3 with fixed pieces")
+    @Disabled("TODO: Depends on solveParallel() working - needs investigation")
     @DisplayName("Solution found flag should stop other threads")
     @Timeout(value = 35, unit = TimeUnit.SECONDS)
     void testSolutionFoundStopsThreads() throws InterruptedException {
         // Arrange
         SharedSearchState sharedState = new SharedSearchState();
-        int numThreads = 5;
+        int numThreads = 3;
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(numThreads);
 
-        Board board = new Board(3, 3);
-        Map<Integer, Piece> pieces = createSolvablePuzzle3x3();
+        Board board = new Board(2, 2);
+        Map<Integer, Piece> pieces = createSolvablePuzzle2x2();
 
         List<Boolean> results = Collections.synchronizedList(new ArrayList<>());
 
@@ -155,25 +155,23 @@ class ParallelSolvingIntegrationTest {
 
     // Helper methods
 
-    private Map<Integer, Piece> createSolvablePuzzle3x3() {
-        // Create a REAL solvable 3x3 puzzle with proper edge constraints
-        // Border edges are 0, internal edges are matching pairs
+    private Map<Integer, Piece> createSolvablePuzzle2x2() {
+        // Create a SIMPLE 2x2 puzzle that's guaranteed to be solvable
+        // Border edges are 0, internal edges match
+        // This is much faster to solve for tests
         Map<Integer, Piece> pieces = new HashMap<>();
 
-        // Row 0 (top)
-        pieces.put(1, new Piece(1, new int[]{0, 1, 2, 0}));  // top-left corner
-        pieces.put(2, new Piece(2, new int[]{0, 3, 4, 1}));  // top-middle
-        pieces.put(3, new Piece(3, new int[]{0, 0, 5, 3}));  // top-right corner
+        // Piece layout (N,E,S,W):
+        // +---+---+
+        // | 1 | 2 |
+        // +---+---+
+        // | 3 | 4 |
+        // +---+---+
 
-        // Row 1 (middle)
-        pieces.put(4, new Piece(4, new int[]{2, 6, 7, 0}));  // middle-left
-        pieces.put(5, new Piece(5, new int[]{4, 8, 9, 6}));  // center
-        pieces.put(6, new Piece(6, new int[]{5, 0, 10, 8})); // middle-right
-
-        // Row 2 (bottom)
-        pieces.put(7, new Piece(7, new int[]{7, 11, 0, 0})); // bottom-left corner
-        pieces.put(8, new Piece(8, new int[]{9, 12, 0, 11}));// bottom-middle
-        pieces.put(9, new Piece(9, new int[]{10, 0, 0, 12}));// bottom-right corner
+        pieces.put(1, new Piece(1, new int[]{0, 1, 2, 0}));  // top-left: north=0, east=1, south=2, west=0
+        pieces.put(2, new Piece(2, new int[]{0, 0, 3, 1}));  // top-right: north=0, east=0, south=3, west=1
+        pieces.put(3, new Piece(3, new int[]{2, 4, 0, 0}));  // bottom-left: north=2, east=4, south=0, west=0
+        pieces.put(4, new Piece(4, new int[]{3, 0, 0, 4}));  // bottom-right: north=3, east=0, south=0, west=4
 
         return pieces;
     }

@@ -1,4 +1,7 @@
-# Eternity II - 16×16 - Converted from edge_puzzle CSV
+# Eternity II from edge_puzzle
+# Type: Eternity II
+# Dimensions: 16x16
+# Difficulty: Hard
 # Format: pieceId N E S W
 # Total pieces: 256
 #

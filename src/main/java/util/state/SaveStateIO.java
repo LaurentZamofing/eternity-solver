@@ -3,10 +3,13 @@ package util.state;
 import util.SolverLogger;
 
 import model.Board;
+import model.Piece;
 import util.SaveStateManager.PlacementInfo;
 import util.SaveStateManager.SaveState;
 import util.TimeConstants;
 import util.state.SaveFileManager;
+
+import java.util.Map;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -54,7 +57,8 @@ public class SaveStateIO {
     public static void writeToFile(String filename, String puzzleName, Board board, int depth,
                                   List<PlacementInfo> placementOrder, List<Integer> unusedIds,
                                   double progressPercentage, long totalComputeTimeMs,
-                                  int numFixedPieces, List<PlacementInfo> initialFixedPieces)
+                                  int numFixedPieces, List<PlacementInfo> initialFixedPieces,
+                                  Map<Integer, Piece> allPieces)
             throws IOException {
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
@@ -62,7 +66,7 @@ public class SaveStateIO {
             writeHeader(writer, puzzleName, board, depth, progressPercentage, totalComputeTimeMs);
 
             // Write visual board representation
-            writeBoardVisual(writer, board, depth, numFixedPieces, initialFixedPieces);
+            writeBoardVisual(writer, board, depth, numFixedPieces, initialFixedPieces, allPieces);
 
             // Write fixed pieces section
             writeFixedPiecesSection(writer, numFixedPieces, initialFixedPieces);
@@ -256,14 +260,19 @@ public class SaveStateIO {
     }
 
     private static void writeBoardVisual(PrintWriter writer, Board board, int depth,
-                                        int numFixedPieces, List<PlacementInfo> initialFixedPieces) {
+                                        int numFixedPieces, List<PlacementInfo> initialFixedPieces,
+                                        Map<Integer, Piece> allPieces) {
         int fixedCount = (initialFixedPieces != null) ? initialFixedPieces.size() : 0;
         writer.println("# ═══════════════════════════════════════════════════════════");
         writer.println("# VISUAL BOARD DISPLAY (" + (depth + fixedCount) +
                       " pieces: " + fixedCount + " fixed + " + depth + " backtracking)");
         writer.println("# ═══════════════════════════════════════════════════════════");
         writer.println("#");
-        solver.display.BoardDisplayService.writeToSaveFile(writer, board);
+        if (allPieces != null && !allPieces.isEmpty()) {
+            solver.display.BoardDisplayService.writeToSaveFileDetailed(writer, board, allPieces);
+        } else {
+            solver.display.BoardDisplayService.writeToSaveFile(writer, board);
+        }
         writer.println("#");
         writer.println("# ═══════════════════════════════════════════════════════════");
         writer.println();
@@ -408,9 +417,9 @@ public class SaveStateIO {
         long timestamp = System.currentTimeMillis();
         String filename = puzzleDir + "current_" + timestamp + ".txt";
 
-        // Write the file
+        // Write the file (without allPieces - simple display)
         writeToFile(filename, puzzleName, board, depth, placementOrder, unusedIds,
-                   -1.0, totalComputeTimeMs, numFixedPieces, null);
+                   -1.0, totalComputeTimeMs, numFixedPieces, null, null);
     }
 
     /**

@@ -104,7 +104,8 @@ public class FileSaveStateRepository implements SaveStateRepository {
                 -1.0, // progressPercentage
                 state.getElapsedTimeMs(),
                 0, // numFixedPieces
-                null // initialFixedPieces
+                null, // initialFixedPieces
+                null  // allPieces (not available in repository context)
             );
 
             SolverLogger.info("✓ Saved state: " + state.getConfigId() +

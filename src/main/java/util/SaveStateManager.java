@@ -169,7 +169,7 @@ public class SaveStateManager {
             String currentFile = puzzleDir + "current_" + timestamp + ".txt";
             SaveStateIO.writeToFile(currentFile, puzzleName, board, state.depth,
                                    placementOrder, unusedIds, progressPercentage,
-                                   elapsedTimeMs, numFixedPieces, initialFixedPieces);
+                                   elapsedTimeMs, numFixedPieces, initialFixedPieces, allPieces);
 
             // Save in binary format if enabled
             if (useBinaryFormat) {
@@ -198,7 +198,7 @@ public class SaveStateManager {
                                      java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss.SSS")));
                     SaveStateIO.writeToFile(bestFile, puzzleName, board, state.depth,
                                            placementOrder, unusedIds, progressPercentage,
-                                           elapsedTimeMs, numFixedPieces, initialFixedPieces);
+                                           elapsedTimeMs, numFixedPieces, initialFixedPieces, allPieces);
 
                     if (isNewRecord(puzzleDir, state.depth)) {
                         SolverLogger.info("  🏆 New record confirmed: best_" + state.depth + ".txt written successfully");

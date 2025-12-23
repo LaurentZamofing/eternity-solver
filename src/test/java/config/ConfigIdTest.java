@@ -3,7 +3,7 @@ package config;
 /**
  * Test pour vérifier l'extraction du configId depuis les noms de fichiers
  */
-public class TestConfigId {
+public class ConfigIdTest {
 
     private static String extractConfigId(String filepath) {
         java.io.File file = new java.io.File(filepath);

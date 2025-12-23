@@ -1,7 +1,7 @@
-import solver.TestBasics;
-import solver.TestSolver;
-import solver.TestMRVTieBreaking;
-import util.TestSaveLoad;
+import solver.BasicsTest;
+import solver.SolverTest;
+import solver.MRVTieBreakingTest;
+import util.SaveLoadTest;
 
 /**
  * Suite de tests complète - Lance tous les tests dans l'ordre
@@ -25,7 +25,7 @@ public class TestAll {
         System.out.println("│ SUITE 1/3: Tests de base                                        │");
         System.out.println("└──────────────────────────────────────────────────────────────────┘");
         try {
-            TestBasics.main(new String[]{});
+            BasicsTest.main(new String[]{});
             totalPassed++;
         } catch (Exception e) {
             suitesFailed++;
@@ -38,7 +38,7 @@ public class TestAll {
         System.out.println("│ SUITE 2/3: Tests du solveur                                     │");
         System.out.println("└──────────────────────────────────────────────────────────────────┘");
         try {
-            TestSolver.main(new String[]{});
+            SolverTest.main(new String[]{});
             totalPassed++;
         } catch (Exception e) {
             suitesFailed++;
@@ -51,7 +51,7 @@ public class TestAll {
         System.out.println("│ SUITE 3/4: Tests sauvegarde/chargement                          │");
         System.out.println("└──────────────────────────────────────────────────────────────────┘");
         try {
-            TestSaveLoad.main(new String[]{});
+            SaveLoadTest.main(new String[]{});
             totalPassed++;
         } catch (Exception e) {
             suitesFailed++;
@@ -64,7 +64,7 @@ public class TestAll {
         System.out.println("│ SUITE 4/4: Tests MRV tie-breaking (contraintes)                │");
         System.out.println("└──────────────────────────────────────────────────────────────────┘");
         try {
-            TestMRVTieBreaking.main(new String[]{});
+            MRVTieBreakingTest.main(new String[]{});
             totalPassed++;
         } catch (Exception e) {
             suitesFailed++;

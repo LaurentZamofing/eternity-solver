@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * Tests complets pour le système de sauvegarde dual (current + best)
  */
-public class TestDualSaveSystem {
+public class DualSaveSystemTest {
 
     private static final String TEST_PUZZLE = "test_dual_save";
     private static final String SAVE_DIR = "saves/";

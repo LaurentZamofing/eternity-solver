@@ -6,7 +6,7 @@ import model.Placement;
 /**
  * Tests de base pour valider les fonctionnalités fondamentales
  */
-public class TestBasics {
+public class BasicsTest {
 
     private static int testsRun = 0;
     private static int testsPassed = 0;

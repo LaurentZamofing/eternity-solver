@@ -13,7 +13,7 @@ import static org.junit.platform.engine.discovery.DiscoverySelectors.selectPacka
 /**
  * Simple test runner for executing JUnit tests.
  */
-public class TestRunner {
+public class RunnerTest {
 
     public static void main(String[] args) {
         LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()

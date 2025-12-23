@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * Test pour afficher l'état d'une sauvegarde chargée
  */
-public class TestDisplaySavedState {
+public class DisplaySavedStateTest {
 
     public static void main(String[] args) {
         System.out.println("╔═══════════════════════════════════════════════════════════════════╗");

@@ -118,7 +118,8 @@
       "Bash(for f in src/main/java/solver/*.java)",
       "Bash(/tmp/move_to_packages.sh)",
       "Bash(git restore:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(for file in src/test/java/solver/TestBacktracking.java src/test/java/solver/TestBasics.java src/test/java/solver/TestSolver.java)"
     ],
     "deny": [],
     "ask": []

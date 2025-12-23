@@ -12,7 +12,7 @@ import java.util.Map;
  * Lignes: A-F (0-5)
  * Colonnes: 1-6 (0-5)
  */
-public class TestValidation6x6 {
+public class Validation6x6Test {
     public static void main(String[] args) {
         System.out.println("╔════════════════════════════════════════════════════════╗");
         System.out.println("║        TEST DE VALIDATION - PUZZLE 6×6                 ║");

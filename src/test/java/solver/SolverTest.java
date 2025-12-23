@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Tests du solveur avec des puzzles simples dont on connaît la solution
  */
-public class TestSolver {
+public class SolverTest {
 
     private static int testsRun = 0;
     private static int testsPassed = 0;

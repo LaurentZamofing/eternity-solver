@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Test pour calculer le score d'une sauvegarde existante.
  */
-public class TestSavedBoardScore {
+public class SavedBoardScoreTest {
     public static void main(String[] args) {
         try {
             // Charger les pièces Eternity II

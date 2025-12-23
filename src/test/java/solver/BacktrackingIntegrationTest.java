@@ -14,7 +14,7 @@ import java.util.Set;
  * Tests d'intégration pour valider la nouvelle logique de backtracking
  * avec profondeur augmentée (40 pièces au lieu de 10)
  */
-public class TestBacktrackingIntegration {
+public class BacktrackingIntegrationTest {
 
     public static void main(String[] args) {
         System.out.println("╔════════════════════════════════════════════════════════════╗");

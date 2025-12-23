@@ -211,13 +211,19 @@ public class BoardDisplayService {
             StringBuilder line1 = new StringBuilder("# ");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
-                    line1.append("    .    ");
+                    // Calculate number of candidate pieces for this empty cell
+                    int candidates = countCandidates(board, r, c, allPieces);
+                    if (candidates > 0) {
+                        line1.append(String.format("  [%3d]  ", candidates));
+                    } else {
+                        line1.append("   ∅     ");  // Empty set symbol if no candidates
+                    }
                 } else {
                     Placement p = board.getPlacement(r, c);
                     Piece piece = allPieces.get(p.getPieceId());
                     if (piece != null) {
-                        int[] edges = piece.getEdges();
-                        int northEdge = edges[p.getRotation()];
+                        int[] edges = piece.edgesRotated(p.getRotation());
+                        int northEdge = edges[0];
                         line1.append(String.format("   %2d    ", northEdge));
                     } else {
                         line1.append("   ??    ");
@@ -227,7 +233,7 @@ public class BoardDisplayService {
             }
             writer.println(line1.toString());
 
-            // Line 2: piece ID with west and east edges
+            // Line 2: piece ID with west and east edges OR candidate count
             StringBuilder line2 = new StringBuilder("# ");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
@@ -286,5 +292,151 @@ public class BoardDisplayService {
             if (c < cols - 1) bottomSep.append("┴");
         }
         writer.println(bottomSep.toString());
+    }
+
+    /**
+     * Counts the number of candidate pieces that can be placed in an empty cell.
+     * Useful for debugging and understanding solver progress.
+     *
+     * @param board Current board state
+     * @param row Row of empty cell
+     * @param col Column of empty cell
+     * @param allPieces All pieces (to check which ones are available)
+     * @return Number of pieces that could fit in this cell
+     */
+    private static int countCandidates(Board board, int row, int col, Map<Integer, Piece> allPieces) {
+        if (allPieces == null) return 0;
+
+        int count = 0;
+
+        // Check each piece
+        for (Piece piece : allPieces.values()) {
+            // Skip if piece is already placed
+            boolean isPlaced = false;
+            for (int r = 0; r < board.getRows(); r++) {
+                for (int c = 0; c < board.getCols(); c++) {
+                    if (!board.isEmpty(r, c)) {
+                        Placement p = board.getPlacement(r, c);
+                        if (p.getPieceId() == piece.getId()) {
+                            isPlaced = true;
+                            break;
+                        }
+                    }
+                }
+                if (isPlaced) break;
+            }
+
+            if (isPlaced) continue;
+
+            // Try all 4 rotations
+            for (int rotation = 0; rotation < 4; rotation++) {
+                if (canPlacePiece(board, row, col, piece, rotation, allPieces)) {
+                    count++;
+                    break; // Count piece once, not each rotation
+                }
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Checks if a piece can be placed at a specific position with constraints.
+     *
+     * @param board Current board
+     * @param row Row position
+     * @param col Column position
+     * @param piece Piece to place
+     * @param rotation Rotation to try
+     * @param allPieces All pieces map
+     * @return true if piece fits all edge constraints
+     */
+    private static boolean canPlacePiece(Board board, int row, int col, Piece piece, int rotation, Map<Integer, Piece> allPieces) {
+        int[] edges = piece.edgesRotated(rotation);
+        int north = edges[0];
+        int east = edges[1];
+        int south = edges[2];
+        int west = edges[3];
+
+        // Check north neighbor
+        if (row > 0) {
+            if (board.isEmpty(row - 1, col)) {
+                // No constraint yet
+            } else {
+                Placement northPlacement = board.getPlacement(row - 1, col);
+                Piece northPiece = findPieceById(board, allPieces, northPlacement.getPieceId());
+                if (northPiece != null) {
+                    int[] northEdges = northPiece.edgesRotated(northPlacement.getRotation());
+                    int northSouth = northEdges[2]; // South edge of north piece
+                    if (northSouth != north) return false;
+                }
+            }
+        } else {
+            // Top border
+            if (north != 0) return false;
+        }
+
+        // Check east neighbor
+        if (col < board.getCols() - 1) {
+            if (board.isEmpty(row, col + 1)) {
+                // No constraint yet
+            } else {
+                Placement eastPlacement = board.getPlacement(row, col + 1);
+                Piece eastPiece = findPieceById(board, allPieces, eastPlacement.getPieceId());
+                if (eastPiece != null) {
+                    int[] eastEdges = eastPiece.edgesRotated(eastPlacement.getRotation());
+                    int eastWest = eastEdges[3]; // West edge of east piece
+                    if (eastWest != east) return false;
+                }
+            }
+        } else {
+            // Right border
+            if (east != 0) return false;
+        }
+
+        // Check south neighbor
+        if (row < board.getRows() - 1) {
+            if (board.isEmpty(row + 1, col)) {
+                // No constraint yet
+            } else {
+                Placement southPlacement = board.getPlacement(row + 1, col);
+                Piece southPiece = findPieceById(board, allPieces, southPlacement.getPieceId());
+                if (southPiece != null) {
+                    int[] southEdges = southPiece.edgesRotated(southPlacement.getRotation());
+                    int southNorth = southEdges[0]; // North edge of south piece
+                    if (southNorth != south) return false;
+                }
+            }
+        } else {
+            // Bottom border
+            if (south != 0) return false;
+        }
+
+        // Check west neighbor
+        if (col > 0) {
+            if (board.isEmpty(row, col - 1)) {
+                // No constraint yet
+            } else {
+                Placement westPlacement = board.getPlacement(row, col - 1);
+                Piece westPiece = findPieceById(board, allPieces, westPlacement.getPieceId());
+                if (westPiece != null) {
+                    int[] westEdges = westPiece.edgesRotated(westPlacement.getRotation());
+                    int westEast = westEdges[1]; // East edge of west piece
+                    if (westEast != west) return false;
+                }
+            }
+        } else {
+            // Left border
+            if (west != 0) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Finds a piece by ID from the allPieces map.
+     */
+    private static Piece findPieceById(Board board, Map<Integer, Piece> allPieces, int pieceId) {
+        return allPieces.get(pieceId);
     }
 }

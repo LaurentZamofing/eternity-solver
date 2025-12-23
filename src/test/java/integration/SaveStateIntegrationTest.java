@@ -86,7 +86,7 @@ class SaveStateIntegrationTest {
     }
 
     @Test
-    @Disabled("TODO: Binary format not being created properly - investigate SaveStateManager")
+    @Disabled("TODO: SaveStateIO.saveCurrentState() doesn't create .bin - use SaveStateManager.saveState() instead")
     @Order(2)
     @DisplayName("Should save and load state in binary format")
     void testBinaryFormatSaveLoad() throws Exception {
@@ -123,7 +123,7 @@ class SaveStateIntegrationTest {
     }
 
     @Test
-    @Disabled("TODO: Save directory path issue - verify getPuzzleSubDir implementation")
+    @Disabled("TODO: saveCurrentState() uses getPuzzleSubDir which returns different path - verify saves/ structure")
     @Order(3)
     @DisplayName("Should preserve milestone saves")
     void testMilestonePreservation() throws Exception {

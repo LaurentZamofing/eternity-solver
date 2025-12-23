@@ -6,7 +6,7 @@ import util.SaveLoadTest;
 /**
  * Suite de tests complète - Lance tous les tests dans l'ordre
  */
-public class TestAll {
+public class AllTests {
 
     public static void main(String[] args) {
         System.out.println("\n");

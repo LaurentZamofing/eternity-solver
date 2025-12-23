@@ -144,9 +144,17 @@ public class BoardDisplayService {
         int rows = board.getRows();
         int cols = board.getCols();
 
-        // Simple representation: piece:rotation format
+        // Top border
+        writer.print("# ┌");
+        for (int c = 0; c < cols; c++) {
+            writer.print("──────");
+            if (c < cols - 1) writer.print("┬");
+        }
+        writer.println("┐");
+
+        // Board content with pipes
         for (int r = 0; r < rows; r++) {
-            writer.print("# ");
+            writer.print("# │");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
                     writer.print("  --  ");
@@ -154,9 +162,28 @@ public class BoardDisplayService {
                     Placement p = board.getPlacement(r, c);
                     writer.printf(" %3d:%d ", p.getPieceId(), p.getRotation());
                 }
+                writer.print("│");
             }
             writer.println();
+
+            // Row separator (except after last row)
+            if (r < rows - 1) {
+                writer.print("# ├");
+                for (int c = 0; c < cols; c++) {
+                    writer.print("──────");
+                    if (c < cols - 1) writer.print("┼");
+                }
+                writer.println("┤");
+            }
         }
+
+        // Bottom border
+        writer.print("# └");
+        for (int c = 0; c < cols; c++) {
+            writer.print("──────");
+            if (c < cols - 1) writer.print("┴");
+        }
+        writer.println("┘");
     }
 
     /**

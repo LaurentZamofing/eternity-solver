@@ -301,10 +301,11 @@ public class CellDetailsService {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 String cellValue = boardState[r][c];
-                if (cellValue != null && !cellValue.isEmpty()) {
-                    String[] parts = cellValue.split("_");
-                    int pieceId = Integer.parseInt(parts[0]);
-                    int rotation = Integer.parseInt(parts[1]);
+                if (cellValue != null && !cellValue.isEmpty() && !cellValue.equals("--")) {
+                    // Format can be "pieceId:rotation" or "pieceId_rotation"
+                    String[] parts = cellValue.contains(":") ? cellValue.split(":") : cellValue.split("_");
+                    int pieceId = Integer.parseInt(parts[0].trim());
+                    int rotation = Integer.parseInt(parts[1].trim());
 
                     PieceDefinition pieceDef = pieceDefs.get(pieceId);
                     if (pieceDef != null) {

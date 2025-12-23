@@ -358,6 +358,18 @@ public class BoardDisplayService {
         int south = edges[2];
         int west = edges[3];
 
+        // IMPORTANT: Interior cells cannot have 0 edges
+        boolean isTopBorder = (row == 0);
+        boolean isBottomBorder = (row == board.getRows() - 1);
+        boolean isLeftBorder = (col == 0);
+        boolean isRightBorder = (col == board.getCols() - 1);
+
+        // Interior cells: no edge can be 0
+        if (!isTopBorder && north == 0) return false;
+        if (!isBottomBorder && south == 0) return false;
+        if (!isLeftBorder && west == 0) return false;
+        if (!isRightBorder && east == 0) return false;
+
         // Check north neighbor
         if (row > 0) {
             if (board.isEmpty(row - 1, col)) {

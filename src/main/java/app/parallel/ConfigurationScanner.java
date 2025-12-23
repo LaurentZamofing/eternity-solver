@@ -75,7 +75,7 @@ public class ConfigurationScanner {
 
         File dataDir = new File(dataDirectory + "eternity2/");
         File[] configFiles = dataDir.listFiles((dir, name) ->
-            name.startsWith("eternity2_p") && name.endsWith(".txt")
+            name.startsWith("eternity2") && name.endsWith(".txt")
         );
 
         if (configFiles == null || configFiles.length == 0) {

@@ -6,6 +6,7 @@ import model.Board;
 import util.SaveStateManager.PlacementInfo;
 import util.SaveStateManager.SaveState;
 import util.TimeConstants;
+import util.state.SaveFileManager;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -372,5 +373,63 @@ public class SaveStateIO {
             }
         }
         return null;
+    }
+
+    /**
+     * Simplified save method for testing purposes.
+     * Creates a save file with a timestamped filename in the puzzle subdirectory.
+     *
+     * @param puzzleName Name of the puzzle
+     * @param board Current board state
+     * @param depth Number of pieces placed
+     * @param numFixedPieces Number of fixed pieces
+     * @param placementOrder List of placements
+     * @param unusedIds List of unused piece IDs
+     * @param totalComputeTimeMs Total compute time in milliseconds
+     * @throws IOException if file write fails
+     */
+    public static void saveCurrentState(String puzzleName, Board board, int depth,
+                                       int numFixedPieces, List<PlacementInfo> placementOrder,
+                                       List<Integer> unusedIds, long totalComputeTimeMs) throws IOException {
+        // Create save directories
+        File saveDir = new File("saves/");
+        if (!saveDir.exists()) {
+            saveDir.mkdirs();
+        }
+
+        // Get puzzle subdirectory
+        String puzzleDir = SaveFileManager.getPuzzleSubDir(puzzleName);
+        File dir = new File(puzzleDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        // Create filename with timestamp
+        long timestamp = System.currentTimeMillis();
+        String filename = puzzleDir + "current_" + timestamp + ".txt";
+
+        // Write the file
+        writeToFile(filename, puzzleName, board, depth, placementOrder, unusedIds,
+                   -1.0, totalComputeTimeMs, numFixedPieces, null);
+    }
+
+    /**
+     * Simplified load method for testing purposes.
+     * Loads a save state from the specified file path.
+     *
+     * @param filePath Path to the save file
+     * @return SaveState object, or null if load fails
+     */
+    public static SaveState loadSaveState(String filePath) {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            return null;
+        }
+
+        // Extract puzzle name from path (e.g., "saves/test_puzzle/current_123.txt" -> "test_puzzle")
+        String[] pathParts = filePath.split("/");
+        String puzzleName = pathParts.length > 1 ? pathParts[pathParts.length - 2] : "unknown";
+
+        return readFromFile(file, puzzleName);
     }
 }

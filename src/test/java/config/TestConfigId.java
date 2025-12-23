@@ -1,3 +1,5 @@
+package config;
+
 /**
  * Test pour vérifier l'extraction du configId depuis les noms de fichiers
  */

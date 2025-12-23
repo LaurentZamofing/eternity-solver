@@ -1,3 +1,5 @@
+package config;
+
 import config.PuzzleConfig;
 import java.io.IOException;
 

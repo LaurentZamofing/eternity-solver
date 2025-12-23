@@ -1,3 +1,5 @@
+package solver;
+
 import model.Board;
 import model.Piece;
 import model.Placement;

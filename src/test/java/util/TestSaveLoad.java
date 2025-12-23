@@ -1,3 +1,5 @@
+package util;
+
 import model.Board;
 import model.Piece;
 import model.Placement;

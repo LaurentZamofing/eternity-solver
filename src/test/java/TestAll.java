@@ -1,3 +1,8 @@
+import solver.TestBasics;
+import solver.TestSolver;
+import solver.TestMRVTieBreaking;
+import util.TestSaveLoad;
+
 /**
  * Suite de tests complète - Lance tous les tests dans l'ordre
  */

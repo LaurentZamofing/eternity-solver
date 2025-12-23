@@ -193,8 +193,9 @@ public class BoardDisplayService {
      * @param writer PrintWriter to write the visual representation
      * @param board Board to render
      * @param allPieces Map of all pieces for displaying edge details
+     * @param domainManager Optional DomainManager for AC-3 domains (null = use estimation)
      */
-    public static void writeToSaveFileDetailed(PrintWriter writer, Board board, Map<Integer, Piece> allPieces) {
+    public static void writeToSaveFileDetailed(PrintWriter writer, Board board, Map<Integer, Piece> allPieces, solver.DomainManager domainManager) {
         int rows = board.getRows();
         int cols = board.getCols();
 
@@ -211,8 +212,16 @@ public class BoardDisplayService {
             StringBuilder line1 = new StringBuilder("# ");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
-                    // Calculate number of candidate pieces for this empty cell
-                    int candidates = countCandidates(board, r, c, allPieces);
+                    // Use AC-3 domains if available, otherwise estimate
+                    int candidates;
+                    if (domainManager != null && domainManager.isAC3Initialized()) {
+                        java.util.Map<Integer, java.util.List<solver.DomainManager.ValidPlacement>> domain =
+                            domainManager.getDomain(r, c);
+                        candidates = (domain != null) ? domain.size() : 0;
+                    } else {
+                        candidates = countCandidates(board, r, c, allPieces);
+                    }
+
                     if (candidates > 0) {
                         line1.append(String.format("  [%3d]  ", candidates));
                     } else {

@@ -70,7 +70,7 @@ public class MainParallel {
                     long minutes = (totalSeconds % TimeConstants.SECONDS_PER_HOUR) / TimeConstants.SECONDS_PER_MINUTE;
                     long seconds = totalSeconds % 60;
                     SolverLogger.info("   Status: RESUME (cumulative time: " +
-                        String.format("%dh %02dm %02ds", hours, minutes, seconds) + ")");
+                            String.format("%dh %02dm %02ds", hours, minutes, seconds) + ")");
                 } else {
                     SolverLogger.info("   Status: NEW");
                 }

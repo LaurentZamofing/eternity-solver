@@ -88,12 +88,17 @@ public class ConfigurationScanner {
 
         for (File file : configFiles) {
             try {
+                SolverLogger.info("  🔍 Analyzing: " + file.getName());
                 ConfigInfo info = analyzeConfiguration(file);
                 if (info != null) {
                     configs.add(info);
+                    SolverLogger.info("     ✓ Loaded successfully");
+                } else {
+                    SolverLogger.warn("     ✗ Failed to load (PuzzleConfig.loadFromFile returned null)");
                 }
             } catch (IOException | RuntimeException e) {
-                SolverLogger.error("Error loading configuration " + file.getName() + ": " + e.getMessage());
+                SolverLogger.error("     ✗ Error: " + e.getMessage());
+                e.printStackTrace();
             }
         }
 
@@ -108,8 +113,10 @@ public class ConfigurationScanner {
      */
     private ConfigInfo analyzeConfiguration(File file) throws IOException {
         // Load the config
+        SolverLogger.debug("     Loading config from: " + file.getAbsolutePath());
         PuzzleConfig config = PuzzleConfig.loadFromFile(file.getAbsolutePath());
         if (config == null) {
+            SolverLogger.warn("     PuzzleConfig.loadFromFile returned null for: " + file.getName());
             return null;
         }
 

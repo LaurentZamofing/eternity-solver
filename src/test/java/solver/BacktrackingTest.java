@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Tests pour le système de backtracking automatique avec placement order
  */
-public class TestBacktracking {
+public class BacktrackingTest {
 
     private static final String TEST_SAVE_DIR = "saves/";
     private static int testsRun = 0;

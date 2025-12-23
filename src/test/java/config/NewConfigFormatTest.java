@@ -6,7 +6,7 @@ import java.io.IOException;
 /**
  * Test pour vérifier le chargement des nouvelles configurations avec SortOrder
  */
-public class TestNewConfigFormat {
+public class NewConfigFormatTest {
 
     public static void main(String[] args) {
         System.out.println("╔═══════════════════════════════════════════════════════════════════╗");

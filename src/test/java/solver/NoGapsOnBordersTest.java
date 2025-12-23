@@ -19,7 +19,7 @@ import java.util.Map;
  *
  * Ce test vérifie que la nouvelle logique de remplissage continu fonctionne correctement.
  */
-public class TestNoGapsOnBorders {
+public class NoGapsOnBordersTest {
 
     public static void main(String[] args) {
         System.out.println("╔═══════════════════════════════════════════════════════════════════╗");

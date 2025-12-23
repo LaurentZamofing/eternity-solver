@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * Tests critiques pour la sauvegarde et le chargement
  */
-public class TestSaveLoad {
+public class SaveLoadTest {
 
     private static int testsRun = 0;
     private static int testsPassed = 0;

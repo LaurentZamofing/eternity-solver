@@ -14,7 +14,7 @@ import java.util.Map;
  * Test du tie-breaking MRV: vérifier que quand plusieurs positions ont le même nombre
  * de candidats, on choisit celle avec le PLUS de voisins occupés (plus de contraintes).
  */
-public class TestMRVTieBreaking {
+public class MRVTieBreakingTest {
 
     private static int testsRun = 0;
     private static int testsPassed = 0;

@@ -10,7 +10,7 @@ import java.util.List;
  * Tests pour valider la logique de profondeur de backtracking
  * lors du chargement d'une sauvegarde.
  */
-public class TestBacktrackingDepth {
+public class BacktrackingDepthTest {
 
     public static void main(String[] args) {
         System.out.println("╔════════════════════════════════════════════════════════════╗");

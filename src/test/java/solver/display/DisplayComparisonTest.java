@@ -14,13 +14,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Test pour afficher la meilleure solution sauvegardée
+ * Test pour afficher la comparaison entre le meilleur record et le current
  */
-public class TestDisplayBestSolution {
+public class DisplayComparisonTest {
 
     public static void main(String[] args) {
         System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
-        System.out.println("║         TEST D'AFFICHAGE DE LA MEILLEURE SOLUTION                ║");
+        System.out.println("║         TEST D'AFFICHAGE AVEC COMPARAISON                        ║");
         System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
         System.out.println();
 
@@ -29,34 +29,35 @@ public class TestDisplayBestSolution {
         // Charger toutes les sauvegardes
         List<File> bestSaves = SaveStateManager.findAllSaves(puzzleType);
 
-        if (bestSaves == null || bestSaves.isEmpty()) {
-            System.out.println("✗ Aucune sauvegarde trouvée pour " + puzzleType);
+        if (bestSaves == null || bestSaves.size() < 2) {
+            System.out.println("✗ Besoin d'au moins 2 sauvegardes pour comparer");
             return;
         }
 
         System.out.println("✓ " + bestSaves.size() + " sauvegarde(s) trouvée(s)");
         System.out.println();
 
-        // Prendre la meilleure (première dans la liste)
+        // Prendre les deux meilleures pour simuler best vs current
         File bestSave = bestSaves.get(0);
-        System.out.println("✓ Meilleure sauvegarde: " + bestSave.getName());
+        File currentSave = bestSaves.size() > 1 ? bestSaves.get(1) : bestSaves.get(0);
+
+        System.out.println("✓ RECORD: " + bestSave.getName());
+        System.out.println("✓ CURRENT: " + currentSave.getName());
         System.out.println();
 
-        // Charger l'état
+        // Charger les états
         SaveStateManager.SaveState bestState = SaveStateManager.loadStateFromFile(bestSave, puzzleType);
+        SaveStateManager.SaveState currentState = SaveStateManager.loadStateFromFile(currentSave, puzzleType);
 
-        if (bestState == null) {
-            System.out.println("✗ Erreur lors du chargement de la sauvegarde");
+        if (bestState == null || currentState == null) {
+            System.out.println("✗ Erreur lors du chargement des sauvegardes");
             return;
         }
 
-        System.out.println("✓ État chargé:");
-        System.out.println("  - Profondeur: " + bestState.depth + " pièces");
-        System.out.println("  - Pièces non utilisées: " + bestState.unusedPieceIds.size());
-        System.out.println();
+        // Créer les boards
+        Board bestBoard = new Board(16, 16);
+        Board currentBoard = new Board(16, 16);
 
-        // Créer le board et charger toutes les pièces
-        Board board = new Board(16, 16);
         Map<Integer, Piece> allPieces;
         try {
             PuzzleConfig config = PuzzleConfig.loadFromFile("data/puzzle_eternity2.txt");
@@ -66,33 +67,43 @@ public class TestDisplayBestSolution {
             return;
         }
 
-        // Restaurer l'état
-        boolean restored = SaveStateManager.restoreState(bestState, board, allPieces);
+        Map<Integer, Piece> bestPieces = new HashMap<>(allPieces);
+        Map<Integer, Piece> currentPieces = new HashMap<>(allPieces);
 
-        if (!restored) {
+        // Restaurer les états
+        boolean bestRestored = SaveStateManager.restoreState(bestState, bestBoard, bestPieces);
+        boolean currentRestored = SaveStateManager.restoreState(currentState, currentBoard, currentPieces);
+
+        if (!bestRestored || !currentRestored) {
             System.out.println("✗ Erreur lors de la restauration");
             return;
         }
 
-        System.out.println("✓ État restauré sur le board");
+        System.out.println("✓ États restaurés");
+        System.out.println("  - RECORD: " + bestState.depth + " pièces");
+        System.out.println("  - CURRENT: " + currentState.depth + " pièces");
         System.out.println();
 
-        // Afficher la meilleure solution
+        // Afficher la comparaison
         System.out.println("╔═══════════════════════════════════════════════════════════════════╗");
         System.out.println("║              MEILLEURE SOLUTION ATTEINTE (RECORD)                ║");
         System.out.println("╚═══════════════════════════════════════════════════════════════════╝");
         System.out.println();
-        System.out.println("État avec le plus de pièces placées jusqu'à présent:");
+        System.out.println("Légende des couleurs (comparaison RECORD vs CURRENT):");
+        System.out.println("  - \033[1;35mMagenta\033[0m: Case occupée dans RECORD mais vide dans CURRENT (régression)");
+        System.out.println("  - \033[1;38;5;208mOrange\033[0m: Pièce différente entre RECORD et CURRENT (changement)");
+        System.out.println("  - \033[1;33mJaune\033[0m: Case vide dans RECORD mais occupée dans CURRENT (progression)");
+        System.out.println("  - \033[1;36mCyan\033[0m: Case identique dans RECORD et CURRENT (stabilité)");
         System.out.println();
 
-        // Créer le solver pour utiliser sa méthode d'affichage
         EternitySolver solver = new EternitySolver();
-        List<Integer> unusedIds = new ArrayList<>(bestState.unusedPieceIds);
+        List<Integer> bestUnusedIds = new ArrayList<>(bestState.unusedPieceIds);
 
-        solver.printBoardWithLabels(board, allPieces, unusedIds);
+        // Afficher le RECORD avec comparaison au CURRENT
+        solver.printBoardWithComparison(bestBoard, currentBoard, bestPieces, bestUnusedIds);
 
         System.out.println();
-        board.printScore();
+        bestBoard.printScore();
         System.out.println();
         System.out.println("═".repeat(70));
     }

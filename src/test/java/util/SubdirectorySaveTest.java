@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * Test de création des sous-répertoires et de l'affichage visuel
  */
-public class TestSubdirectorySave {
+public class SubdirectorySaveTest {
 
     public static void main(String[] args) {
         System.out.println("Test de sauvegarde avec sous-répertoires et affichage visuel");

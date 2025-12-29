@@ -5,6 +5,7 @@ import model.Piece;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import util.SaveStateManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -318,7 +319,7 @@ public class RecordManagerTest {
 
         // Should not throw exception
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 9, stats,
-                board, piecesById, unusedIds, fixedPositions, validator));
+                board, piecesById, unusedIds, fixedPositions, validator, null, null));
     }
 
     @Test
@@ -341,7 +342,7 @@ public class RecordManagerTest {
 
         // Should not throw exception
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 9, stats,
-                board, piecesById, unusedIds, fixedPositions, validator));
+                board, piecesById, unusedIds, fixedPositions, validator, null, null));
     }
 
     @Test
@@ -558,8 +559,10 @@ public class RecordManagerTest {
         List<Integer> unusedIds = new ArrayList<>();
 
         // Should display complete board without exceptions
+        // Last piece placed is at C3 (piece 4), no next cell (board is complete)
+        SaveStateManager.PlacementInfo lastPlacement = new SaveStateManager.PlacementInfo(2, 2, 4, 0);
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 9, stats,
-                testBoard, simplePieces, unusedIds, fixedPositions, validator));
+                testBoard, simplePieces, unusedIds, fixedPositions, validator, lastPlacement, null));
 
         // Verify all edges match (this is a valid solution)
         int[] scoreData = testBoard.calculateScore();
@@ -598,8 +601,11 @@ public class RecordManagerTest {
         }
 
         // Should display partial board with rotations
+        // Last piece placed: piece 2 at A3 with 180° rotation, next target: B1
+        SaveStateManager.PlacementInfo lastPlacement = new SaveStateManager.PlacementInfo(0, 2, 2, 2);
+        int[] nextTarget = new int[]{1, 0}; // B1
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 3, stats,
-                testBoard, rotationPieces, unusedIds, fixedPositions, validator));
+                testBoard, rotationPieces, unusedIds, fixedPositions, validator, lastPlacement, nextTarget));
     }
 
     @Test
@@ -625,8 +631,11 @@ public class RecordManagerTest {
 
         // Board should show valid counts for empty cells (A2, B1, B2, B3, C2)
         // Each empty cell should show how many of the unused pieces can fit there
+        // Last piece: piece 4 at C3, next target: A2
+        SaveStateManager.PlacementInfo lastPlacement = new SaveStateManager.PlacementInfo(2, 2, 4, 0);
+        int[] nextTarget = new int[]{0, 1}; // A2
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 4, stats,
-                testBoard, testPieces, unusedIds, fixedPositions, validator));
+                testBoard, testPieces, unusedIds, fixedPositions, validator, lastPlacement, nextTarget));
 
         // Verify that some cells should have valid options
         // For example, A2 (top edge) should be able to fit piece 5
@@ -658,8 +667,11 @@ public class RecordManagerTest {
         List<Integer> unusedIds = List.of(2, 3, 4, 7, 8, 9, 10);
 
         // Should display board showing the dead-end scenario
+        // Last piece: wrong piece 6 at B1, next target: A3
+        SaveStateManager.PlacementInfo lastPlacement = new SaveStateManager.PlacementInfo(1, 0, 6, 0);
+        int[] nextTarget = new int[]{0, 2}; // A3
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 3, stats,
-                testBoard, backtrackPieces, unusedIds, fixedPositions, validator));
+                testBoard, backtrackPieces, unusedIds, fixedPositions, validator, lastPlacement, nextTarget));
 
         // The display should show cells with low valid piece counts (warning colors)
         // indicating that backtracking may be needed

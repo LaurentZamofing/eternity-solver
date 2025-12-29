@@ -119,13 +119,13 @@ public class AutoSaveManager {
      */
     public void saveRecord(Board board, BitSet pieceUsed, int totalPieces,
                           StatisticsManager stats, int currentDepth) {
-        // Save from 10 pieces AND at each new depth record
-        if (currentDepth >= 10 && allPiecesMap != null) {
+        // Save from 1 piece AND at each new depth record
+        if (currentDepth >= 1 && allPiecesMap != null) {
             SolverLogger.info("  📝 AutoSaveManager: Triggering immediate save for depth " + currentDepth + " (new record detected)");
             lastSavedDepth = currentDepth; // Update last saved depth
             performSave(board, pieceUsed, totalPieces, stats);
-        } else if (currentDepth < 10) {
-            SolverLogger.info("  ⏭️  AutoSaveManager: Skipping save for depth " + currentDepth + " (< 10)");
+        } else if (currentDepth < 1) {
+            SolverLogger.info("  ⏭️  AutoSaveManager: Skipping save for depth " + currentDepth + " (< 1)");
         } else if (allPiecesMap == null) {
             SolverLogger.error("  ⚠️  AutoSaveManager: Cannot save - piecesMap not initialized!");
         }

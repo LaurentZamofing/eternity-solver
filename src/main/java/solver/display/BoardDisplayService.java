@@ -225,7 +225,8 @@ public class BoardDisplayService {
                     }
 
                     if (count.numPieces > 0 || count.numRotations > 0) {
-                        line1.append(String.format(" (%d/%2d) ", count.numPieces, count.numRotations));
+                        // Format: (PPP/RRR) = 9 chars exactly
+                        line1.append(String.format("(%3d/%3d)", count.numPieces, count.numRotations));
                     } else {
                         line1.append("   ∅     ");  // Empty set symbol if no candidates
                     }

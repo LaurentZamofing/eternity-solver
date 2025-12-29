@@ -212,18 +212,20 @@ public class BoardDisplayService {
             StringBuilder line1 = new StringBuilder("# ");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
-                    // Use AC-3 domains if available, otherwise estimate
-                    int candidates;
+                    // Count pieces and rotations
+                    CandidateCount count;
                     if (domainManager != null && domainManager.isAC3Initialized()) {
                         java.util.Map<Integer, java.util.List<solver.DomainManager.ValidPlacement>> domain =
                             domainManager.getDomain(r, c);
-                        candidates = (domain != null) ? domain.size() : 0;
+                        int numPieces = (domain != null) ? domain.size() : 0;
+                        // For AC-3, we don't have rotation info, so use pieces count for both
+                        count = new CandidateCount(numPieces, numPieces);
                     } else {
-                        candidates = countCandidates(board, r, c, allPieces);
+                        count = countCandidatesWithRotations(board, r, c, allPieces);
                     }
 
-                    if (candidates > 0) {
-                        line1.append(String.format("  [%3d]  ", candidates));
+                    if (count.numPieces > 0 || count.numRotations > 0) {
+                        line1.append(String.format(" (%d/%2d) ", count.numPieces, count.numRotations));
                     } else {
                         line1.append("   ∅     ");  // Empty set symbol if no candidates
                     }
@@ -444,5 +446,71 @@ public class BoardDisplayService {
      */
     private static Piece findPieceById(Board board, Map<Integer, Piece> allPieces, int pieceId) {
         return allPieces.get(pieceId);
+    }
+
+    /**
+     * Counts both the number of pieces and total rotations that can fit in a cell.
+     * Similar to countCandidates() but also counts rotations.
+     *
+     * @param board Current board state
+     * @param row Row of empty cell
+     * @param col Column of empty cell
+     * @param allPieces All pieces (to check which ones are available)
+     * @return CandidateCount with both pieces and rotations count
+     */
+    private static CandidateCount countCandidatesWithRotations(Board board, int row, int col, Map<Integer, Piece> allPieces) {
+        if (allPieces == null) return new CandidateCount(0, 0);
+
+        int numPieces = 0;
+        int numRotations = 0;
+
+        // Check each piece
+        for (Piece piece : allPieces.values()) {
+            // Skip if piece is already placed
+            boolean isPlaced = false;
+            for (int r = 0; r < board.getRows(); r++) {
+                for (int c = 0; c < board.getCols(); c++) {
+                    if (!board.isEmpty(r, c)) {
+                        Placement p = board.getPlacement(r, c);
+                        if (p.getPieceId() == piece.getId()) {
+                            isPlaced = true;
+                            break;
+                        }
+                    }
+                }
+                if (isPlaced) break;
+            }
+
+            if (isPlaced) continue;
+
+            // Count valid rotations for this piece
+            int validRotationsForThisPiece = 0;
+            for (int rotation = 0; rotation < 4; rotation++) {
+                if (canPlacePiece(board, row, col, piece, rotation, allPieces)) {
+                    validRotationsForThisPiece++;
+                    numRotations++;
+                }
+            }
+
+            // Count this piece if at least one rotation works
+            if (validRotationsForThisPiece > 0) {
+                numPieces++;
+            }
+        }
+
+        return new CandidateCount(numPieces, numRotations);
+    }
+
+    /**
+     * Simple holder for candidate count results.
+     */
+    private static class CandidateCount {
+        final int numPieces;
+        final int numRotations;
+
+        CandidateCount(int numPieces, int numRotations) {
+            this.numPieces = numPieces;
+            this.numRotations = numRotations;
+        }
     }
 }

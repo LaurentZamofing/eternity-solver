@@ -70,15 +70,22 @@ public class BoardDisplayServiceTest {
     }
 
     @Test
-    @DisplayName("Empty board should display candidate counts correctly")
-    void testEmptyBoardDisplay() {
-        Board board = new Board(2, 2);
+    @DisplayName("Empty cells should display (pieces/rotations) format correctly")
+    void testEmptyCellsDisplayWithRotations() {
+        Board board = new Board(3, 3);
 
-        // Create pieces map with 3 pieces
+        // Place corner pieces to make interior cells valid for placement
+        Piece corner1 = new Piece(1, new int[]{0, 1, 2, 0});  // Top-left corner
+        Piece corner2 = new Piece(2, new int[]{0, 0, 3, 4});  // Top-right corner
+        board.place(0, 0, corner1, 0);
+        board.place(0, 2, corner2, 0);
+
+        // Create pieces map with unused pieces (for interior cells)
         Map<Integer, Piece> piecesMap = new HashMap<>();
-        piecesMap.put(1, new Piece(1, new int[]{0, 1, 2, 3}));
-        piecesMap.put(2, new Piece(2, new int[]{1, 2, 3, 4}));
-        piecesMap.put(3, new Piece(3, new int[]{2, 3, 4, 5}));
+        piecesMap.put(1, corner1);  // Already placed
+        piecesMap.put(2, corner2);  // Already placed
+        piecesMap.put(3, new Piece(3, new int[]{1, 5, 6, 7}));  // Available
+        piecesMap.put(4, new Piece(4, new int[]{2, 8, 9, 10}));  // Available
 
         StringWriter stringWriter = new StringWriter();
         PrintWriter writer = new PrintWriter(stringWriter);
@@ -88,7 +95,12 @@ public class BoardDisplayServiceTest {
 
         String output = stringWriter.toString();
 
-        // The output shows counts but NOT in [] format - it shows like [  3] for 3 candidates
+        // The output shows counts in (pieces/rotations) format for empty cells
+        // Should see format like (2/8) or similar for cells with candidates
+        assertTrue(output.contains("("), "Should contain opening parenthesis for count");
+        assertTrue(output.contains("/"), "Should contain slash separator for pieces/rotations");
+        assertTrue(output.contains(")"), "Should contain closing parenthesis for count");
+
         // Check that output doesn't contain ??? or ?? which would indicate errors
         assertFalse(output.contains("???"), "Should NOT contain ??? error markers");
         assertFalse(output.contains("? ??"), "Should NOT contain broken formatting");

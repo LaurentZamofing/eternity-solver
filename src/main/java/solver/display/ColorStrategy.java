@@ -50,9 +50,14 @@ public interface ColorStrategy {
     String CYAN = "\033[96m";
     String BRIGHT_CYAN = "\033[1;96m";
     String BOLD_CYAN = "\033[1;36m";
+    String BLUE = "\033[34m";
+    String BRIGHT_BLUE = "\033[94m";
+    String BOLD_BLUE = "\033[1;34m";
     String MAGENTA = "\033[95m";
     String BOLD_MAGENTA = "\033[1;35m";
+    String BRIGHT_MAGENTA = "\033[1;95m";
     String ORANGE = "\033[38;5;208m";
     String BOLD_ORANGE = "\033[1;38;5;208m";
+    String BOLD = "\033[1m";
     String RESET = "\033[0m";
 }

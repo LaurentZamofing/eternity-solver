@@ -163,4 +163,15 @@ public class PlacementOrderTracker {
         }
         return null;
     }
+
+    /**
+     * Gets the last placement from history (most recently placed piece)
+     * @return information about the last placement, or null if history is empty
+     */
+    public SaveStateManager.PlacementInfo getLastPlacement() {
+        if (placementHistory != null && !placementHistory.isEmpty()) {
+            return placementHistory.get(placementHistory.size() - 1);
+        }
+        return null;
+    }
 }

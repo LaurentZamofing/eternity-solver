@@ -32,6 +32,7 @@ public class EdgeMatchingColorStrategy implements ColorStrategy {
 
     private final EdgeMatchingValidator validator;
     private final Set<String> fixedPositions;
+    private final Set<String> highlightedPositions;
 
     /**
      * Creates edge matching color strategy.
@@ -40,38 +41,64 @@ public class EdgeMatchingColorStrategy implements ColorStrategy {
      * @param fixedPositions Set of fixed position keys ("row,col")
      */
     public EdgeMatchingColorStrategy(Board board, Set<String> fixedPositions) {
+        this(board, fixedPositions, null);
+    }
+
+    /**
+     * Creates edge matching color strategy with highlighted positions.
+     *
+     * @param board Board to validate
+     * @param fixedPositions Set of fixed position keys ("row,col")
+     * @param highlightedPositions Set of positions to highlight ("row,col")
+     */
+    public EdgeMatchingColorStrategy(Board board, Set<String> fixedPositions, Set<String> highlightedPositions) {
         this.validator = new EdgeMatchingValidator(board);
         this.fixedPositions = fixedPositions;
+        this.highlightedPositions = highlightedPositions;
     }
 
     /**
      * Returns color for a cell.
-     * Fixed positions get bright cyan, others get no cell color.
+     * Highlighted positions get bright magenta, fixed positions get bright cyan.
      *
      * @param board Current board
      * @param row Row index
      * @param col Column index
-     * @return BRIGHT_CYAN if fixed, empty string otherwise
+     * @return Color code based on cell type
      */
     @Override
     public String getCellColor(Board board, int row, int col) {
         String positionKey = row + "," + col;
+
+        // Highlighted positions (last placed piece) get bright magenta
+        if (highlightedPositions != null && highlightedPositions.contains(positionKey)) {
+            return BRIGHT_MAGENTA;
+        }
+
+        // Fixed positions get bright cyan
         return fixedPositions.contains(positionKey) ? BRIGHT_CYAN : "";
     }
 
     /**
      * Returns color for an edge based on matching with neighbor.
+     * Highlighted cells get bright magenta edges to stand out.
      *
      * @param board Current board
      * @param row Row index
      * @param col Column index
      * @param direction Edge direction (NORTH=0, EAST=1, SOUTH=2, WEST=3)
-     * @return GREEN if matches, RED if doesn't match, empty if no neighbor
+     * @return Color code for the edge
      */
     @Override
     public String getEdgeColor(Board board, int row, int col, int direction) {
-        // Check if this is a fixed position - fixed positions always use cell color
         String positionKey = row + "," + col;
+
+        // Highlighted positions (last placed piece) get bright magenta edges
+        if (highlightedPositions != null && highlightedPositions.contains(positionKey)) {
+            return BRIGHT_MAGENTA;
+        }
+
+        // Fixed positions always use cell color (bright cyan)
         if (fixedPositions.contains(positionKey)) {
             return ""; // Cell color (bright cyan) will be used instead
         }

@@ -1,6 +1,7 @@
 package solver;
 
 import util.SolverLogger;
+import util.SaveStateManager;
 import model.Board;
 import model.Piece;
 import model.Placement;
@@ -224,10 +225,13 @@ public class RecordManager {
      * @param unusedIds list of unused piece IDs
      * @param fixedPositions set of fixed position keys ("row,col")
      * @param validator placement validator for edge checking
+     * @param lastPlacement last placed piece info (can be null)
+     * @param nextCell next empty cell coordinates [row, col] (can be null if board is full)
      */
     public void displayRecord(RecordCheckResult result, int usedCount, StatisticsManager stats,
                              Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
-                             Set<String> fixedPositions, PlacementValidator validator) {
+                             Set<String> fixedPositions, PlacementValidator validator,
+                             SaveStateManager.PlacementInfo lastPlacement, int[] nextCell) {
         // Note: Using synchronized block to ensure atomic multi-line output
         synchronized (SolverLogger.getLogger()) {
             SolverLogger.info("\n" + "=".repeat(80));
@@ -246,6 +250,22 @@ public class RecordManager {
                 }
             }
 
+            // Display last placed piece and next target
+            if (lastPlacement != null) {
+                char rowLabel = (char) ('A' + lastPlacement.row);
+                int colLabel = lastPlacement.col + 1;
+                Piece piece = piecesById.get(lastPlacement.pieceId);
+                String rotationStr = lastPlacement.rotation > 0 ? " (rotated " + (lastPlacement.rotation * 90) + "°)" : "";
+                SolverLogger.info("Last placed: Piece {} at {}{}{}",
+                    lastPlacement.pieceId, rowLabel, colLabel, rotationStr);
+            }
+
+            if (nextCell != null) {
+                char rowLabel = (char) ('A' + nextCell[0]);
+                int colLabel = nextCell[1] + 1;
+                SolverLogger.info("Next target: {}{}", rowLabel, colLabel);
+            }
+
             // Display progress percentage
             double progress = stats.getProgressPercentage();
             if (progress > 0.0 && progress < 99.9) {
@@ -262,7 +282,7 @@ public class RecordManager {
             // Display board visualization with pieces and available options
             SolverLogger.info("\nBoard state:\n");
             BoardDisplayManager displayManager = new BoardDisplayManager(fixedPositions, validator);
-            displayManager.printBoardWithLabels(board, piecesById, unusedIds);
+            displayManager.printBoardWithLabels(board, piecesById, unusedIds, lastPlacement, nextCell);
 
             SolverLogger.info("");
         }

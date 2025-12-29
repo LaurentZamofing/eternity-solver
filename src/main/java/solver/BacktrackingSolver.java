@@ -5,6 +5,7 @@ import util.SolverLogger;
 import model.Board;
 import model.Piece;
 import util.SaveManager;
+import util.SaveStateManager;
 import util.TimeConstants;
 
 import java.util.ArrayList;
@@ -190,10 +191,18 @@ public class BacktrackingSolver {
                         }
                     }
 
+                    // Get last placed piece position for visual highlight
+                    SaveStateManager.PlacementInfo lastPlacement =
+                        (solver.placementOrderTracker != null) ? solver.placementOrderTracker.getLastPlacement() : null;
+
+                    // Find next empty cell to try
+                    int[] nextCell = solver.findNextCellMRV(board, piecesById, pieceUsed, totalPieces);
+
                     // Display record with board visualization
                     recordManager.displayRecord(recordResult, usedCount, stats,
                         board, piecesById, unusedIds,
-                        config.getFixedPositions(), solver.validator);
+                        config.getFixedPositions(), solver.validator,
+                        lastPlacement, nextCell);
                 }
             }
         }

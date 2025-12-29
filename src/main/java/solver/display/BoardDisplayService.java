@@ -229,14 +229,9 @@ public class BoardDisplayService {
                     }
                 } else {
                     Placement p = board.getPlacement(r, c);
-                    Piece piece = allPieces.get(p.getPieceId());
-                    if (piece != null) {
-                        int[] edges = piece.edgesRotated(p.getRotation());
-                        int northEdge = edges[0];
-                        line1.append(String.format("   %2d    ", northEdge));
-                    } else {
-                        line1.append("   ??    ");
-                    }
+                    // Use edges from Placement (already rotated)
+                    int northEdge = p.edges[0];
+                    line1.append(String.format("   %2d    ", northEdge));
                 }
                 if (c < cols - 1) line1.append("│");
             }
@@ -249,15 +244,10 @@ public class BoardDisplayService {
                     line2.append("    .    ");
                 } else {
                     Placement p = board.getPlacement(r, c);
-                    Piece piece = allPieces.get(p.getPieceId());
-                    if (piece != null) {
-                        int[] edges = piece.getEdges();
-                        int westEdge = edges[(3 + p.getRotation()) % 4];
-                        int eastEdge = edges[(1 + p.getRotation()) % 4];
-                        line2.append(String.format("%2d %3d %2d", westEdge, p.getPieceId(), eastEdge));
-                    } else {
-                        line2.append(" ? ??? ?");
-                    }
+                    // Use edges from Placement (already rotated)
+                    int westEdge = p.edges[3];  // WEST = 3
+                    int eastEdge = p.edges[1];  // EAST = 1
+                    line2.append(String.format("%2d %3d %2d", westEdge, p.getPieceId(), eastEdge));
                 }
                 if (c < cols - 1) line2.append("│");
             }
@@ -270,14 +260,9 @@ public class BoardDisplayService {
                     line3.append("    .    ");
                 } else {
                     Placement p = board.getPlacement(r, c);
-                    Piece piece = allPieces.get(p.getPieceId());
-                    if (piece != null) {
-                        int[] edges = piece.getEdges();
-                        int southEdge = edges[(2 + p.getRotation()) % 4];
-                        line3.append(String.format("   %2d    ", southEdge));
-                    } else {
-                        line3.append("   ??    ");
-                    }
+                    // Use edges from Placement (already rotated)
+                    int southEdge = p.edges[2];  // SOUTH = 2
+                    line3.append(String.format("   %2d    ", southEdge));
                 }
                 if (c < cols - 1) line3.append("│");
             }

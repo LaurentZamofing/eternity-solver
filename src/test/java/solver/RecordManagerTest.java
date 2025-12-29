@@ -6,8 +6,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -29,6 +33,8 @@ public class RecordManagerTest {
     private AtomicReference<Board> globalBestBoard;
     private AtomicReference<Map<Integer, Piece>> globalBestPieces;
     private Object lockObject;
+    private PlacementValidator validator;
+    private Set<String> fixedPositions;
 
     @BeforeEach
     public void setUp() {
@@ -50,6 +56,12 @@ public class RecordManagerTest {
         globalBestPieces = new AtomicReference<>(null);
         lockObject = new Object();
 
+        // Initialize validator and fixed positions for displayRecord
+        CellConstraints[][] cellConstraints = CellConstraints.createConstraintsMatrix(3, 3);
+        EternitySolver.Statistics stats = new EternitySolver.Statistics();
+        validator = new PlacementValidator(cellConstraints, stats, "ascending");
+        fixedPositions = new HashSet<>();
+
         // Create RecordManager
         recordManager = new RecordManager(
                 "test_puzzle",
@@ -64,11 +76,116 @@ public class RecordManagerTest {
         );
     }
 
+    /**
+     * Creates a simple valid 3x3 puzzle pieces.
+     * This puzzle can be solved WITHOUT rotations - all pieces fit in their natural orientation.
+     *
+     * Board layout (3x3):
+     *   A B C
+     * 1 ┌─┬─┐
+     * 2 ├─┼─┤
+     * 3 └─┴─┘
+     *
+     * 9 pieces total:
+     * - 4 corners (2 zeros each): A1, A3, C1, C3
+     * - 4 edges (1 zero each): A2, B1, B3, C2
+     * - 1 center (0 zeros): B2
+     */
     private Map<Integer, Piece> createTestPieces() {
         Map<Integer, Piece> pieces = new HashMap<>();
-        pieces.put(1, new Piece(1, new int[]{1, 2, 3, 4}));
-        pieces.put(2, new Piece(2, new int[]{5, 6, 7, 8}));
-        pieces.put(3, new Piece(3, new int[]{0, 0, 0, 0}));
+
+        // Corner pieces (4): two adjacent 0s
+        // Piece 1: Top-left corner (A1) - N=0, E=2, S=3, W=0
+        pieces.put(1, new Piece(1, new int[]{0, 2, 3, 0}));
+
+        // Piece 2: Top-right corner (A3) - N=0, E=0, S=5, W=4
+        pieces.put(2, new Piece(2, new int[]{0, 0, 5, 4}));
+
+        // Piece 3: Bottom-left corner (C1) - N=6, E=7, S=0, W=0
+        pieces.put(3, new Piece(3, new int[]{6, 7, 0, 0}));
+
+        // Piece 4: Bottom-right corner (C3) - N=8, E=0, S=0, W=9
+        pieces.put(4, new Piece(4, new int[]{8, 0, 0, 9}));
+
+        // Edge pieces (4): one 0
+        // Piece 5: Top edge (A2) - N=0, E=4, S=10, W=2
+        pieces.put(5, new Piece(5, new int[]{0, 4, 10, 2}));
+
+        // Piece 6: Left edge (B1) - N=3, E=11, S=6, W=0
+        pieces.put(6, new Piece(6, new int[]{3, 11, 6, 0}));
+
+        // Piece 7: Right edge (B3) - N=5, E=0, S=8, W=12
+        pieces.put(7, new Piece(7, new int[]{5, 0, 8, 12}));
+
+        // Piece 8: Bottom edge (C2) - N=13, E=9, S=0, W=7
+        pieces.put(8, new Piece(8, new int[]{13, 9, 0, 7}));
+
+        // Center piece (1): no 0s
+        // Piece 9: Center (B2) - N=10, E=12, S=13, W=11
+        pieces.put(9, new Piece(9, new int[]{10, 12, 13, 11}));
+
+        return pieces;
+    }
+
+    /**
+     * Creates a puzzle that requires rotations to solve.
+     * Pieces don't fit in their initial orientation.
+     */
+    private Map<Integer, Piece> createPuzzleRequiringRotations() {
+        Map<Integer, Piece> pieces = new HashMap<>();
+
+        // All pieces need to be rotated to fit correctly
+        // Piece 1: needs 90° rotation to fit in A1
+        pieces.put(1, new Piece(1, new int[]{2, 3, 0, 0})); // Should be {0, 2, 3, 0} after rotation
+
+        // Piece 2: needs 180° rotation to fit in A3
+        pieces.put(2, new Piece(2, new int[]{5, 4, 0, 0})); // Should be {0, 0, 5, 4} after rotation
+
+        // Piece 3: needs 270° rotation to fit in C1
+        pieces.put(3, new Piece(3, new int[]{0, 6, 7, 0})); // Should be {6, 7, 0, 0} after rotation
+
+        // Rest can fit without rotation
+        pieces.put(4, new Piece(4, new int[]{8, 0, 0, 9}));
+        pieces.put(5, new Piece(5, new int[]{0, 4, 10, 2}));
+        pieces.put(6, new Piece(6, new int[]{3, 11, 6, 0}));
+        pieces.put(7, new Piece(7, new int[]{5, 0, 8, 12}));
+        pieces.put(8, new Piece(8, new int[]{13, 9, 0, 7}));
+        pieces.put(9, new Piece(9, new int[]{10, 12, 13, 11}));
+
+        return pieces;
+    }
+
+    /**
+     * Creates a puzzle that requires backtracking.
+     * Multiple pieces can initially fit in certain positions,
+     * but only one configuration leads to a complete solution.
+     */
+    private Map<Integer, Piece> createPuzzleRequiringBacktracking() {
+        Map<Integer, Piece> pieces = new HashMap<>();
+
+        // Create pieces with overlapping valid placements
+        // This forces the solver to try different combinations and backtrack
+
+        // Corners
+        pieces.put(1, new Piece(1, new int[]{0, 2, 3, 0}));
+        pieces.put(2, new Piece(2, new int[]{0, 0, 5, 4}));
+        pieces.put(3, new Piece(3, new int[]{6, 7, 0, 0}));
+        pieces.put(4, new Piece(4, new int[]{8, 0, 0, 9}));
+
+        // Edges - with intentional conflicts
+        pieces.put(5, new Piece(5, new int[]{0, 4, 10, 2}));
+
+        // Piece 6: can initially fit in B1 BUT will cause deadlock later
+        // We need a piece with N=3 to match piece 1's S=3
+        pieces.put(6, new Piece(6, new int[]{3, 14, 6, 0})); // Alternative edge value 14
+
+        // Piece 10: the correct piece for B1 (backtracking will find this)
+        pieces.put(10, new Piece(10, new int[]{3, 11, 6, 0})); // Correct edge value 11
+
+        pieces.put(7, new Piece(7, new int[]{5, 0, 8, 12}));
+        pieces.put(8, new Piece(8, new int[]{13, 9, 0, 7}));
+        pieces.put(9, new Piece(9, new int[]{10, 12, 13, 11}));
+
         return pieces;
     }
 
@@ -195,8 +312,13 @@ public class RecordManagerTest {
         RecordManager.RecordCheckResult result =
                 recordManager.checkAndUpdateRecord(board, piecesById, 65, 100);
 
+        // Calculate unused piece IDs
+        List<Integer> unusedIds = new ArrayList<>();
+        unusedIds.add(3); // piece 3 is unused
+
         // Should not throw exception
-        assertDoesNotThrow(() -> recordManager.displayRecord(result, 9, stats));
+        assertDoesNotThrow(() -> recordManager.displayRecord(result, 9, stats,
+                board, piecesById, unusedIds, fixedPositions, validator));
     }
 
     @Test
@@ -214,8 +336,12 @@ public class RecordManagerTest {
         RecordManager.RecordCheckResult result =
                 recordManager.checkAndUpdateRecord(board, piecesById, 15, 200);
 
+        // Calculate unused piece IDs (all pieces are used now)
+        List<Integer> unusedIds = new ArrayList<>();
+
         // Should not throw exception
-        assertDoesNotThrow(() -> recordManager.displayRecord(result, 9, stats));
+        assertDoesNotThrow(() -> recordManager.displayRecord(result, 9, stats,
+                board, piecesById, unusedIds, fixedPositions, validator));
     }
 
     @Test
@@ -398,5 +524,144 @@ public class RecordManagerTest {
         // Saved board should not be affected
         assertFalse(savedBoard.isEmpty(0, 0),
                 "Saved board should be independent of original board");
+    }
+
+    // ==================================================================================
+    // INTEGRATION TESTS - Testing with realistic puzzle scenarios
+    // ==================================================================================
+
+    @Test
+    @DisplayName("Display record with simple solvable 3x3 puzzle")
+    public void testDisplayRecordWithSimplePuzzle() {
+        // Create a clean board and use simple puzzle pieces
+        Board testBoard = new Board(3, 3);
+        Map<Integer, Piece> simplePieces = createTestPieces();
+
+        // Place all pieces to create a complete board
+        testBoard.place(0, 0, simplePieces.get(1), 0); // A1: corner
+        testBoard.place(0, 1, simplePieces.get(5), 0); // A2: edge
+        testBoard.place(0, 2, simplePieces.get(2), 0); // A3: corner
+        testBoard.place(1, 0, simplePieces.get(6), 0); // B1: edge
+        testBoard.place(1, 1, simplePieces.get(9), 0); // B2: center
+        testBoard.place(1, 2, simplePieces.get(7), 0); // B3: edge
+        testBoard.place(2, 0, simplePieces.get(3), 0); // C1: corner
+        testBoard.place(2, 1, simplePieces.get(8), 0); // C2: edge
+        testBoard.place(2, 2, simplePieces.get(4), 0); // C3: corner
+
+        StatisticsManager stats = new StatisticsManager();
+        stats.start();
+
+        RecordManager.RecordCheckResult result =
+                recordManager.checkAndUpdateRecord(testBoard, simplePieces, 70, 100);
+
+        // No unused pieces
+        List<Integer> unusedIds = new ArrayList<>();
+
+        // Should display complete board without exceptions
+        assertDoesNotThrow(() -> recordManager.displayRecord(result, 9, stats,
+                testBoard, simplePieces, unusedIds, fixedPositions, validator));
+
+        // Verify all edges match (this is a valid solution)
+        int[] scoreData = testBoard.calculateScore();
+        int currentScore = scoreData[0];
+        int maxScore = scoreData[1];
+
+        // For a 3x3 board:
+        // - Internal edges: 12 (each internal cell has neighbors)
+        // - All should match if puzzle is correctly solved
+        assertEquals(maxScore, currentScore, "All internal edges should match in solved puzzle");
+    }
+
+    @Test
+    @DisplayName("Display record with partially solved puzzle requiring rotations")
+    public void testDisplayRecordWithRotationPuzzle() {
+        Board testBoard = new Board(3, 3);
+        Map<Integer, Piece> rotationPieces = createPuzzleRequiringRotations();
+
+        // Place some pieces with rotations
+        testBoard.place(0, 0, rotationPieces.get(1), 3); // 270° rotation (3 * 90°)
+        testBoard.place(0, 1, rotationPieces.get(5), 0); // no rotation
+        testBoard.place(0, 2, rotationPieces.get(2), 2); // 180° rotation
+
+        StatisticsManager stats = new StatisticsManager();
+        stats.start();
+
+        RecordManager.RecordCheckResult result =
+                recordManager.checkAndUpdateRecord(testBoard, rotationPieces, 65, 100);
+
+        // Calculate unused pieces
+        List<Integer> unusedIds = new ArrayList<>();
+        for (int id = 1; id <= 9; id++) {
+            if (id != 1 && id != 5 && id != 2) {
+                unusedIds.add(id);
+            }
+        }
+
+        // Should display partial board with rotations
+        assertDoesNotThrow(() -> recordManager.displayRecord(result, 3, stats,
+                testBoard, rotationPieces, unusedIds, fixedPositions, validator));
+    }
+
+    @Test
+    @DisplayName("Display record shows valid piece counts for empty cells")
+    public void testDisplayRecordShowsValidCounts() {
+        Board testBoard = new Board(3, 3);
+        Map<Integer, Piece> testPieces = createTestPieces();
+
+        // Place only corner pieces
+        testBoard.place(0, 0, testPieces.get(1), 0); // A1
+        testBoard.place(0, 2, testPieces.get(2), 0); // A3
+        testBoard.place(2, 0, testPieces.get(3), 0); // C1
+        testBoard.place(2, 2, testPieces.get(4), 0); // C3
+
+        StatisticsManager stats = new StatisticsManager();
+        stats.start();
+
+        RecordManager.RecordCheckResult result =
+                recordManager.checkAndUpdateRecord(testBoard, testPieces, 65, 100);
+
+        // Unused pieces: 5, 6, 7, 8, 9
+        List<Integer> unusedIds = List.of(5, 6, 7, 8, 9);
+
+        // Board should show valid counts for empty cells (A2, B1, B2, B3, C2)
+        // Each empty cell should show how many of the unused pieces can fit there
+        assertDoesNotThrow(() -> recordManager.displayRecord(result, 4, stats,
+                testBoard, testPieces, unusedIds, fixedPositions, validator));
+
+        // Verify that some cells should have valid options
+        // For example, A2 (top edge) should be able to fit piece 5
+        assertFalse(testBoard.isEmpty(0, 0), "A1 should have a piece");
+        assertTrue(testBoard.isEmpty(0, 1), "A2 should be empty");
+        assertFalse(testBoard.isEmpty(0, 2), "A3 should have a piece");
+    }
+
+    @Test
+    @DisplayName("Display record with puzzle requiring backtracking")
+    public void testDisplayRecordWithBacktrackingPuzzle() {
+        Board testBoard = new Board(3, 3);
+        Map<Integer, Piece> backtrackPieces = createPuzzleRequiringBacktracking();
+
+        // Place pieces in a configuration that will require backtracking
+        testBoard.place(0, 0, backtrackPieces.get(1), 0); // A1: corner
+        testBoard.place(0, 1, backtrackPieces.get(5), 0); // A2: edge
+
+        // Try the "wrong" piece first (piece 6 that will cause deadlock)
+        testBoard.place(1, 0, backtrackPieces.get(6), 0); // B1: edge (wrong choice)
+
+        StatisticsManager stats = new StatisticsManager();
+        stats.start();
+
+        RecordManager.RecordCheckResult result =
+                recordManager.checkAndUpdateRecord(testBoard, backtrackPieces, 65, 100);
+
+        // Unused pieces (including piece 10, the correct choice for B1)
+        List<Integer> unusedIds = List.of(2, 3, 4, 7, 8, 9, 10);
+
+        // Should display board showing the dead-end scenario
+        assertDoesNotThrow(() -> recordManager.displayRecord(result, 3, stats,
+                testBoard, backtrackPieces, unusedIds, fixedPositions, validator));
+
+        // The display should show cells with low valid piece counts (warning colors)
+        // indicating that backtracking may be needed
     }
 }

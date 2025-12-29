@@ -7,7 +7,9 @@ import model.Piece;
 import util.SaveManager;
 import util.TimeConstants;
 
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -180,7 +182,18 @@ public class BacktrackingSolver {
 
                 // Display record if it should be shown
                 if (recordManager.shouldShowRecord(recordResult, currentDepth)) {
-                    recordManager.displayRecord(recordResult, usedCount, stats);
+                    // Calculate unused piece IDs for board visualization
+                    List<Integer> unusedIds = new ArrayList<>();
+                    for (int id = 1; id < totalPieces + 1; id++) {
+                        if (!pieceUsed.get(id)) {
+                            unusedIds.add(id);
+                        }
+                    }
+
+                    // Display record with board visualization
+                    recordManager.displayRecord(recordResult, usedCount, stats,
+                        board, piecesById, unusedIds,
+                        config.getFixedPositions(), solver.validator);
                 }
             }
         }

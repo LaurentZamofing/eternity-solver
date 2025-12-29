@@ -5,8 +5,11 @@ import model.Board;
 import model.Piece;
 import model.Placement;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -211,13 +214,20 @@ public class RecordManager {
     }
 
     /**
-     * Displays record information.
+     * Displays record information with board visualization.
      *
      * @param result record check result
      * @param usedCount total number of pieces used
      * @param stats statistics manager for progress
+     * @param board current board state
+     * @param piecesById map of pieces by ID
+     * @param unusedIds list of unused piece IDs
+     * @param fixedPositions set of fixed position keys ("row,col")
+     * @param validator placement validator for edge checking
      */
-    public void displayRecord(RecordCheckResult result, int usedCount, StatisticsManager stats) {
+    public void displayRecord(RecordCheckResult result, int usedCount, StatisticsManager stats,
+                             Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
+                             Set<String> fixedPositions, PlacementValidator validator) {
         // Note: Using synchronized block to ensure atomic multi-line output
         synchronized (SolverLogger.getLogger()) {
             SolverLogger.info("\n" + "=".repeat(80));
@@ -247,7 +257,14 @@ public class RecordManager {
                 SolverLogger.info("Progress: calculating... (waiting for data from initial depths)");
             }
 
-            SolverLogger.info("=".repeat(80) + "\n");
+            SolverLogger.info("=".repeat(80));
+
+            // Display board visualization with pieces and available options
+            SolverLogger.info("\nBoard state:\n");
+            BoardDisplayManager displayManager = new BoardDisplayManager(fixedPositions, validator);
+            displayManager.printBoardWithLabels(board, piecesById, unusedIds);
+
+            SolverLogger.info("");
         }
     }
 }

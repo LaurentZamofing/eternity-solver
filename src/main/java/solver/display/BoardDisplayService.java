@@ -397,12 +397,9 @@ public class BoardDisplayService {
                 // No constraint yet
             } else {
                 Placement northPlacement = board.getPlacement(row - 1, col);
-                Piece northPiece = findPieceById(board, allPieces, northPlacement.getPieceId());
-                if (northPiece != null) {
-                    int[] northEdges = northPiece.edgesRotated(northPlacement.getRotation());
-                    int northSouth = northEdges[2]; // South edge of north piece
-                    if (northSouth != north) return false;
-                }
+                // Use edges from Placement (already rotated)
+                int northSouth = northPlacement.edges[2]; // South edge of north piece
+                if (northSouth != north) return false;
             }
         } else {
             // Top border
@@ -415,12 +412,9 @@ public class BoardDisplayService {
                 // No constraint yet
             } else {
                 Placement eastPlacement = board.getPlacement(row, col + 1);
-                Piece eastPiece = findPieceById(board, allPieces, eastPlacement.getPieceId());
-                if (eastPiece != null) {
-                    int[] eastEdges = eastPiece.edgesRotated(eastPlacement.getRotation());
-                    int eastWest = eastEdges[3]; // West edge of east piece
-                    if (eastWest != east) return false;
-                }
+                // Use edges from Placement (already rotated)
+                int eastWest = eastPlacement.edges[3]; // West edge of east piece
+                if (eastWest != east) return false;
             }
         } else {
             // Right border
@@ -433,12 +427,9 @@ public class BoardDisplayService {
                 // No constraint yet
             } else {
                 Placement southPlacement = board.getPlacement(row + 1, col);
-                Piece southPiece = findPieceById(board, allPieces, southPlacement.getPieceId());
-                if (southPiece != null) {
-                    int[] southEdges = southPiece.edgesRotated(southPlacement.getRotation());
-                    int southNorth = southEdges[0]; // North edge of south piece
-                    if (southNorth != south) return false;
-                }
+                // Use edges from Placement (already rotated)
+                int southNorth = southPlacement.edges[0]; // North edge of south piece
+                if (southNorth != south) return false;
             }
         } else {
             // Bottom border
@@ -451,12 +442,9 @@ public class BoardDisplayService {
                 // No constraint yet
             } else {
                 Placement westPlacement = board.getPlacement(row, col - 1);
-                Piece westPiece = findPieceById(board, allPieces, westPlacement.getPieceId());
-                if (westPiece != null) {
-                    int[] westEdges = westPiece.edgesRotated(westPlacement.getRotation());
-                    int westEast = westEdges[1]; // East edge of west piece
-                    if (westEast != west) return false;
-                }
+                // Use edges from Placement (already rotated)
+                int westEast = westPlacement.edges[1]; // East edge of west piece
+                if (westEast != west) return false;
             }
         } else {
             // Left border

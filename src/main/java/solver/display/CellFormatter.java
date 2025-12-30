@@ -205,10 +205,11 @@ public class CellFormatter {
         // Get color from strategy (usually based on total rotations)
         String color = colorStrategy.getCellColor(board, row, col);
 
+        // Format: (PPP/RRR) = 9 chars exactly (consistent with save files)
         if (!color.isEmpty()) {
-            return String.format("%s (%d/%2d) %s", color, numPieces, numRotations, ColorStrategy.RESET);
+            return String.format("%s(%3d/%3d)%s", color, numPieces, numRotations, ColorStrategy.RESET);
         } else {
-            return String.format(" (%d/%2d) ", numPieces, numRotations);
+            return String.format("(%3d/%3d)", numPieces, numRotations);
         }
     }
 }

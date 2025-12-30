@@ -84,7 +84,7 @@ class CellFormatterTest {
     void testFormatWithRotations_1p1r() {
         String result = formatter.formatEmptyCellWithRotations(board, 0, 0, 1, 1);
 
-        assertEquals(" (1/ 1) ", result, "Should display 1/1 correctly");
+        assertEquals("(  1/  1)", result, "Should display 1/1 with fixed width");
     }
 
     @Test
@@ -93,7 +93,7 @@ class CellFormatterTest {
     void testFormatWithRotations_1p4r() {
         String result = formatter.formatEmptyCellWithRotations(board, 1, 1, 1, 4);
 
-        assertEquals(" (1/ 4) ", result, "Should display 1/4 for symmetric piece");
+        assertEquals("(  1/  4)", result, "Should display 1/4 with fixed width");
     }
 
     @Test
@@ -102,7 +102,7 @@ class CellFormatterTest {
     void testFormatWithRotations_MultipleP() {
         String result = formatter.formatEmptyCellWithRotations(board, 0, 0, 5, 12);
 
-        assertEquals(" (5/12) ", result, "Should display 5/12 correctly");
+        assertEquals("(  5/ 12)", result, "Should display 5/12 with fixed width");
     }
 
     @Test
@@ -111,7 +111,7 @@ class CellFormatterTest {
     void testFormatWithRotations_Deadend() {
         String result = formatter.formatEmptyCellWithRotations(board, 0, 0, 0, 0);
 
-        assertEquals(" (0/ 0) ", result, "Should display 0/0 for deadend");
+        assertEquals("(  0/  0)", result, "Should display 0/0 with fixed width");
     }
 
     @Test

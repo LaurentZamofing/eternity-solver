@@ -81,7 +81,7 @@ public class BoardDisplayManager {
      * @param unusedIds List of unused piece IDs
      */
     public void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds) {
-        printBoardWithLabels(board, piecesById, unusedIds, null, null);
+        printBoardWithLabels(board, piecesById, unusedIds, null, null, null);
     }
 
     /**
@@ -104,9 +104,11 @@ public class BoardDisplayManager {
      * @param unusedIds List of unused piece IDs
      * @param lastPlacement Last placed piece info (can be null)
      * @param nextCell Next target cell [row, col] (can be null)
+     * @param placementOrderMap Map of position to placement order (can be null)
      */
     public void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
-                                     SaveStateManager.PlacementInfo lastPlacement, int[] nextCell) {
+                                     SaveStateManager.PlacementInfo lastPlacement, int[] nextCell,
+                                     java.util.Map<String, Integer> placementOrderMap) {
         // Create valid piece counter
         ValidPieceCounter validPieceCounter = new ValidPieceCounter(validator);
 
@@ -122,7 +124,7 @@ public class BoardDisplayManager {
         // Create renderer with edge matching and valid count colors
         LabeledBoardRenderer renderer = new LabeledBoardRenderer(
             board, piecesById, unusedIds, validator, validPieceCounter, fixedPositions,
-            highlightedPositions
+            highlightedPositions, placementOrderMap
         );
 
         // Render board

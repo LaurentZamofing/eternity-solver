@@ -227,11 +227,13 @@ public class RecordManager {
      * @param validator placement validator for edge checking
      * @param lastPlacement last placed piece info (can be null)
      * @param nextCell next empty cell coordinates [row, col] (can be null if board is full)
+     * @param placementOrderTracker tracker for placement order (can be null)
      */
     public void displayRecord(RecordCheckResult result, int usedCount, StatisticsManager stats,
                              Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
                              Set<String> fixedPositions, PlacementValidator validator,
-                             SaveStateManager.PlacementInfo lastPlacement, int[] nextCell) {
+                             SaveStateManager.PlacementInfo lastPlacement, int[] nextCell,
+                             PlacementOrderTracker placementOrderTracker) {
         // Note: Using synchronized block to ensure atomic multi-line output
         synchronized (SolverLogger.getLogger()) {
             SolverLogger.info("\n" + "=".repeat(80));
@@ -279,10 +281,22 @@ public class RecordManager {
 
             SolverLogger.info("=".repeat(80));
 
+            // Build placement order map
+            java.util.Map<String, Integer> placementOrderMap = null;
+            if (placementOrderTracker != null) {
+                placementOrderMap = new java.util.HashMap<>();
+                java.util.List<SaveStateManager.PlacementInfo> allPlacements = placementOrderTracker.getPlacementHistory();
+                int step = 1;
+                for (SaveStateManager.PlacementInfo info : allPlacements) {
+                    String key = info.row + "," + info.col;
+                    placementOrderMap.put(key, step++);
+                }
+            }
+
             // Display board visualization with pieces and available options
             SolverLogger.info("\nBoard state:\n");
             BoardDisplayManager displayManager = new BoardDisplayManager(fixedPositions, validator);
-            displayManager.printBoardWithLabels(board, piecesById, unusedIds, lastPlacement, nextCell);
+            displayManager.printBoardWithLabels(board, piecesById, unusedIds, lastPlacement, nextCell, placementOrderMap);
 
             SolverLogger.info("");
         }

@@ -1,4 +1,0 @@
-{"depth":143,"calls":449,"piecesPerSec":14.0,"progress":45.71,"placements":699,"computeMs":10042,"singletons":0,"fitChecks":86838983,"ts":1767048355475,"backtracks":344,"deadEnds":502}
-{"depth":110,"calls":3359,"piecesPerSec":5.0,"progress":45.71,"placements":6898,"computeMs":20044,"singletons":4,"fitChecks":243492667,"ts":1767048365477,"backtracks":3221,"deadEnds":7076}
-{"depth":123,"calls":1965,"piecesPerSec":12.0,"progress":45.71,"placements":3996,"computeMs":10007,"singletons":0,"fitChecks":172385139,"ts":1767073689958,"backtracks":1840,"deadEnds":4064}
-{"depth":110,"calls":1572,"piecesPerSec":10.0,"progress":45.71,"placements":3271,"computeMs":10005,"singletons":0,"fitChecks":152346952,"ts":1767074474256,"backtracks":1434,"deadEnds":3400}

@@ -19,13 +19,17 @@
         </encoder>
     </appender>
 
-    <!-- Logger pour solver package (niveau DEBUG en développement) -->
-    <logger name="solver" level="DEBUG" />
-    <logger name="util" level="DEBUG" />
-    <logger name="app" level="DEBUG" />
+    <!-- Logger pour solver package -->
+    <logger name="solver" level="INFO" />
+    <logger name="util" level="INFO" />
+    <logger name="app" level="INFO" />
 
-    <!-- Logger racine (niveau DEBUG pour development) -->
-    <root level="DEBUG">
+    <!-- DEBUG logs for specific components when needed -->
+    <logger name="solver.display.BoardDisplayService" level="DEBUG" />
+    <logger name="util.state.SaveStateIO" level="DEBUG" />
+
+    <!-- Logger racine (niveau INFO par défaut) -->
+    <root level="INFO">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
     </root>

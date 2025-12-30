@@ -27,8 +27,6 @@
     <!-- DEBUG logs for specific components when needed -->
     <logger name="solver.display.BoardDisplayService" level="DEBUG" />
     <logger name="util.state.SaveStateIO" level="DEBUG" />
-    <logger name="solver.BacktrackingSolver" level="DEBUG" />
-    <logger name="solver.RecordManager" level="DEBUG" />
 
     <!-- Logger racine (niveau INFO par défaut) -->
     <root level="INFO">

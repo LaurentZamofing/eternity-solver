@@ -66,7 +66,7 @@ public class SaveStateIO {
             writeHeader(writer, puzzleName, board, depth, progressPercentage, totalComputeTimeMs);
 
             // Write visual board representation
-            writeBoardVisual(writer, board, depth, numFixedPieces, initialFixedPieces, allPieces);
+            writeBoardVisual(writer, board, depth, numFixedPieces, initialFixedPieces, allPieces, placementOrder);
 
             // Write fixed pieces section
             writeFixedPiecesSection(writer, numFixedPieces, initialFixedPieces);
@@ -261,16 +261,27 @@ public class SaveStateIO {
 
     private static void writeBoardVisual(PrintWriter writer, Board board, int depth,
                                         int numFixedPieces, List<PlacementInfo> initialFixedPieces,
-                                        Map<Integer, Piece> allPieces) {
+                                        Map<Integer, Piece> allPieces, List<PlacementInfo> placementOrder) {
         int fixedCount = (initialFixedPieces != null) ? initialFixedPieces.size() : 0;
         writer.println("# ═══════════════════════════════════════════════════════════");
         writer.println("# VISUAL BOARD DISPLAY (" + (depth + fixedCount) +
                       " pieces: " + fixedCount + " fixed + " + depth + " backtracking)");
         writer.println("# ═══════════════════════════════════════════════════════════");
         writer.println("#");
+
+        // Build placement order map: position -> step number
+        java.util.Map<String, Integer> placementOrderMap = new java.util.HashMap<>();
+        if (placementOrder != null) {
+            int step = 1;
+            for (PlacementInfo info : placementOrder) {
+                String key = info.row + "," + info.col;
+                placementOrderMap.put(key, step++);
+            }
+        }
+
         if (allPieces != null && !allPieces.isEmpty()) {
             // Use detailed display with AC-3 domains if available (null = estimation mode)
-            solver.display.BoardDisplayService.writeToSaveFileDetailed(writer, board, allPieces, null);
+            solver.display.BoardDisplayService.writeToSaveFileDetailed(writer, board, allPieces, null, placementOrderMap);
         } else {
             solver.display.BoardDisplayService.writeToSaveFile(writer, board);
         }

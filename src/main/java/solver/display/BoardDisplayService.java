@@ -194,8 +194,10 @@ public class BoardDisplayService {
      * @param board Board to render
      * @param allPieces Map of all pieces for displaying edge details
      * @param domainManager Optional DomainManager for AC-3 domains (null = use estimation)
+     * @param placementOrderMap Map of position ("row,col") to placement step number (null = no order display)
      */
-    public static void writeToSaveFileDetailed(PrintWriter writer, Board board, Map<Integer, Piece> allPieces, solver.DomainManager domainManager) {
+    public static void writeToSaveFileDetailed(PrintWriter writer, Board board, Map<Integer, Piece> allPieces,
+                                               solver.DomainManager domainManager, java.util.Map<String, Integer> placementOrderMap) {
         int rows = board.getRows();
         int cols = board.getCols();
 
@@ -238,7 +240,7 @@ public class BoardDisplayService {
                 }
             }
 
-            // Line 1: north edges (empty cells show nothing)
+            // Line 1: north edges (empty cells show nothing) + placement order in top-right
             StringBuilder line1 = new StringBuilder("# │");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
@@ -247,7 +249,16 @@ public class BoardDisplayService {
                     Placement p = board.getPlacement(r, c);
                     // Use edges from Placement (already rotated)
                     int northEdge = p.edges[0];
-                    line1.append(String.format("   %2d    ", northEdge));
+
+                    // Get placement order if available
+                    String posKey = r + "," + c;
+                    String orderStr = "";
+                    if (placementOrderMap != null && placementOrderMap.containsKey(posKey)) {
+                        orderStr = "#" + placementOrderMap.get(posKey);
+                    }
+
+                    // Format: "   NN####" where NN=north edge, ####=order (right-aligned in 9 chars)
+                    line1.append(String.format("   %2d%-4s", northEdge, orderStr));
                 }
                 line1.append("│");
             }

@@ -51,7 +51,7 @@ public class BoardDisplayServiceTest {
         PrintWriter writer = new PrintWriter(stringWriter);
 
         // This should NOT throw NPE or display "???"
-        BoardDisplayService.writeToSaveFileDetailed(writer, board, emptyPiecesMap, null);
+        BoardDisplayService.writeToSaveFileDetailed(writer, board, emptyPiecesMap, null, null);
         writer.flush();
 
         String output = stringWriter.toString();
@@ -90,7 +90,7 @@ public class BoardDisplayServiceTest {
         StringWriter stringWriter = new StringWriter();
         PrintWriter writer = new PrintWriter(stringWriter);
 
-        BoardDisplayService.writeToSaveFileDetailed(writer, board, piecesMap, null);
+        BoardDisplayService.writeToSaveFileDetailed(writer, board, piecesMap, null, null);
         writer.flush();
 
         String output = stringWriter.toString();
@@ -123,7 +123,7 @@ public class BoardDisplayServiceTest {
         StringWriter stringWriter = new StringWriter();
         PrintWriter writer = new PrintWriter(stringWriter);
 
-        BoardDisplayService.writeToSaveFileDetailed(writer, board, piecesMap, null);
+        BoardDisplayService.writeToSaveFileDetailed(writer, board, piecesMap, null, null);
         writer.flush();
 
         String output = stringWriter.toString();
@@ -156,7 +156,7 @@ public class BoardDisplayServiceTest {
         StringWriter stringWriter = new StringWriter();
         PrintWriter writer = new PrintWriter(stringWriter);
 
-        BoardDisplayService.writeToSaveFileDetailed(writer, board, partialPiecesMap, null);
+        BoardDisplayService.writeToSaveFileDetailed(writer, board, partialPiecesMap, null, null);
         writer.flush();
 
         String output = stringWriter.toString();

@@ -38,6 +38,7 @@ import model.Board;
 public class CellFormatter {
 
     private final ColorStrategy colorStrategy;
+    private final java.util.Map<String, Integer> placementOrderMap;
 
     /**
      * Creates cell formatter with color strategy.
@@ -45,7 +46,18 @@ public class CellFormatter {
      * @param colorStrategy Strategy for determining cell and edge colors
      */
     public CellFormatter(ColorStrategy colorStrategy) {
+        this(colorStrategy, null);
+    }
+
+    /**
+     * Creates cell formatter with color strategy and placement order map.
+     *
+     * @param colorStrategy Strategy for determining cell and edge colors
+     * @param placementOrderMap Map of position ("row,col") to placement step number (null = no order)
+     */
+    public CellFormatter(ColorStrategy colorStrategy, java.util.Map<String, Integer> placementOrderMap) {
         this.colorStrategy = colorStrategy;
+        this.placementOrderMap = placementOrderMap;
     }
 
     /**
@@ -65,16 +77,32 @@ public class CellFormatter {
         int[] edges = board.getPlacement(row, col).edges;
         int edgeNorth = edges[0];
 
+        // Get placement order if available
+        String orderSuffix = "";
+        if (placementOrderMap != null) {
+            String posKey = row + "," + col;
+            Integer order = placementOrderMap.get(posKey);
+            if (order != null) {
+                orderSuffix = "#" + order;
+            }
+        }
+
         // Determine color (cell color takes precedence over edge color)
         String cellColor = colorStrategy.getCellColor(board, row, col);
         String edgeColor = colorStrategy.getEdgeColor(board, row, col, 0); // NORTH = 0
 
         String color = !cellColor.isEmpty() ? cellColor : edgeColor;
 
+        // Format: edge centered + order right-aligned
+        // Calculate spaces to keep edge centered
+        int spacesNeeded = 9 - 2 - orderSuffix.length();
+        int leftSpaces = spacesNeeded / 2 + (spacesNeeded % 2);
+
         if (!color.isEmpty()) {
-            return String.format("%s   %2d    %s", color, edgeNorth, ColorStrategy.RESET);
+            String formatted = String.format("%" + leftSpaces + "s%2d%s", "", edgeNorth, orderSuffix);
+            return color + formatted + ColorStrategy.RESET;
         } else {
-            return String.format("   %2d    ", edgeNorth);
+            return String.format("%" + leftSpaces + "s%2d%s", "", edgeNorth, orderSuffix);
         }
     }
 

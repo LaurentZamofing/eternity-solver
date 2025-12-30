@@ -252,13 +252,18 @@ public class BoardDisplayService {
 
                     // Get placement order if available
                     String posKey = r + "," + c;
-                    String orderStr = "";
+                    String orderSuffix = "";
                     if (placementOrderMap != null && placementOrderMap.containsKey(posKey)) {
-                        orderStr = "#" + placementOrderMap.get(posKey);
+                        int order = placementOrderMap.get(posKey);
+                        orderSuffix = "#" + order;
                     }
 
-                    // Format: "   NN####" where NN=north edge, ####=order (right-aligned in 9 chars)
-                    line1.append(String.format("   %2d%-4s", northEdge, orderStr));
+                    // Format: "   NN####" where NN=north edge (centered), ####=order (right-aligned)
+                    // The order suffix pushes from the right, north edge stays centered at position 3-4
+                    // Examples: "    0  #1" (7 spaces + 2 chars), "    0 #27" (6 spaces + 3 chars), "    0#112" (5 spaces + 4 chars)
+                    int spacesNeeded = 9 - 2 - orderSuffix.length(); // 9 total - 2 for edge - length of order
+                    int leftSpaces = spacesNeeded / 2 + (spacesNeeded % 2); // Slightly more on left to keep edge centered
+                    line1.append(String.format("%" + leftSpaces + "s%2d%s", "", northEdge, orderSuffix));
                 }
                 line1.append("│");
             }

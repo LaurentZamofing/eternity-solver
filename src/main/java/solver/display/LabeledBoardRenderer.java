@@ -70,17 +70,36 @@ public class LabeledBoardRenderer extends AbstractBoardRenderer {
                                  List<Integer> unusedIds, PlacementValidator validator,
                                  ValidPieceCounter validPieceCounter, Set<String> fixedPositions,
                                  Set<String> highlightedPositions) {
+        this(board, piecesById, unusedIds, validator, validPieceCounter, fixedPositions, highlightedPositions, null);
+    }
+
+    /**
+     * Creates labeled board renderer with highlighted positions and placement order.
+     *
+     * @param board Board to render
+     * @param piecesById Map of all pieces by ID
+     * @param unusedIds List of unused piece IDs
+     * @param validator Placement validator for edge checking
+     * @param validPieceCounter Counter for valid pieces
+     * @param fixedPositions Set of fixed position keys ("row,col")
+     * @param highlightedPositions Set of positions to highlight ("row,col")
+     * @param placementOrderMap Map of position to placement order number (null = no order)
+     */
+    public LabeledBoardRenderer(Board board, Map<Integer, Piece> piecesById,
+                                 List<Integer> unusedIds, PlacementValidator validator,
+                                 ValidPieceCounter validPieceCounter, Set<String> fixedPositions,
+                                 Set<String> highlightedPositions, java.util.Map<String, Integer> placementOrderMap) {
         super(board, piecesById, unusedIds, validPieceCounter);
 
         // Color strategy for occupied cells (edge matching + fixed highlighting + highlights)
         EdgeMatchingColorStrategy occupiedColorStrategy =
             new EdgeMatchingColorStrategy(board, fixedPositions, highlightedPositions);
-        this.occupiedCellFormatter = new CellFormatter(occupiedColorStrategy);
+        this.occupiedCellFormatter = new CellFormatter(occupiedColorStrategy, placementOrderMap);
 
         // Color strategy for empty cells (valid count warnings + highlights)
         ValidCountColorStrategy emptyColorStrategy =
             new ValidCountColorStrategy(validPieceCounter, piecesById, unusedIds, highlightedPositions);
-        this.emptyCellFormatter = new CellFormatter(emptyColorStrategy);
+        this.emptyCellFormatter = new CellFormatter(emptyColorStrategy, null); // No order for empty cells
     }
 
     @Override

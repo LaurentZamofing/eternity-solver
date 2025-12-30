@@ -188,4 +188,27 @@ public class CellFormatter {
             return String.format("  (%3d)  ", validCount);
         }
     }
+
+    /**
+     * Formats empty cell with piece count and rotation count.
+     * Displays as "P/R" where P=pieces, R=rotations.
+     * Example: "(1/4)" means 1 piece with 4 valid rotations.
+     *
+     * @param board Current board
+     * @param row Row index
+     * @param col Column index
+     * @param numPieces Number of unique pieces that fit
+     * @param numRotations Total number of valid rotations
+     * @return Formatted string with color codes
+     */
+    public String formatEmptyCellWithRotations(Board board, int row, int col, int numPieces, int numRotations) {
+        // Get color from strategy (usually based on total rotations)
+        String color = colorStrategy.getCellColor(board, row, col);
+
+        if (!color.isEmpty()) {
+            return String.format("%s (%d/%2d) %s", color, numPieces, numRotations, ColorStrategy.RESET);
+        } else {
+            return String.format(" (%d/%2d) ", numPieces, numRotations);
+        }
+    }
 }

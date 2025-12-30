@@ -372,4 +372,86 @@ public class AutoSaveManagerTest {
             manager.saveRecord(board, pieceUsed, 5, stats, 10);
         }, "saveRecord devrait fonctionner dans le workflow complet");
     }
+
+    // ==================== Depth Threshold Tests (NEW - depth=1) ====================
+
+    @Test
+    @DisplayName("saveRecord - saves at depth 1 (minimum threshold)")
+    void testSaveRecordAtDepth1() {
+        autoSaveManager.initializePiecesMap(pieces);
+
+        // Should save at depth 1 (new minimum threshold)
+        assertDoesNotThrow(() -> {
+            autoSaveManager.saveRecord(board, pieceUsed, 5, stats, 1);
+        }, "Should save record at depth 1");
+    }
+
+    @Test
+    @DisplayName("saveRecord - saves at depth 2, 3, 4... (all early depths)")
+    void testSaveRecordEarlyDepths() {
+        autoSaveManager.initializePiecesMap(pieces);
+
+        // Test depths 1-10 all save now
+        for (int depth = 1; depth <= 10; depth++) {
+            int finalDepth = depth;
+            assertDoesNotThrow(() -> {
+                autoSaveManager.saveRecord(board, pieceUsed, 5, stats, finalDepth);
+            }, "Should save record at depth " + depth);
+        }
+    }
+
+    @Test
+    @DisplayName("saveRecord - does not save at depth 0")
+    void testSaveRecordAtDepth0() {
+        autoSaveManager.initializePiecesMap(pieces);
+
+        // Depth 0 should still skip (no pieces placed)
+        assertDoesNotThrow(() -> {
+            autoSaveManager.saveRecord(board, pieceUsed, 5, stats, 0);
+        }, "Should handle depth 0 gracefully (skip save)");
+    }
+
+    @Test
+    @DisplayName("saveRecord - progression from depth 1 to 100")
+    void testSaveRecordProgressionFromDepth1() {
+        autoSaveManager.initializePiecesMap(pieces);
+
+        // Test saving multiple increasing depths
+        for (int depth : new int[]{1, 5, 10, 25, 50, 75, 100}) {
+            int finalDepth = depth;
+            assertDoesNotThrow(() -> {
+                autoSaveManager.saveRecord(board, pieceUsed, 5, stats, finalDepth);
+            }, "Should save record at depth " + depth);
+        }
+    }
+
+    @Test
+    @DisplayName("saveRecord - handles depth 1 with empty board")
+    void testSaveRecordDepth1WithEmptyBoard() {
+        Board emptyBoard = new Board(3, 3);
+        BitSet noPieces = new BitSet();
+
+        autoSaveManager.initializePiecesMap(pieces);
+
+        assertDoesNotThrow(() -> {
+            autoSaveManager.saveRecord(emptyBoard, noPieces, 5, stats, 1);
+        }, "Should handle depth 1 with empty board");
+    }
+
+    @Test
+    @DisplayName("saveRecord - handles depth 1 with single piece placed")
+    void testSaveRecordDepth1WithOnePiece() {
+        Board singlePieceBoard = new Board(3, 3);
+        singlePieceBoard.place(0, 0, pieces.get(1), 0);
+
+        BitSet onePieceUsed = new BitSet();
+        onePieceUsed.set(1);
+
+        autoSaveManager.initializePiecesMap(pieces);
+
+        assertDoesNotThrow(() -> {
+            autoSaveManager.saveRecord(singlePieceBoard, onePieceUsed, 5, stats, 1);
+        }, "Should handle depth 1 with one piece placed");
+    }
 }
+

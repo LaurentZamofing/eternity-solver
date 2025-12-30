@@ -27,6 +27,14 @@ import java.util.Scanner;
  */
 public class VerbosePlacementOutput implements PlacementOutputStrategy {
 
+    // ANSI color codes for different actions
+    private static final String GREEN = "\u001B[32m";    // Placement
+    private static final String RED = "\u001B[31m";      // Backtrack/Rejection
+    private static final String YELLOW = "\u001B[33m";   // Calculation/Testing
+    private static final String BLUE = "\u001B[34m";     // Selection/Navigation
+    private static final String CYAN = "\u001B[36m";     // Dead-end
+    private static final String RESET = "\u001B[0m";
+
     @Override
     public void logCellSelection(BacktrackingContext context, EternitySolver solver,
                                 int row, int col, int uniquePieces, int availableCount) {
@@ -91,32 +99,32 @@ public class VerbosePlacementOutput implements PlacementOutputStrategy {
     @Override
     public void logPlacementAttempt(int pieceId, int rotation, int row, int col,
                                    int optionIndex, int totalOptions, int[] edges) {
-        SolverLogger.info("\n  → Testing piece ID=" + pieceId + ", rotation=" + (rotation * 90) +
-                         "° in cell (" + row + ", " + col + ") [piece " + (optionIndex + 1) + "/" + totalOptions + "]");
-        SolverLogger.info("    Edges: N=" + edges[0] + ", E=" + edges[1] +
-                         ", S=" + edges[2] + ", W=" + edges[3]);
+        SolverLogger.info(YELLOW + "\n  → Testing piece ID=" + pieceId + ", rotation=" + (rotation * 90) +
+                         "° in cell (" + row + ", " + col + ") [piece " + (optionIndex + 1) + "/" + totalOptions + "]" + RESET);
+        SolverLogger.info(YELLOW + "    Edges: N=" + edges[0] + ", E=" + edges[1] +
+                         ", S=" + edges[2] + ", W=" + edges[3] + RESET);
     }
 
     @Override
     public void logEdgeRejection() {
-        SolverLogger.info("    ✗ Rejected: edges don't match constraints");
+        SolverLogger.info(RED + "    ✗ Rejected: edges don't match constraints" + RESET);
     }
 
     @Override
     public void logSymmetryRejection() {
-        SolverLogger.info("    ✗ Rejected: symmetry breaking constraint");
+        SolverLogger.info(RED + "    ✗ Rejected: symmetry breaking constraint" + RESET);
     }
 
     @Override
     public void logConstraintsSatisfied() {
-        SolverLogger.info("    ✓ Constraints satisfied! Placing piece...");
+        SolverLogger.info(GREEN + "    ✓ Constraints satisfied! Placing piece..." + RESET);
     }
 
     @Override
     public void logSuccessfulPlacement(BacktrackingContext context, EternitySolver solver,
                                       int row, int col) {
-        SolverLogger.info("\n    ✓ Piece successfully placed!");
-        SolverLogger.info("    → Continuing to next cell...");
+        SolverLogger.info(GREEN + "\n    ✓ Piece successfully placed!" + RESET);
+        SolverLogger.info(BLUE + "    → Continuing to next cell..." + RESET);
         solver.printBoardWithCounts(context.board, context.piecesById, context.pieceUsed,
                                   context.totalPieces, row, col);
         waitForUser();
@@ -124,34 +132,34 @@ public class VerbosePlacementOutput implements PlacementOutputStrategy {
 
     @Override
     public void logAC3DeadEnd(int pieceId) {
-        SolverLogger.info("\n    ✗ DEAD END detected by AC-3!");
-        SolverLogger.info("    Reason: Placing this piece would make another cell unsolvable");
-        SolverLogger.info("    → Some neighboring cell would have no valid pieces left");
-        SolverLogger.info("    → Removing piece ID=" + pieceId + " and trying next option");
+        SolverLogger.info(CYAN + "\n    ✗ DEAD END detected by AC-3!" + RESET);
+        SolverLogger.info(CYAN + "    Reason: Placing this piece would make another cell unsolvable" + RESET);
+        SolverLogger.info(CYAN + "    → Some neighboring cell would have no valid pieces left" + RESET);
+        SolverLogger.info(CYAN + "    → Removing piece ID=" + pieceId + " and trying next option" + RESET);
     }
 
     @Override
     public void logTimeout(int pieceId, int row, int col) {
-        SolverLogger.info("\n⏱️  Timeout reached after placing piece " + pieceId + " at (" + row + ", " + col + ")");
-        SolverLogger.info("    → Stopping before exploring deeper");
-        SolverLogger.info("    → Current state will be saved with this piece placed");
-        SolverLogger.info("    → Piece order preserved: pieces 1-" + (pieceId-1) + " already tested");
+        SolverLogger.info(YELLOW + "\n⏱️  Timeout reached after placing piece " + pieceId + " at (" + row + ", " + col + ")" + RESET);
+        SolverLogger.info(YELLOW + "    → Stopping before exploring deeper" + RESET);
+        SolverLogger.info(YELLOW + "    → Current state will be saved with this piece placed" + RESET);
+        SolverLogger.info(YELLOW + "    → Piece order preserved: pieces 1-" + (pieceId-1) + " already tested" + RESET);
     }
 
     @Override
     public void logBacktrack(int pieceId, int row, int col, int totalBacktracks) {
-        SolverLogger.info("\n╔════════════════════════════════════════════════════════════════╗");
-        SolverLogger.info("║  BACKTRACKING from cell (" + row + ", " + col + ")");
-        SolverLogger.info("║  Piece ID=" + pieceId + " was placed but led to no solution");
-        SolverLogger.info("║  ");
-        SolverLogger.info("║  Possible reasons:");
-        SolverLogger.info("║  → Dead end: All subsequent cells had no valid pieces");
-        SolverLogger.info("║  → Timeout: Time limit reached during exploration");
-        SolverLogger.info("║  → Solution found: Another thread found the solution");
-        SolverLogger.info("║  ");
-        SolverLogger.info("║  Action: Removing piece " + pieceId + " and trying next available piece");
-        SolverLogger.info("║  Total backtracks so far: " + (totalBacktracks + 1));
-        SolverLogger.info("╚════════════════════════════════════════════════════════════════╝");
+        SolverLogger.info(RED + "\n╔════════════════════════════════════════════════════════════════╗" + RESET);
+        SolverLogger.info(RED + "║  BACKTRACKING from cell (" + row + ", " + col + ")" + RESET);
+        SolverLogger.info(RED + "║  Piece ID=" + pieceId + " was placed but led to no solution" + RESET);
+        SolverLogger.info(RED + "║  " + RESET);
+        SolverLogger.info(RED + "║  Possible reasons:" + RESET);
+        SolverLogger.info(RED + "║  → Dead end: All subsequent cells had no valid pieces" + RESET);
+        SolverLogger.info(RED + "║  → Timeout: Time limit reached during exploration" + RESET);
+        SolverLogger.info(RED + "║  → Solution found: Another thread found the solution" + RESET);
+        SolverLogger.info(RED + "║  " + RESET);
+        SolverLogger.info(RED + "║  Action: Removing piece " + pieceId + " and trying next available piece" + RESET);
+        SolverLogger.info(RED + "║  Total backtracks so far: " + (totalBacktracks + 1) + RESET);
+        SolverLogger.info(RED + "╚════════════════════════════════════════════════════════════════╝" + RESET);
         waitForUser();
     }
 

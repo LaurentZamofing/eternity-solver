@@ -71,14 +71,18 @@ public class ValidCountColorStrategy implements ColorStrategy {
     }
 
     /**
-     * Returns color based on number of valid pieces for empty position.
+     * Returns color based on number of valid rotations for empty position.
      * Highlighted empty cells (next target) get bold blue.
      * Only colors empty cells - occupied cells return empty string.
+     *
+     * Uses rotation count (not piece count) for better accuracy:
+     * - A cell with 1 piece having 4 rotations = more options than
+     * - A cell with 4 pieces each having 1 rotation
      *
      * @param board Current board
      * @param row Row index
      * @param col Column index
-     * @return Color code based on valid piece count or highlight status
+     * @return Color code based on valid rotation count or highlight status
      */
     @Override
     public String getCellColor(Board board, int row, int col) {
@@ -94,16 +98,18 @@ public class ValidCountColorStrategy implements ColorStrategy {
             return BOLD + BLUE;
         }
 
-        // Count valid pieces for this position
-        int validCount = counter.countValidPieces(board, row, col, piecesById, unusedIds);
+        // Count valid rotations for this position (more accurate than piece count)
+        ValidPieceCounter.ValidCountResult result =
+            counter.countValidPiecesAndRotations(board, row, col, piecesById, unusedIds);
+        int numRotations = result.numRotations;
 
-        // Color according to number of possible pieces
-        if (validCount == 0) {
+        // Color according to number of possible rotations
+        if (numRotations == 0) {
             return BRIGHT_RED;  // Deadend! (bright red + bold)
-        } else if (validCount <= 5) {
-            return BRIGHT_YELLOW;  // Critical (bright yellow)
-        } else if (validCount <= 20) {
-            return YELLOW;  // Warning (dark yellow)
+        } else if (numRotations <= 5) {
+            return BRIGHT_YELLOW;  // Critical (very few options)
+        } else if (numRotations <= 20) {
+            return YELLOW;  // Warning (constrained)
         }
 
         // Normal - plenty of options

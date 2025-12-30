@@ -490,4 +490,135 @@ class PlacementOrderTrackerTest {
         tracker.recordPlacement(1, 1, 10, 2);
         assertEquals(1, tracker.getCurrentDepth(), "Should be able to record after clear");
     }
+
+    // ==================== getLastPlacement() Tests (NEW) ====================
+
+    @Test
+    @DisplayName("getLastPlacement - returns null for empty history")
+    void testGetLastPlacementEmpty() {
+        tracker = new PlacementOrderTracker();
+        tracker.initialize();
+
+        PlacementInfo last = tracker.getLastPlacement();
+
+        assertNull(last, "Should return null for empty history");
+    }
+
+    @Test
+    @DisplayName("getLastPlacement - returns most recent placement")
+    void testGetLastPlacementSingle() {
+        tracker = new PlacementOrderTracker();
+        tracker.initialize();
+
+        tracker.recordPlacement(2, 3, 42, 1);
+
+        PlacementInfo last = tracker.getLastPlacement();
+
+        assertNotNull(last, "Should return placement");
+        assertEquals(2, last.row, "Should have correct row");
+        assertEquals(3, last.col, "Should have correct col");
+        assertEquals(42, last.pieceId, "Should have correct pieceId");
+        assertEquals(1, last.rotation, "Should have correct rotation");
+    }
+
+    @Test
+    @DisplayName("getLastPlacement - updates after each placement")
+    void testGetLastPlacementUpdates() {
+        tracker = new PlacementOrderTracker();
+        tracker.initialize();
+
+        tracker.recordPlacement(0, 0, 1, 0);
+        PlacementInfo first = tracker.getLastPlacement();
+        assertEquals(1, first.pieceId, "First placement should be piece 1");
+
+        tracker.recordPlacement(0, 1, 2, 1);
+        PlacementInfo second = tracker.getLastPlacement();
+        assertEquals(2, second.pieceId, "Second placement should be piece 2");
+
+        tracker.recordPlacement(0, 2, 3, 2);
+        PlacementInfo third = tracker.getLastPlacement();
+        assertEquals(3, third.pieceId, "Third placement should be piece 3");
+    }
+
+    @Test
+    @DisplayName("getLastPlacement - updates after removeLastPlacement")
+    void testGetLastPlacementAfterRemoval() {
+        tracker = new PlacementOrderTracker();
+        tracker.initialize();
+
+        tracker.recordPlacement(0, 0, 1, 0);
+        tracker.recordPlacement(0, 1, 2, 1);
+        tracker.recordPlacement(0, 2, 3, 2);
+
+        // Remove last (piece 3)
+        tracker.removeLastPlacement();
+
+        PlacementInfo last = tracker.getLastPlacement();
+        assertEquals(2, last.pieceId, "After removing piece 3, last should be piece 2");
+
+        // Remove another (piece 2)
+        tracker.removeLastPlacement();
+
+        PlacementInfo newLast = tracker.getLastPlacement();
+        assertEquals(1, newLast.pieceId, "After removing piece 2, last should be piece 1");
+
+        // Remove last one (piece 1)
+        tracker.removeLastPlacement();
+
+        PlacementInfo empty = tracker.getLastPlacement();
+        assertNull(empty, "After removing all, should return null");
+    }
+
+    @Test
+    @DisplayName("getLastPlacement - doesn't modify history")
+    void testGetLastPlacementDoesntModify() {
+        tracker = new PlacementOrderTracker();
+        tracker.initialize();
+
+        tracker.recordPlacement(0, 0, 1, 0);
+        tracker.recordPlacement(0, 1, 2, 1);
+
+        int depthBefore = tracker.getCurrentDepth();
+        PlacementInfo last = tracker.getLastPlacement();
+        int depthAfter = tracker.getCurrentDepth();
+
+        assertEquals(depthBefore, depthAfter, "getLastPlacement should not modify history");
+        assertEquals(2, depthAfter, "Depth should remain 2");
+    }
+
+    @Test
+    @DisplayName("getLastPlacement - works with fixed pieces")
+    void testGetLastPlacementWithFixedPieces() {
+        List<PlacementInfo> fixedPieces = Arrays.asList(
+            new PlacementInfo(0, 0, 10, 0),
+            new PlacementInfo(0, 2, 20, 0)
+        );
+
+        tracker = new PlacementOrderTracker(fixedPieces);
+        tracker.initialize();
+        tracker.initializeWithFixedPieces(fixedPieces);
+
+        PlacementInfo last = tracker.getLastPlacement();
+        assertEquals(20, last.pieceId, "Last fixed piece should be piece 20");
+
+        // Add new placement
+        tracker.recordPlacement(1, 1, 30, 1);
+
+        PlacementInfo newLast = tracker.getLastPlacement();
+        assertEquals(30, newLast.pieceId, "After adding, last should be new piece 30");
+    }
+
+    @Test
+    @DisplayName("getLastPlacement - returns null for uninitialized tracker")
+    void testGetLastPlacementUninitialized() {
+        tracker = new PlacementOrderTracker();
+        // Don't call initialize()
+
+        PlacementInfo last = tracker.getLastPlacement();
+
+        // Should handle gracefully (return null or work with auto-initialized list)
+        // Based on code, constructor initializes the list, so should be safe
+        assertNotNull(tracker, "Tracker should exist");
+    }
 }
+

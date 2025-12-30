@@ -102,27 +102,30 @@ public class MRVCellSelector implements HeuristicStrategy {
                     boolean isBorder = (r == 0 || r == board.getRows() - 1 || c == 0 || c == board.getCols() - 1);
 
                     // Use AC-3 domains if available for more efficient MRV
-                    int uniquePiecesCount;
+                    // IMPORTANT: Count TOTAL ROTATIONS, not just unique pieces
+                    // This gives more accurate MRV: a cell with 1 piece having 4 rotations
+                    // should be ranked LOWER than a cell with 1 piece having 1 rotation
+                    int totalValidRotations;
                     if (useAC3 && domainManager.isAC3Initialized()) {
                         Map<Integer, List<ValidPlacement>> domain = domainManager.getDomain(r, c);
-                        // Count unique pieces from AC-3 domains
-                        uniquePiecesCount = (domain != null) ? domain.size() : 0;
+                        // Count total number of valid placements (piece + rotation combinations)
+                        if (domain != null) {
+                            totalValidRotations = 0;
+                            for (List<ValidPlacement> placements : domain.values()) {
+                                totalValidRotations += placements.size();
+                            }
+                        } else {
+                            totalValidRotations = 0;
+                        }
                     } else {
                         // Fall back to computing from scratch
                         List<ValidPlacement> validPlacements = getValidPlacements(board, r, c, piecesById, pieceUsed, totalPieces);
-
-                        // Extract unique piece IDs
-                        List<Integer> uniquePieceIds = new ArrayList<>();
-                        for (ValidPlacement vp : validPlacements) {
-                            if (!uniquePieceIds.contains(vp.pieceId)) {
-                                uniquePieceIds.add(vp.pieceId);
-                            }
-                        }
-                        uniquePiecesCount = uniquePieceIds.size();
+                        // Count total valid placements (each entry is a piece + rotation combination)
+                        totalValidRotations = validPlacements.size();
                     }
 
                     // If no possibilities, it's an immediate dead-end
-                    if (uniquePiecesCount == 0) {
+                    if (totalValidRotations == 0) {
                         // Dead-end detected - silent backtrack
                         return new int[]{r, c}; // Return immediately to backtrack
                     }
@@ -164,7 +167,7 @@ public class MRVCellSelector implements HeuristicStrategy {
                                 } else if (currentBorderNeighbors == 0 && bestBorderNeighbors == 0) {
                                     // RULE 2: If both cells have no neighbors (start or potential gap)
                                     // Accept current ONLY if it has significantly fewer options (≤50%)
-                                    if (uniquePiecesCount * 2 <= minUniquePieces) {
+                                    if (totalValidRotations * 2 <= minUniquePieces) {
                                         shouldUpdate = true; // Current has ≤50% options -> accept despite gap
                                     }
                                 } else {
@@ -173,35 +176,35 @@ public class MRVCellSelector implements HeuristicStrategy {
                                         // More neighbors = better continuity -> ALWAYS prefer
                                         shouldUpdate = true;
                                     } else if (currentBorderNeighbors == bestBorderNeighbors) {
-                                        // Same neighbor count: use MRV to break tie
-                                        shouldUpdate = (uniquePiecesCount < minUniquePieces);
+                                        // Same neighbor count: use MRV to break tie (based on rotation count)
+                                        shouldUpdate = (totalValidRotations < minUniquePieces);
                                     }
                                     // If currentBorderNeighbors < bestBorderNeighbors -> don't update, keep best
                                 }
                             } else {
-                                // BOTH cells trap a gap: choose lesser evil (MRV)
-                                shouldUpdate = (uniquePiecesCount < minUniquePieces);
+                                // BOTH cells trap a gap: choose lesser evil (MRV based on rotations)
+                                shouldUpdate = (totalValidRotations < minUniquePieces);
                             }
                         } else if (!isBorder && !bestIsBorder) {
-                            // Two interior cells: normal MRV
-                            shouldUpdate = (uniquePiecesCount < minUniquePieces);
+                            // Two interior cells: normal MRV (based on rotation count)
+                            shouldUpdate = (totalValidRotations < minUniquePieces);
                         }
                         // Otherwise (!isBorder && bestIsBorder) -> don't update, keep border
                     } else {
                         // Normal mode without border prioritization
-                        shouldUpdate = (uniquePiecesCount < minUniquePieces);
+                        shouldUpdate = (totalValidRotations < minUniquePieces);
                     }
 
-                    // Choose cell with minimum unique pieces (with border prioritization if enabled)
+                    // Choose cell with minimum rotations (with border prioritization if enabled)
                     if (shouldUpdate) {
-                        minUniquePieces = uniquePiecesCount;
+                        minUniquePieces = totalValidRotations;
                         bestCell = new int[]{r, c};
                         bestIsBorder = isBorder;
                         // IMPORTANT: Update border neighbor count for border cells
                         if (isBorder) {
                             bestBorderNeighbors = neighborAnalyzer.countAdjacentFilledBorderCells(board, r, c);
                         }
-                    } else if (uniquePiecesCount == minUniquePieces && bestCell != null && (isBorder == bestIsBorder || !prioritizeBorders)) {
+                    } else if (totalValidRotations == minUniquePieces && bestCell != null && (isBorder == bestIsBorder || !prioritizeBorders)) {
                         // Tie-breaking: use degree heuristic
                         // Count OCCUPIED neighbors for this cell (more constraints = better)
                         int currentConstraints = neighborAnalyzer.countOccupiedNeighbors(board, r, c);

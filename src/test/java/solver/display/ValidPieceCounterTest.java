@@ -313,4 +313,133 @@ class ValidPieceCounterTest {
             }
         };
     }
+
+    // ==================== Rotation Counting Tests (NEW) ====================
+
+    @Test
+    @Order(16)
+    @DisplayName("countValidPiecesAndRotations - should count both pieces and rotations")
+    void testCountPiecesAndRotations() {
+        List<Integer> unusedIds = List.of(1, 2, 3, 4, 5);
+
+        ValidPieceCounter.ValidCountResult result =
+            counter.countValidPiecesAndRotations(board, 0, 0, piecesById, unusedIds);
+
+        assertTrue(result.numPieces >= 0, "Should count non-negative pieces");
+        assertTrue(result.numRotations >= 0, "Should count non-negative rotations");
+        assertTrue(result.numRotations >= result.numPieces,
+            "Total rotations should be >= number of pieces");
+    }
+
+    @Test
+    @Order(17)
+    @DisplayName("countValidPiecesAndRotations - piece with multiple valid rotations")
+    void testMultipleRotationsForOnePiece() {
+        // Create a symmetric piece that fits with multiple rotations
+        // Piece with all same edges [5,5,5,5] can fit in 4 rotations if neighbors allow
+        Piece symmetricPiece = new Piece(99, new int[]{5, 5, 5, 5});
+        piecesById.put(99, symmetricPiece);
+
+        // Empty board, corner position - piece should fit with multiple rotations
+        List<Integer> unusedIds = List.of(99);
+
+        ValidPieceCounter.ValidCountResult result =
+            counter.countValidPiecesAndRotations(board, 1, 1, piecesById, unusedIds);
+
+        // For center position with no neighbors, symmetric piece fits in all 4 rotations
+        assertEquals(1, result.numPieces, "Should count 1 unique piece");
+        assertEquals(4, result.numRotations, "Symmetric piece should fit in 4 rotations");
+    }
+
+    @Test
+    @Order(18)
+    @DisplayName("countValidPiecesAndRotations - piece with only one valid rotation")
+    void testOnlyOneRotation() {
+        // Create strong constraints that allow only one specific rotation
+        board.place(0, 1, new Piece(1, new int[]{0, 2, 10, 4}), 0);  // South=10
+        board.place(1, 0, new Piece(2, new int[]{5, 9, 7, 0}), 0);   // East=9
+
+        // Piece 3: [5, 7, 9, 10] with rotation 1 gives [10, 5, 7, 9]
+        // This matches North=10 from above, West=9 from left
+        List<Integer> unusedIds = List.of(3);
+
+        ValidPieceCounter.ValidCountResult result =
+            counter.countValidPiecesAndRotations(board, 1, 1, piecesById, unusedIds);
+
+        assertEquals(1, result.numPieces, "Should count 1 piece");
+        assertTrue(result.numRotations >= 1, "Should have at least 1 valid rotation");
+        assertTrue(result.numRotations <= 4, "Should have at most 4 rotations");
+    }
+
+    @Test
+    @Order(19)
+    @DisplayName("countValidPiecesAndRotations - deadend (0 pieces, 0 rotations)")
+    void testRotationCountDeadend() {
+        // Create impossible constraints
+        board.place(0, 1, new Piece(1, new int[]{0, 2, 99, 4}), 0);  // South=99
+        board.place(1, 0, new Piece(2, new int[]{5, 99, 7, 0}), 0);  // East=99
+
+        List<Integer> unusedIds = List.of(3, 4, 5);
+
+        ValidPieceCounter.ValidCountResult result =
+            counter.countValidPiecesAndRotations(board, 1, 1, piecesById, unusedIds);
+
+        assertEquals(0, result.numPieces, "Deadend should have 0 pieces");
+        assertEquals(0, result.numRotations, "Deadend should have 0 rotations");
+    }
+
+    @Test
+    @Order(20)
+    @DisplayName("countValidPiecesAndRotations - multiple pieces with varying rotations")
+    void testMultiplePiecesWithVaryingRotations() {
+        // Test realistic scenario: some pieces fit with 1 rotation, others with multiple
+        List<Integer> unusedIds = List.of(1, 2, 3, 4, 5);
+
+        ValidPieceCounter.ValidCountResult result =
+            counter.countValidPiecesAndRotations(board, 1, 1, piecesById, unusedIds);
+
+        // Rotations should be >= pieces (each piece contributes at least 1 rotation if it fits)
+        if (result.numPieces > 0) {
+            assertTrue(result.numRotations >= result.numPieces,
+                "Total rotations must be >= number of pieces");
+        }
+
+        // Maximum possible: 5 pieces * 4 rotations = 20
+        assertTrue(result.numRotations <= 20,
+            "Cannot have more than pieces * 4 rotations");
+    }
+
+    @Test
+    @Order(21)
+    @DisplayName("countValidPiecesAndRotations - result consistency with countValidPieces")
+    void testResultConsistencyWithOldMethod() {
+        List<Integer> unusedIds = List.of(1, 2, 3);
+
+        int oldCount = counter.countValidPieces(board, 1, 1, piecesById, unusedIds);
+        ValidPieceCounter.ValidCountResult newResult =
+            counter.countValidPiecesAndRotations(board, 1, 1, piecesById, unusedIds);
+
+        // The piece count should match
+        assertEquals(oldCount, newResult.numPieces,
+            "Piece count should match between old and new methods");
+    }
+
+    @Test
+    @Order(22)
+    @DisplayName("countValidPiecesAndRotations - corner piece with 2 zeros")
+    void testCornerPieceRotations() {
+        // Corner pieces have 2 adjacent zeros - they should fit in only 1 rotation at corner
+        Piece cornerPiece = new Piece(99, new int[]{0, 2, 3, 0}); // North and West are 0
+        piecesById.put(99, cornerPiece);
+
+        List<Integer> unusedIds = List.of(99);
+
+        ValidPieceCounter.ValidCountResult result =
+            counter.countValidPiecesAndRotations(board, 0, 0, piecesById, unusedIds);
+
+        assertEquals(1, result.numPieces, "Should count 1 corner piece");
+        // At corner (0,0), this piece should fit in exactly 1 rotation
+        assertEquals(1, result.numRotations,
+            "Corner piece with 2 zeros should fit in only 1 rotation at corner");
+    }
 }

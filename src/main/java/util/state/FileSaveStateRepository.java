@@ -105,7 +105,7 @@ public class FileSaveStateRepository implements SaveStateRepository {
                 state.getElapsedTimeMs(),
                 0, // numFixedPieces
                 null, // initialFixedPieces
-                null  // allPieces (not available in repository context)
+                pieces  // Pass allPieces from state (was null - fixed)
             );
 
             SolverLogger.info("✓ Saved state: " + state.getConfigId() +

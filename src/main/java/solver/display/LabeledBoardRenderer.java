@@ -95,11 +95,12 @@ public class LabeledBoardRenderer extends AbstractBoardRenderer {
     @Override
     protected String formatMiddleContent(int row, int col) {
         if (board.isEmpty(row, col)) {
-            // Show valid piece count for empty cells
-            int validCount = validPieceCounter.countValidPieces(
-                board, row, col, piecesById, unusedIds
+            // Show valid piece count AND rotation count for empty cells
+            ValidPieceCounter.ValidCountResult countResult =
+                validPieceCounter.countValidPiecesAndRotations(board, row, col, piecesById, unusedIds);
+            return emptyCellFormatter.formatEmptyCellWithRotations(
+                board, row, col, countResult.numPieces, countResult.numRotations
             );
-            return emptyCellFormatter.formatEmptyCell(board, row, col, validCount);
         } else {
             return occupiedCellFormatter.formatMiddleLine(board, row, col);
         }

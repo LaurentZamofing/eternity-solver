@@ -199,52 +199,71 @@ public class BoardDisplayService {
         int rows = board.getRows();
         int cols = board.getCols();
 
-        // Generate a horizontal separator
-        StringBuilder separator = new StringBuilder("# ");
+        util.SolverLogger.debug("Generating detailed save file visualization:");
+        util.SolverLogger.debug("  Board size: {}x{}", rows, cols);
+
+        // Count placed pieces
+        int placedCount = 0;
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (!board.isEmpty(r, c)) placedCount++;
+            }
+        }
+        util.SolverLogger.debug("  Placed pieces: {}/{}", placedCount, rows * cols);
+        util.SolverLogger.debug("  Pieces map size: {}", allPieces != null ? allPieces.size() : 0);
+        util.SolverLogger.debug("  Using AC-3 domains: {}", domainManager != null && domainManager.isAC3Initialized());
+
+        // Generate top horizontal separator
+        StringBuilder separator = new StringBuilder("# ├");
         for (int c = 0; c < cols; c++) {
             separator.append("─────────");
             if (c < cols - 1) separator.append("┬");
         }
+        separator.append("┤");
         writer.println(separator.toString());
 
         for (int r = 0; r < rows; r++) {
-            // Line 1: north edges
-            StringBuilder line1 = new StringBuilder("# ");
+            // Pre-compute candidate counts for this row (needed for both line1 and line2)
+            CandidateCount[] rowCandidates = new CandidateCount[cols];
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
-                    // Count pieces and rotations
-                    CandidateCount count;
                     if (domainManager != null && domainManager.isAC3Initialized()) {
                         java.util.Map<Integer, java.util.List<solver.DomainManager.ValidPlacement>> domain =
                             domainManager.getDomain(r, c);
                         int numPieces = (domain != null) ? domain.size() : 0;
-                        // For AC-3, we don't have rotation info, so use pieces count for both
-                        count = new CandidateCount(numPieces, numPieces);
+                        rowCandidates[c] = new CandidateCount(numPieces, numPieces);
                     } else {
-                        count = countCandidatesWithRotations(board, r, c, allPieces);
+                        rowCandidates[c] = countCandidatesWithRotations(board, r, c, allPieces);
                     }
+                }
+            }
 
-                    if (count.numPieces > 0 || count.numRotations > 0) {
-                        // Format: (PPP/RRR) = 9 chars exactly
-                        line1.append(String.format("(%3d/%3d)", count.numPieces, count.numRotations));
-                    } else {
-                        line1.append("   ∅     ");  // Empty set symbol if no candidates
-                    }
+            // Line 1: north edges (empty cells show nothing)
+            StringBuilder line1 = new StringBuilder("# │");
+            for (int c = 0; c < cols; c++) {
+                if (board.isEmpty(r, c)) {
+                    line1.append("    .    ");  // Empty cells: just dot on line 1
                 } else {
                     Placement p = board.getPlacement(r, c);
                     // Use edges from Placement (already rotated)
                     int northEdge = p.edges[0];
                     line1.append(String.format("   %2d    ", northEdge));
                 }
-                if (c < cols - 1) line1.append("│");
+                line1.append("│");
             }
             writer.println(line1.toString());
 
-            // Line 2: piece ID with west and east edges OR candidate count
-            StringBuilder line2 = new StringBuilder("# ");
+            // Line 2: piece ID with edges OR (pieces/rotations) count
+            StringBuilder line2 = new StringBuilder("# │");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
-                    line2.append("    .    ");
+                    CandidateCount count = rowCandidates[c];
+                    if (count.numPieces > 0 || count.numRotations > 0) {
+                        // Format: (PPP/RRR) = 9 chars exactly
+                        line2.append(String.format("(%3d/%3d)", count.numPieces, count.numRotations));
+                    } else {
+                        line2.append("   ∅     ");  // Empty set symbol if no candidates
+                    }
                 } else {
                     Placement p = board.getPlacement(r, c);
                     // Use edges from Placement (already rotated)
@@ -252,12 +271,12 @@ public class BoardDisplayService {
                     int eastEdge = p.edges[1];  // EAST = 1
                     line2.append(String.format("%2d %3d %2d", westEdge, p.getPieceId(), eastEdge));
                 }
-                if (c < cols - 1) line2.append("│");
+                line2.append("│");
             }
             writer.println(line2.toString());
 
             // Line 3: south edges
-            StringBuilder line3 = new StringBuilder("# ");
+            StringBuilder line3 = new StringBuilder("# │");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
                     line3.append("    .    ");
@@ -267,28 +286,33 @@ public class BoardDisplayService {
                     int southEdge = p.edges[2];  // SOUTH = 2
                     line3.append(String.format("   %2d    ", southEdge));
                 }
-                if (c < cols - 1) line3.append("│");
+                line3.append("│");
             }
             writer.println(line3.toString());
 
             // Separator between rows
             if (r < rows - 1) {
-                StringBuilder sep = new StringBuilder("# ");
+                StringBuilder sep = new StringBuilder("# ├");
                 for (int c = 0; c < cols; c++) {
                     sep.append("─────────");
                     if (c < cols - 1) sep.append("┼");
                 }
+                sep.append("┤");
                 writer.println(sep.toString());
             }
         }
 
         // Bottom separator
-        StringBuilder bottomSep = new StringBuilder("# ");
+        StringBuilder bottomSep = new StringBuilder("# └");
         for (int c = 0; c < cols; c++) {
             bottomSep.append("─────────");
             if (c < cols - 1) bottomSep.append("┴");
         }
+        bottomSep.append("┘");
         writer.println(bottomSep.toString());
+
+        util.SolverLogger.debug("Save file visualization generated successfully");
+        util.SolverLogger.debug("  Total rows rendered: {}", rows);
     }
 
     /**

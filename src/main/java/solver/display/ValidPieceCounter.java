@@ -87,4 +87,66 @@ public class ValidPieceCounter {
 
         return count;
     }
+
+    /**
+     * Result containing both piece count and rotation count.
+     */
+    public static class ValidCountResult {
+        public final int numPieces;      // Number of unique pieces that fit
+        public final int numRotations;   // Total number of valid rotations
+
+        public ValidCountResult(int numPieces, int numRotations) {
+            this.numPieces = numPieces;
+            this.numRotations = numRotations;
+        }
+    }
+
+    /**
+     * Counts both unique pieces AND total valid rotations for a position.
+     *
+     * <p>More detailed than countValidPieces() - returns both the number of
+     * unique pieces that fit AND the total number of valid rotations across
+     * all those pieces.</p>
+     *
+     * <p>Example: If piece A fits with rotations 0,1,2 and piece B fits with
+     * rotation 3, returns numPieces=2, numRotations=4.</p>
+     *
+     * @param board Current board state
+     * @param row Row position to test
+     * @param col Column position to test
+     * @param piecesById Map of all pieces by ID
+     * @param unusedIds List of unused piece IDs
+     * @return Result with piece count and rotation count
+     */
+    public ValidCountResult countValidPiecesAndRotations(Board board, int row, int col,
+                                                          Map<Integer, Piece> piecesById,
+                                                          List<Integer> unusedIds) {
+        int numPieces = 0;
+        int numRotations = 0;
+
+        for (int pieceId : unusedIds) {
+            Piece piece = piecesById.get(pieceId);
+
+            if (piece != null) {
+                int validRotationsForThisPiece = 0;
+
+                // Test all 4 rotations
+                for (int rotation = 0; rotation < 4; rotation++) {
+                    int[] rotatedEdges = piece.edgesRotated(rotation);
+
+                    if (validator.fits(board, row, col, rotatedEdges)) {
+                        validRotationsForThisPiece++;
+                        numRotations++;
+                    }
+                }
+
+                // Count this piece if at least one rotation works
+                if (validRotationsForThisPiece > 0) {
+                    numPieces++;
+                }
+            }
+        }
+
+        return new ValidCountResult(numPieces, numRotations);
+    }
 }

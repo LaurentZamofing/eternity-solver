@@ -93,9 +93,10 @@ class SaveStateIOTest {
             testPlacementOrder,
             testUnusedIds,
             25.5, // progress percentage
-            1500, // total compute time ms
+            1500L, // total compute time ms
             1, // num fixed pieces
-            testFixedPieces
+            testFixedPieces,
+            testPieces
         );
 
         // Verify file exists
@@ -141,9 +142,10 @@ class SaveStateIOTest {
             Collections.emptyList(),
             Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9),
             0.0,
+            0L,
             0,
-            0,
-            Collections.emptyList()
+            Collections.emptyList(),
+            null
         );
 
         SaveState loadedState = SaveStateIO.readFromFile(new File(filename), TEST_PUZZLE);
@@ -173,7 +175,8 @@ class SaveStateIOTest {
             42.5,
             expectedTime,
             1,
-            testFixedPieces
+            testFixedPieces,
+            testPieces
         );
 
         SaveState loaded = SaveStateIO.readFromFile(new File(filename), TEST_PUZZLE);
@@ -225,9 +228,10 @@ class SaveStateIOTest {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 0.0,
+                0L,
                 0,
-                0,
-                Collections.emptyList()
+                Collections.emptyList(),
+                null
             );
         }, "Should throw IOException for invalid path");
     }
@@ -262,9 +266,10 @@ class SaveStateIOTest {
             largePlacementOrder,
             Collections.emptyList(),
             6.25,
-            5000,
+            5000L,
             0,
-            Collections.emptyList()
+            Collections.emptyList(),
+            largePieces
         );
 
         SaveState loaded = SaveStateIO.readFromFile(new File(filename), "large_puzzle");
@@ -302,9 +307,10 @@ class SaveStateIOTest {
             placements,
             Collections.emptyList(),
             100.0,
-            1000,
+            1000L,
             0,
-            Collections.emptyList()
+            Collections.emptyList(),
+            pieces
         );
 
         SaveState loaded = SaveStateIO.readFromFile(new File(filename), TEST_PUZZLE);
@@ -333,9 +339,10 @@ class SaveStateIOTest {
             testPlacementOrder,
             testUnusedIds,
             25.5,
-            1500,
+            1500L,
             1,
-            testFixedPieces
+            testFixedPieces,
+            testPieces
         );
 
         // Should not throw exception

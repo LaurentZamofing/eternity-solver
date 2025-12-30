@@ -119,7 +119,18 @@
       "Bash(/tmp/move_to_packages.sh)",
       "Bash(git restore:*)",
       "Bash(git rm:*)",
-      "Bash(for file in src/test/java/solver/TestBacktracking.java src/test/java/solver/TestBasics.java src/test/java/solver/TestSolver.java)"
+      "Bash(for file in src/test/java/solver/TestBacktracking.java src/test/java/solver/TestBasics.java src/test/java/solver/TestSolver.java)",
+      "Bash(tree:*)",
+      "Bash(if [ -d logs ])",
+      "Bash(then find logs/ -name \"*.log\" -mtime +7 -type f -exec rm {} ;)",
+      "Bash(else echo \"No logs directory\")",
+      "Bash(for file in BenchmarkThreads.java BenchmarkThreadsSimple.java TestAllSmallPuzzles.java TestBorderPriority.java TestEternityII.java TestHintPiece.java TestIndice1Border.java ValidateEternity2.java)",
+      "Bash(then echo \"EXISTS in src/test/java: $file\")",
+      "Bash(else echo \"MISSING in src/test/java: $file\")",
+      "Bash(git check-ignore:*)",
+      "Bash(./gradlew test:*)",
+      "Bash(./mvnw clean test:*)",
+      "Bash(wait)"
     ],
     "deny": [],
     "ask": []

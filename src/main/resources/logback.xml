@@ -20,11 +20,12 @@
     </appender>
 
     <!-- Logger pour solver package (niveau DEBUG en développement) -->
-    <logger name="solver" level="INFO" />
-    <logger name="util" level="INFO" />
+    <logger name="solver" level="DEBUG" />
+    <logger name="util" level="DEBUG" />
+    <logger name="app" level="DEBUG" />
 
-    <!-- Logger racine (niveau INFO par défaut) -->
-    <root level="INFO">
+    <!-- Logger racine (niveau DEBUG pour development) -->
+    <root level="DEBUG">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
     </root>

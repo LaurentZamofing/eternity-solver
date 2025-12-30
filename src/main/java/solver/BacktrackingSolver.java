@@ -202,7 +202,7 @@ public class BacktrackingSolver {
                     recordManager.displayRecord(recordResult, usedCount, stats,
                         board, piecesById, unusedIds,
                         config.getFixedPositions(), solver.validator,
-                        lastPlacement, nextCell);
+                        lastPlacement, nextCell, solver.placementOrderTracker);
                 }
             }
         }

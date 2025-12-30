@@ -94,15 +94,23 @@ public class CellFormatter {
         String color = !cellColor.isEmpty() ? cellColor : edgeColor;
 
         // Format: edge centered + order right-aligned
-        // Calculate spaces to keep edge centered
-        int spacesNeeded = 9 - 2 - orderSuffix.length();
-        int leftSpaces = spacesNeeded / 2 + (spacesNeeded % 2);
+        // Keep edge at position 3-4 (centered), order fills from right
+        // Examples: "    0  #1", "    0 #27", "    0#112", "   15#114"
+        // For very long orders (#1000+), edge may shift slightly left but stays readable
+        int totalLength = 2 + orderSuffix.length(); // edge + order
+        int leftPadding = Math.max(3, (9 - totalLength) / 2 + (9 - totalLength) % 2); // At least 3 spaces
 
         if (!color.isEmpty()) {
-            String formatted = String.format("%" + leftSpaces + "s%2d%s", "", edgeNorth, orderSuffix);
+            String formatted = String.format("%" + leftPadding + "s%2d%s", "", edgeNorth, orderSuffix);
+            // Ensure exactly 9 chars (without color codes)
+            if (formatted.length() < 9) {
+                formatted = String.format("%-9s", formatted);
+            }
             return color + formatted + ColorStrategy.RESET;
         } else {
-            return String.format("%" + leftSpaces + "s%2d%s", "", edgeNorth, orderSuffix);
+            String formatted = String.format("%" + leftPadding + "s%2d%s", "", edgeNorth, orderSuffix);
+            // Pad to 9 chars if needed
+            return formatted.length() >= 9 ? formatted : String.format("%-9s", formatted);
         }
     }
 

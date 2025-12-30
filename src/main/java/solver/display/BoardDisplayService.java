@@ -258,12 +258,17 @@ public class BoardDisplayService {
                         orderSuffix = "#" + order;
                     }
 
-                    // Format: "   NN####" where NN=north edge (centered), ####=order (right-aligned)
-                    // The order suffix pushes from the right, north edge stays centered at position 3-4
-                    // Examples: "    0  #1" (7 spaces + 2 chars), "    0 #27" (6 spaces + 3 chars), "    0#112" (5 spaces + 4 chars)
-                    int spacesNeeded = 9 - 2 - orderSuffix.length(); // 9 total - 2 for edge - length of order
-                    int leftSpaces = spacesNeeded / 2 + (spacesNeeded % 2); // Slightly more on left to keep edge centered
-                    line1.append(String.format("%" + leftSpaces + "s%2d%s", "", northEdge, orderSuffix));
+                    // Format: edge centered + order right-aligned
+                    // Keep edge at position 3-4 (centered), order fills from right
+                    // Examples: "    0  #1", "    0 #27", "    0#112", "   15#114"
+                    int totalLength = 2 + orderSuffix.length();
+                    int leftPadding = Math.max(3, (9 - totalLength) / 2 + (9 - totalLength) % 2);
+                    String formatted = String.format("%" + leftPadding + "s%2d%s", "", northEdge, orderSuffix);
+                    // Pad to exactly 9 chars
+                    if (formatted.length() < 9) {
+                        formatted = String.format("%-9s", formatted);
+                    }
+                    line1.append(formatted);
                 }
                 line1.append("│");
             }

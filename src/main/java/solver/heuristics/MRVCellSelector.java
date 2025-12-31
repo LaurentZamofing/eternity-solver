@@ -4,6 +4,8 @@ import model.Board;
 import model.Piece;
 import solver.DomainManager;
 import solver.DomainManager.ValidPlacement;
+import util.DebugHelper;
+import util.SolverLogger;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -32,12 +34,44 @@ public class MRVCellSelector implements HeuristicStrategy {
     private final solver.NeighborAnalyzer neighborAnalyzer;
     private boolean prioritizeBorders = false;
     private boolean useAC3 = true;
+    private boolean debugBacktracking = false;
+    private boolean debugShowAlternatives = false;
+    private int debugMaxCandidates = 5;
+    private boolean silentMode = false; // Temporarily disable logs for internal calls
 
     /**
      * Interface for checking if a piece fits at a position.
      */
     public interface FitChecker {
         boolean fits(Board board, int r, int c, int[] candidateEdges);
+    }
+
+    /**
+     * Internal class to track candidate cells for debug logging.
+     */
+    private static class CellCandidate {
+        final int row;
+        final int col;
+        final int possibilities;
+        final boolean isBorder;
+        final int borderNeighbors;
+        final boolean wouldTrap;
+        final String rejectionReason;
+
+        CellCandidate(int row, int col, int possibilities, boolean isBorder,
+                     int borderNeighbors, boolean wouldTrap, String rejectionReason) {
+            this.row = row;
+            this.col = col;
+            this.possibilities = possibilities;
+            this.isBorder = isBorder;
+            this.borderNeighbors = borderNeighbors;
+            this.wouldTrap = wouldTrap;
+            this.rejectionReason = rejectionReason;
+        }
+
+        String getCellLabel() {
+            return String.valueOf((char) ('A' + row)) + (col + 1);
+        }
     }
 
     /**
@@ -71,6 +105,42 @@ public class MRVCellSelector implements HeuristicStrategy {
         this.useAC3 = enabled;
     }
 
+    /**
+     * Enables or disables debug backtracking logs.
+     *
+     * @param enabled true to enable debug logs
+     */
+    public void setDebugBacktracking(boolean enabled) {
+        this.debugBacktracking = enabled;
+    }
+
+    /**
+     * Enables or disables showing alternative cell candidates in debug logs.
+     *
+     * @param enabled true to show alternatives
+     */
+    public void setDebugShowAlternatives(boolean enabled) {
+        this.debugShowAlternatives = enabled;
+    }
+
+    /**
+     * Sets maximum number of alternative candidates to show in debug logs.
+     *
+     * @param max maximum number of candidates
+     */
+    public void setDebugMaxCandidates(int max) {
+        this.debugMaxCandidates = max;
+    }
+
+    /**
+     * Temporarily enables/disables logging (for internal calls like save file generation).
+     *
+     * @param silent true to suppress debug logs
+     */
+    public void setSilentMode(boolean silent) {
+        this.silentMode = silent;
+    }
+
     @Override
     public CellPosition selectNextCell(Board board, Map<Integer, Piece> piecesById,
                                        BitSet pieceUsed, int totalPieces) {
@@ -94,6 +164,14 @@ public class MRVCellSelector implements HeuristicStrategy {
         int minUniquePieces = Integer.MAX_VALUE;
         boolean bestIsBorder = false;
         int bestBorderNeighbors = 0; // Track number of border neighbors of best cell
+
+        // Debug: Track all candidates for detailed logging
+        List<CellCandidate> allCandidates = (debugShowAlternatives && !silentMode) ? new ArrayList<>() : null;
+        int cellsEvaluated = 0;
+
+        if (debugBacktracking && !silentMode) {
+            SolverLogger.info("📊 MRV Cell Selection:");
+        }
 
         for (int r = 0; r < board.getRows(); r++) {
             for (int c = 0; c < board.getCols(); c++) {
@@ -195,6 +273,23 @@ public class MRVCellSelector implements HeuristicStrategy {
                         shouldUpdate = (totalValidRotations < minUniquePieces);
                     }
 
+                    // Track candidates for debug logging
+                    cellsEvaluated++;
+                    if (debugShowAlternatives && allCandidates != null) {
+                        boolean wouldTrap = isBorder && neighborAnalyzer.wouldCreateTrappedGap(board, r, c, null, null, null, 0, -1);
+                        int borderNeighbors = isBorder ? neighborAnalyzer.countAdjacentFilledBorderCells(board, r, c) : 0;
+                        String reason = shouldUpdate ? "SELECTED" : "rejected";
+                        allCandidates.add(new CellCandidate(r, c, totalValidRotations, isBorder, borderNeighbors, wouldTrap, reason));
+
+                        // Extra debug: log selection decision for cells with few possibilities
+                        if (debugBacktracking && totalValidRotations <= 10) {
+                            String cellLabel = String.valueOf((char) ('A' + r)) + (c + 1);
+                            SolverLogger.info("      Eval " + cellLabel + ": " + totalValidRotations + " poss, " +
+                                            "border=" + isBorder + ", neighbors=" + borderNeighbors + ", trap=" + wouldTrap +
+                                            " → " + (shouldUpdate ? "UPDATE" : "skip"));
+                        }
+                    }
+
                     // Choose cell with minimum rotations (with border prioritization if enabled)
                     if (shouldUpdate) {
                         minUniquePieces = totalValidRotations;
@@ -213,6 +308,10 @@ public class MRVCellSelector implements HeuristicStrategy {
                         // Choose cell with most occupied neighbors (most constraining)
                         if (currentConstraints > bestConstraints) {
                             bestCell = new int[]{r, c};
+                            // BUGFIX: Update bestBorderNeighbors when bestCell changes in tie-breaking
+                            if (isBorder) {
+                                bestBorderNeighbors = neighborAnalyzer.countAdjacentFilledBorderCells(board, r, c);
+                            }
                         } else if (currentConstraints == bestConstraints) {
                             // Second tie-breaking: prefer central positions
                             int centerR = board.getRows() / 2;
@@ -222,10 +321,54 @@ public class MRVCellSelector implements HeuristicStrategy {
 
                             if (currentDistToCenter < bestDistToCenter) {
                                 bestCell = new int[]{r, c};
+                                // BUGFIX: Update bestBorderNeighbors when bestCell changes in tie-breaking
+                                if (isBorder) {
+                                    bestBorderNeighbors = neighborAnalyzer.countAdjacentFilledBorderCells(board, r, c);
+                                }
                             }
                         }
                     }
                 }
+            }
+        }
+
+        // Debug logging: Show selection result and alternatives
+        if (debugBacktracking && !silentMode) {
+            if (bestCell != null) {
+                String cellLabel = String.valueOf((char) ('A' + bestCell[0])) + (bestCell[1] + 1);
+                SolverLogger.info("   Evaluated " + cellsEvaluated + " empty cells");
+                SolverLogger.info("   ⭐ SELECTED: " + cellLabel + " (" + bestCell[0] + "," + bestCell[1] + ") with " +
+                                 minUniquePieces + " possibilities" +
+                                 (bestIsBorder ? " [border, " + bestBorderNeighbors + " neighbors]" : " [interior]"));
+
+                // Show top alternatives if enabled
+                if (debugShowAlternatives && allCandidates != null && allCandidates.size() > 1) {
+                    SolverLogger.info("   Top " + Math.min(debugMaxCandidates, allCandidates.size()) + " candidates:");
+
+                    // Sort by possibilities (ascending) to show most constrained first
+                    allCandidates.sort((a, b) -> {
+                        if (a.possibilities != b.possibilities) return Integer.compare(a.possibilities, b.possibilities);
+                        if (a.borderNeighbors != b.borderNeighbors) return Integer.compare(b.borderNeighbors, a.borderNeighbors);
+                        return 0;
+                    });
+
+                    for (int i = 0; i < Math.min(debugMaxCandidates, allCandidates.size()); i++) {
+                        CellCandidate cand = allCandidates.get(i);
+                        boolean isSelected = (cand.row == bestCell[0] && cand.col == bestCell[1]);
+                        String marker = isSelected ? " ⭐" : "   ";
+                        String borderInfo = cand.isBorder ? " border" : " interior";
+                        String neighborInfo = cand.isBorder ? ", " + cand.borderNeighbors + " neighbors" : "";
+                        String trapInfo = cand.wouldTrap ? ", TRAPS GAP" : "";
+
+                        SolverLogger.info(marker + " " + (i + 1) + ". " + cand.getCellLabel() +
+                                         ": " + cand.possibilities + " poss [" + borderInfo + neighborInfo + trapInfo + "]");
+                    }
+                }
+
+                DebugHelper.waitForUserInput();
+            } else {
+                SolverLogger.info("   ⚠ No valid cell found (board complete or dead-end)");
+                DebugHelper.waitForUserInput();
             }
         }
 

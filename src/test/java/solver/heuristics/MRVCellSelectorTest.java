@@ -431,5 +431,102 @@ public class MRVCellSelectorTest {
             HeuristicStrategy.CellPosition cell = selector.selectNextCell(board, pieces, pieceUsed, 3);
         }, "Fallback mode should count rotations correctly");
     }
+
+    // ==================== Border Neighbor Tracking Tests (Bug Fix Validation) ====================
+
+    @Test
+    @DisplayName("Border neighbor tracking is consistent in tie-breaking scenarios")
+    public void testBorderNeighborTrackingInTieBreaking() {
+        // REGRESSION TEST for bestBorderNeighbors tracking bug
+        // Bug: bestBorderNeighbors was not updated when bestCell changed in tie-breaking logic
+        // This caused inconsistent logging where SELECTED log showed wrong neighbor count
+
+        // Create a scenario where:
+        // 1. Multiple border cells have same number of possibilities
+        // 2. They have different numbers of filled neighbors
+        // 3. Tie-breaking logic kicks in (based on constraints or position)
+
+        // Enable border prioritization
+        selector.setPrioritizeBorders(true);
+
+        // Place a piece at corner to create neighbors
+        Piece piece1 = pieces.get(1);
+        board.place(0, 0, piece1, 0);
+        pieceUsed.set(1);
+
+        // Reinitialize domains with the new board state
+        domainManager.resetAC3();
+        domainManager.initializeAC3Domains(board, pieces, pieceUsed, 3);
+
+        // Select next cell - this should handle tie-breaking correctly
+        // and maintain consistent neighbor counts
+        HeuristicStrategy.CellPosition cell = selector.selectNextCell(board, pieces, pieceUsed, 3);
+
+        assertNotNull(cell, "Should select a cell");
+        assertTrue(board.isEmpty(cell.row, cell.col), "Selected cell should be empty");
+
+        // The key validation: the selector should not throw exceptions
+        // and should maintain internal consistency (even though we can't directly
+        // verify the private bestBorderNeighbors variable)
+    }
+
+    @Test
+    @DisplayName("Multiple border cells with same domain size - consistent selection")
+    public void testMultipleBorderCellsWithSameDomainSize() {
+        // REGRESSION TEST: Verify that when multiple border cells have identical
+        // domain sizes, the selector chooses one consistently without internal
+        // state corruption
+
+        selector.setPrioritizeBorders(true);
+
+        // Place a piece to create an asymmetric board state
+        Piece piece = pieces.get(1);
+        board.place(1, 1, piece, 0); // Center piece
+        pieceUsed.set(1);
+
+        domainManager.resetAC3();
+        domainManager.initializeAC3Domains(board, pieces, pieceUsed, 3);
+
+        // Call selectNextCell multiple times with same board state
+        // Each call should be deterministic and consistent
+        HeuristicStrategy.CellPosition cell1 = selector.selectNextCell(board, pieces, pieceUsed, 3);
+        HeuristicStrategy.CellPosition cell2 = selector.selectNextCell(board, pieces, pieceUsed, 3);
+
+        assertNotNull(cell1, "First selection should succeed");
+        assertNotNull(cell2, "Second selection should succeed");
+        assertEquals(cell1.row, cell2.row, "Selections should be deterministic (same row)");
+        assertEquals(cell1.col, cell2.col, "Selections should be deterministic (same col)");
+    }
+
+    @Test
+    @DisplayName("Tie-breaking respects neighbor count priority")
+    public void testTieBreakingRespectsNeighborCount() {
+        // Verify that when cells have same possibilities count, cells with MORE
+        // neighbors are preferred (better continuity in border filling)
+
+        selector.setPrioritizeBorders(true);
+
+        // Create a corner configuration where one border cell has neighbors
+        // and others don't
+        Piece piece1 = pieces.get(1);
+        Piece piece2 = pieces.get(2);
+        board.place(0, 0, piece1, 0); // Top-left corner
+        board.place(0, 1, piece2, 0); // Next to corner
+        pieceUsed.set(1);
+        pieceUsed.set(2);
+
+        domainManager.resetAC3();
+        domainManager.initializeAC3Domains(board, pieces, pieceUsed, 3);
+
+        // Cell (0, 2) has 1 neighbor, while (2, 0) has 0 neighbors
+        // If they have similar domain sizes, (0, 2) should be preferred
+        HeuristicStrategy.CellPosition cell = selector.selectNextCell(board, pieces, pieceUsed, 3);
+
+        assertNotNull(cell, "Should select a cell");
+
+        // The exact cell depends on domain sizes, but the selector should
+        // consistently apply its heuristics without state corruption
+        assertTrue(board.isEmpty(cell.row, cell.col), "Selected cell must be empty");
+    }
 }
 

@@ -99,11 +99,19 @@ jobs:
     - name: Check logging standards
       run: |
         echo "Checking for System.out/err usage..."
-        COUNT=$(grep -r 'System\.\(out\|err\)\.print' src/main/java --include='*.java' | \
-          grep -v 'SolverLogger\|Formatter\|Renderer\|Helper' | wc -l || echo "0")
+        # Exclude Javadoc examples (package-info.java) and the legitimate
+        # cases: SolverLogger (the façade itself), visualization Formatters
+        # and Renderers, DebugHelper, and FormattingUtils.printProgressBar
+        # which uses \r + System.out.flush() to repaint a terminal line —
+        # semantics a line-oriented logger can't reproduce.
+        COUNT=$(grep -rn 'System\.\(out\|err\)\.print' src/main/java --include='*.java' | \
+          grep -v 'package-info\.java\|SolverLogger\|Formatter\|Renderer\|Helper\|FormattingUtils' | \
+          wc -l | tr -d ' ')
         echo "Found: $COUNT System.out/err calls"
         if [ "$COUNT" -gt "0" ]; then
-          echo "⚠️ Warning: Direct System.out/err usage found"
+          echo "⚠️ Direct System.out/err usage found — route through SolverLogger or whitelist the file."
+          grep -rn 'System\.\(out\|err\)\.print' src/main/java --include='*.java' | \
+            grep -v 'package-info\.java\|SolverLogger\|Formatter\|Renderer\|Helper\|FormattingUtils'
           exit 1
         fi
 

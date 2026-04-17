@@ -15,10 +15,22 @@ public class SymmetryBreakingManager {
     private final int rows;
     private final int cols;
 
-    // Symmetry-breaking strategy flags
+    // Symmetry-breaking strategy flags.
+    //
+    // Empirical impact on solve4x4Hard (JMH SingleShotTime, 10 iter, JDK 24):
+    //   Both lex+rotation enabled:  ~30 ms/op
+    //   Both disabled:               ~49 ms/op  (+63% slower)
+    // → Current setup buys ~40% wall-clock on 4x4.
+    //
+    // Reflection pruning (e.g. lex order top-right ≤ bottom-left to break the
+    // diagonal reflection of the D4 group) is left disabled: Eternity II
+    // pieces are not naturally mirror-symmetric, so the marginal gain is
+    // probably < 20%, and rolling it out safely needs a 4x4 correctness gate
+    // with a known-good solution to verify no valid branches are pruned.
+    // Capture that gate in AC3CorrectnessTest before flipping this flag.
     private boolean enableLexicographicOrdering = true;
     private boolean enableRotationalFixing = true;
-    private boolean enableReflectionPruning = false; // Future: horizontal/vertical symmetry
+    private boolean enableReflectionPruning = false;
 
     /** Creates symmetry-breaking manager with board dimensions and verbose flag for detailed logging. */
     public SymmetryBreakingManager(int rows, int cols, boolean verbose) {

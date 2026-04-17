@@ -125,9 +125,9 @@ public class SolverInitializer {
         components.domainManager.setSortOrder(sortOrder);
         // MRV priority-queue index disabled by default. Empirically a 30%
         // regression on 4x4 (PQ overhead > scan cost on small boards). The
-        // expected crossover is 6x6+ — re-enable per-solve via
-        // domainManager.setMRVIndexEnabled(true) once that's measured.
-        components.domainManager.setMRVIndexEnabled(false);
+        // expected crossover is 6x6+. Benchmarks / callers flip it via
+        // EternitySolver.setMRVIndexEnabled(true).
+        components.domainManager.setMRVIndexEnabled(solver.isMRVIndexEnabled());
 
         // Create Statistics adapter for ConstraintPropagator
         ConstraintPropagator.Statistics cpStats = new ConstraintPropagator.Statistics() {

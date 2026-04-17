@@ -47,10 +47,20 @@ public class EternitySolver implements Solver {
 
     private boolean useAC3 = true;
     private boolean useDomainCache = true;
+    private boolean mrvIndexEnabled = false;
 
     /** Package-private toggle for tests that need to isolate AC-3 from the
      *  backtracking search path. Production code leaves it on. */
     public void setUseAC3(boolean enabled) { this.useAC3 = enabled; }
+
+    /** Enables the MRV priority-queue index (O(log N) cell selection).
+     *  Off by default because it regresses 4×4 by ~30% (PQ overhead beats
+     *  the linear scan on small boards). Expected crossover is 6×6+.
+     *  Used by benchmarks to measure the crossover point. */
+    public void setMRVIndexEnabled(boolean enabled) { this.mrvIndexEnabled = enabled; }
+
+    /** @return whether the MRV priority-queue index is configured on for the next solve */
+    public boolean isMRVIndexEnabled() { return mrvIndexEnabled; }
 
     private DomainManager domainManager;
     private ConstraintPropagator constraintPropagator;

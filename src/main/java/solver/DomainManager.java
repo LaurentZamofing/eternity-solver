@@ -83,25 +83,41 @@ public class DomainManager {
     public void restoreAC3Domains(Board board, int r, int c, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (!ac3Initialized) return;
 
-        // Recompute domains for the cell itself
-        domains[r][c] = new HashMap<>();
-        List<ValidPlacement> validPlacements = computeDomain(board, r, c, piecesById, pieceUsed, totalPieces);
-        for (ValidPlacement vp : validPlacements) {
-            domains[r][c].computeIfAbsent(vp.pieceId, k -> new ArrayList<>()).add(vp);
-        }
+        // Recompute cell itself
+        recomputeDomainAt(board, r, c, piecesById, pieceUsed, totalPieces);
 
-        // Recompute domains for all neighbors
+        // Recompute every empty neighbor
         int[][] neighbors = {{r-1, c}, {r+1, c}, {r, c-1}, {r, c+1}};
         for (int[] nbr : neighbors) {
             int nr = nbr[0], nc = nbr[1];
             if (nr < 0 || nr >= board.getRows() || nc < 0 || nc >= board.getCols()) continue;
             if (!board.isEmpty(nr, nc)) continue;
+            recomputeDomainAt(board, nr, nc, piecesById, pieceUsed, totalPieces);
+        }
+    }
 
-            domains[nr][nc] = new HashMap<>();
-            validPlacements = computeDomain(board, nr, nc, piecesById, pieceUsed, totalPieces);
-            for (ValidPlacement vp : validPlacements) {
-                domains[nr][nc].computeIfAbsent(vp.pieceId, k -> new ArrayList<>()).add(vp);
-            }
+    /**
+     * Rebuilds the domain at (r,c) by reusing the existing HashMap when present
+     * (clear + refill) instead of allocating a new one. Each backtrack restoration
+     * thus avoids one HashMap allocation per cell touched (1 + up to 4 neighbors).
+     *
+     * <p>Safe because the old domain reference is never read again after a
+     * backtrack: the solver either continues down a new branch (calling
+     * {@code propagateAC3} which produces fresh maps) or backtracks further
+     * (which calls this method again). Single-threaded per DomainManager.</p>
+     */
+    private void recomputeDomainAt(Board board, int r, int c,
+                                   Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
+        Map<Integer, List<ValidPlacement>> target = domains[r][c];
+        if (target == null) {
+            target = new HashMap<>();
+            domains[r][c] = target;
+        } else {
+            target.clear();
+        }
+        List<ValidPlacement> validPlacements = computeDomain(board, r, c, piecesById, pieceUsed, totalPieces);
+        for (ValidPlacement vp : validPlacements) {
+            target.computeIfAbsent(vp.pieceId, k -> new ArrayList<>()).add(vp);
         }
     }
 

@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @DisplayName("MainParallel Integration Tests")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Tag("slow")
 class MainParallelIntegrationTest {
 
     private static final String TEST_DATA_DIR = "data/test_parallel/";

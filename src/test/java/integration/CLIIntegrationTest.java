@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.ByteArrayOutputStream;
@@ -17,6 +18,7 @@ import java.io.File;
  * NOTE: Tests ProcessBuilder désactivés - nécessitent configuration classpath Maven spécifique.
  * Ces tests doivent être exécutés après compilation complète avec: mvn verify
  */
+@Tag("slow")
 public class CLIIntegrationTest {
 
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();

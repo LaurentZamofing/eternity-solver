@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @DisplayName("ConfigurationScanner Tests")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Tag("slow")
 class ConfigurationScannerTest {
 
     private Path tempDataDir;

@@ -1,0 +1,88 @@
+name: Performance Gate
+
+# Runs the end-to-end solve benchmark on every PR to main. Fails the PR
+# if the score regresses more than the threshold defined in
+# .github/perf-baseline.json. Job must stay under ~3 min wall clock.
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  perf-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Install jq (JSON parser)
+      run: sudo apt-get install -y jq
+
+    - name: Compile (skip tests, benchmarks only)
+      run: mvn -q clean compile -DskipTests
+
+    - name: Run FullSolveBenchmark with JSON output
+      run: |
+        mkdir -p target/perf
+        mvn -q exec:java \
+          -Dexec.mainClass=benchmark.FullSolveBenchmark \
+          -Dexec.classpathScope=compile \
+          -Dexec.args=target/perf/results.json
+
+    - name: Compare score against baseline
+      id: compare
+      run: |
+        set -eu
+
+        BASELINE_FILE=.github/perf-baseline.json
+        RESULTS_FILE=target/perf/results.json
+
+        if [ ! -f "$BASELINE_FILE" ]; then
+          echo "::error::Baseline file missing: $BASELINE_FILE"
+          exit 1
+        fi
+        if [ ! -f "$RESULTS_FILE" ]; then
+          echo "::error::JMH results missing: $RESULTS_FILE"
+          exit 1
+        fi
+
+        BASELINE=$(jq -r '.benchmarks["FullSolveBenchmark.solve3x3"].baseline_ms_per_op' "$BASELINE_FILE")
+        THRESHOLD=$(jq -r '.benchmarks["FullSolveBenchmark.solve3x3"].regression_threshold_pct' "$BASELINE_FILE")
+        SCORE=$(jq -r '.[] | select(.benchmark | endswith(".solve3x3")) | .primaryMetric.score' "$RESULTS_FILE")
+
+        MAX_ALLOWED=$(awk -v b="$BASELINE" -v t="$THRESHOLD" 'BEGIN { printf "%.2f", b * (1 + t / 100) }')
+
+        echo "### Performance gate report" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "| benchmark | baseline (ms/op) | threshold | measured | max allowed |" >> "$GITHUB_STEP_SUMMARY"
+        echo "|-----------|-----------------:|----------:|---------:|------------:|" >> "$GITHUB_STEP_SUMMARY"
+        echo "| FullSolveBenchmark.solve3x3 | $BASELINE | +${THRESHOLD}% | $SCORE | $MAX_ALLOWED |" >> "$GITHUB_STEP_SUMMARY"
+
+        REGRESSION=$(awk -v s="$SCORE" -v m="$MAX_ALLOWED" 'BEGIN { print (s > m) ? "1" : "0" }')
+        if [ "$REGRESSION" = "1" ]; then
+          echo "::error::Perf regression: $SCORE ms/op > $MAX_ALLOWED ms/op (baseline $BASELINE + ${THRESHOLD}%)"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "❌ **Regression detected** — solve3x3 took $SCORE ms/op, above the $MAX_ALLOWED ms/op ceiling." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+        fi
+
+        echo "✓ solve3x3: $SCORE ms/op (≤ $MAX_ALLOWED ms/op ceiling)"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "✅ **No regression** — solve3x3 is within the allowed window." >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload JMH JSON as artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: jmh-results-${{ github.run_id }}
+        path: target/perf/results.json
+        retention-days: 30

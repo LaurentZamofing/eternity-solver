@@ -13,6 +13,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -69,10 +70,19 @@ public class FullSolveBenchmark {
         return solver.solve(board, pieces);
     }
 
+    /**
+     * Entry point.
+     *
+     * <p>Accepts an optional path arg to write JSON results — the CI perf-gate
+     * workflow passes a file path so it can compare against the baseline.
+     * Without args, results go to stdout only.</p>
+     */
     public static void main(String[] args) throws RunnerException {
-        Options opt = new OptionsBuilder()
-            .include(FullSolveBenchmark.class.getSimpleName())
-            .build();
-        new Runner(opt).run();
+        OptionsBuilder builder = (OptionsBuilder) new OptionsBuilder()
+            .include(FullSolveBenchmark.class.getSimpleName());
+        if (args.length > 0 && !args[0].isEmpty()) {
+            builder.resultFormat(ResultFormatType.JSON).result(args[0]);
+        }
+        new Runner(builder.build()).run();
     }
 }

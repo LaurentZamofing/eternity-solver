@@ -14,21 +14,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
         cache: maven
 
-    - name: Compile
-      run: mvn clean compile -B
-
-    - name: Run tests
-      run: mvn test -B
-
-    - name: Generate test coverage
-      run: mvn jacoco:report -B
+    # `mvn verify` runs: compile → test (slow group excluded by pom config) →
+    # jacoco:report → jacoco:check (regression gate, LINE ≥ 20%, BRANCH ≥ 18%).
+    # Failure here blocks the PR.
+    - name: Build, test and enforce coverage gate
+      run: mvn verify -B
 
     - name: Upload coverage to Codecov (optional)
       uses: codecov/codecov-action@v3
@@ -37,20 +34,42 @@ jobs:
         files: ./target/site/jacoco/jacoco.xml
         fail_ci_if_error: false
 
-    - name: Check test coverage threshold
-      run: |
-        echo "Checking minimum test coverage (target: 90%)"
-        # Extract coverage percentage from Jacoco report if available
+    - name: Upload coverage report as CI artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: jacoco-coverage-report
+        path: target/site/jacoco/
+        retention-days: 14
 
-    - name: Package
-      run: mvn package -DskipTests -B
-
-    - name: Upload artifacts
+    - name: Upload JARs
       uses: actions/upload-artifact@v4
       with:
         name: eternity-solver-jar
         path: target/*.jar
         retention-days: 30
+
+  slow-tests:
+    # Runs the `@Tag("slow")` suite (full solver end-to-end). Non-blocking:
+    # these tests spawn executor threads that don't always shut down cleanly,
+    # so they're kept out of the main gate but still exercised on every push
+    # to surface real regressions.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Run slow tests
+      run: mvn test -B -Dgroups=slow -DexcludedGroups= -DfailIfNoTests=false
 
   code-quality:
     runs-on: ubuntu-latest
@@ -59,10 +78,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
         cache: maven
 
@@ -88,9 +107,9 @@ jobs:
           exit 1
         fi
 
-    - name: Verify no TODOs in production code
+    - name: Report TODOs in production code
       run: |
         echo "Checking for TODO comments in main code..."
         COUNT=$(grep -r 'TODO\|FIXME' src/main/java --include='*.java' | wc -l || echo "0")
         echo "Found: $COUNT TODO/FIXME comments"
-        # This is informational only, don't fail build
+        # Informational only, doesn't fail the build.

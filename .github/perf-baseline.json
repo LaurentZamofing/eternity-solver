@@ -1,0 +1,11 @@
+{
+  "_comment": "Performance baseline for perf-gate.yml. Values in ms/op (JMH avgt). GitHub Actions runners are slower and noisier than local machines, so baselines are set conservatively. Update when a legitimate improvement lands.",
+  "benchmarks": {
+    "FullSolveBenchmark.solve3x3": {
+      "baseline_ms_per_op": 45.0,
+      "regression_threshold_pct": 20
+    }
+  },
+  "last_updated": "2026-04-17",
+  "notes": "Local baseline is ~20 ms/op (post AC-3 incremental restore). CI runners are ~2x slower, so 45 ms/op leaves room for variance. Tighten once 2-3 real runs have established the CI noise floor."
+}

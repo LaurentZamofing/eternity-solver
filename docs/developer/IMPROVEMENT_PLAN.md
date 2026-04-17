@@ -91,40 +91,42 @@ Score = (impact × confiance) / coût. I/C/C sur 1-5.
 
 ### Quick wins (< 1 h)
 
-| # | Action | I | C | Cost | Score |
-|---|--------|---|---|------|-------|
-| QW1 | Nettoyer @Disabled (document ou supprimer) | 4 | 5 | 1 | 20 |
-| QW2 | Mesurer coverage (`mvn jacoco:report`) | 3 | 5 | 1 | 15 |
-| QW3 | Piece[] au lieu de HashMap dans hot paths | 4 | 4 | 1 | 16 |
-| QW4 | Extract `Piece.isTopLeftFittable(rot)` | 2 | 5 | 1 | 10 |
-| QW5 | Tests PlacementValidator/Debugger/TimeoutChecker | 3 | 5 | 1 | 15 |
-| QW6 | Baseline JMH publiée | 3 | 5 | 1 | 15 |
-| QW7 | PMD/Checkstyle failOnViolation sur règles critiques | 2 | 4 | 1 | 8 |
+| ✔ | # | Action | Commits |
+|:-:|---|--------|---------|
+| ✅ | QW1 | Nettoyer @Disabled (document ou supprimer) | `e105353` |
+| ✅ | QW2 | Mesurer coverage (`mvn jacoco:report`) | `e105353` |
+| ✅ | QW3 | Cache edges sur ValidPlacement (+ helpers `Piece.isTopLeftFittable*`) | `8651d2e` |
+| ✅ | QW4 | Extract `Piece.isTopLeftFittable(rot)` | `8651d2e` |
+| ✅ | QW5 | Tests PlacementValidator/DebugPlacementLogger/TimeoutChecker | `e105353` |
+| ✅ | QW6 | Baseline JMH publiée (`.github/perf-baseline.json`) | déjà à jour |
+| 🔶 | QW7 | PMD : `printFailingErrors=true` (335 violations surfaced ; strict gate reporté à ruleset custom) | `pending-commit` |
 
 ### Medium (½ journée)
 
-| # | Action | I | C | Cost | Score |
-|---|--------|---|---|------|-------|
-| M1 | AC-3 undo-stack O(Δ) remplacent recompute O(W·H) | 5 | 4 | 3 | 6.7 |
-| M2 | Interface `Solver` (mockabilité) | 3 | 5 | 3 | 5 |
-| M3 | Bench MRV PQ 6×6/8×8 — seuil de basculement | 4 | 4 | 3 | 5.3 |
-| M4 | `EternitySolverBuilder` fluent | 3 | 4 | 3 | 4 |
-| M5 | Dé-staticiser SaveStateManager/DebugHelper flags | 3 | 5 | 3 | 5 |
-| M6 | Template `SaveStateIO.writeSection` | 2 | 5 | 3 | 3.3 |
-| M7 | Pool `ArrayList<ValidPlacement>` | 3 | 3 | 3 | 3 |
-| M8 | JaCoCo 20→30 %, 18→25 % progressif | 3 | 5 | 2 | 7.5 |
-| M9 | Split SymmetryBreakingBugTrackingTest (731 LOC) | 2 | 5 | 2 | 5 |
-| M10 | Spring Boot profil `solver-only` auto-skip | 3 | 3 | 3 | 3 |
+| ✔ | # | Action | Commits |
+|:-:|---|--------|---------|
+| ✅ | M1 | AC-3 undo-stack O(Δ) | `acff823` |
+| ✅ | M2 | Interface `Solver` | `acff823` |
+| ⏳ | M3 | Bench MRV PQ 6×6/8×8 — setter `setMRVIndexEnabled` exposé, puzzle 6×6 à créer | `f4f8389` (setter) |
+| ⏳ | M4 | `EternitySolverBuilder` fluent | pending |
+| 🔶 | M5 | Dé-staticiser flags — `useBinaryFormat` gardé (testé+utilisé), `stepByStepEnabled` pending | — |
+| ✅ | M6 | Template `SaveStateIO.writeSection` | `e39a615` |
+| ⏳ | M7 | Pool `ArrayList<ValidPlacement>` | pending (dépend JFR profil M2-BB2) |
+| ✅ | M8 | JaCoCo gate 20/18 → 24/22 (cible 30/25 plus tard) | `7d12778` |
+| ✅ | M9 | Split SymmetryBreakingBugTrackingTest | `27acd09` |
+| ⏳ | M10 | Spring Boot profil `solver-only` | pending |
 
-### Big bets (> 1 jour)
+### Big bets (> 1 jour) — green-lit 2026-04-18
 
-| # | Action | I | C | Cost | Score |
-|---|--------|---|---|------|-------|
-| BB1 | POC DLX (Dancing Links) | 5 | 3 | 5 | 3 |
-| BB2 | Scaling 16×16 (pools, int[], JFR, GC tuning) | 5 | 3 | 5 | 3 |
-| BB3 | Profil contention WorkStealingExecutor | 4 | 3 | 5 | 2.4 |
-| BB4 | Heuristique "most-constraining variable" | 3 | 2 | 5 | 1.2 |
-| BB5 | Mutation testing PITest | 3 | 4 | 4 | 3 |
+| ✔ | # | Action | État |
+|:-:|---|--------|------|
+| 🟢 | BB1 | POC DLX (Dancing Links) | go, démarre après C3/C4 |
+| 🟢 | BB2 | Scaling 16×16 (pools, int[], JFR, GC tuning) | go |
+| 🟢 | BB3 | Profil contention WorkStealingExecutor | go (lié au fix `solveParallel` @Disabled) |
+| ⏳ | BB4 | Heuristique "most-constraining variable" | optionnel, après bench MRV |
+| ⏳ | BB5 | Mutation testing PITest | après coverage > 30 % |
+
+**Légende** : ✅ fait · 🔶 partiel · 🟢 green-lit · ⏳ pending
 
 ---
 

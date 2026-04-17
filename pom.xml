@@ -403,8 +403,11 @@
                 <version>3.27.0</version>
                 <configuration>
                     <linkXRef>false</linkXRef>
+                    <!-- Soft gate : 335 violations today (mostly style). Surface them
+                         in CI logs via printFailingErrors but don't block the build.
+                         Triage + ruleset custom is tracked in IMPROVEMENT_PLAN.md QW7. -->
                     <failOnViolation>false</failOnViolation>
-                    <printFailingErrors>false</printFailingErrors>
+                    <printFailingErrors>true</printFailingErrors>
                     <skip>false</skip>
                 </configuration>
                 <executions>

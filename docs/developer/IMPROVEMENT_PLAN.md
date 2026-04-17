@@ -192,8 +192,8 @@ Tâches : BB1 + BB2.
 
 | Chantier | Statut | Commits | Progress |
 |----------|--------|---------|----------|
-| C1 Stabilisation & mesure | **en cours** | — | @Disabled 10→4 ; +3 nouveaux tests ; coverage baseline mesurée |
-| C2 Quick wins perf AC-3 | pending | — | |
+| C1 Stabilisation & mesure | **terminé** | `e105353` + split | 1.1→1.5 ✅ — @Disabled 10→4, +3 tests, coverage baseline, JMH baseline à jour, test split 731→175+375 |
+| C2 Quick wins perf AC-3 | **à démarrer** | — | |
 | C3 Structure & DI | pending | — | |
 | C4 Coverage & gates | pending | — | |
 | C5 Scaling (R&D) | pending | — | Hors scope session actuelle |
@@ -244,13 +244,16 @@ Target Chantier 4 : LINE 30 %, BRANCH 25 % — atteignable avec +5 points via te
 
 Validation : `mvn test -Dtest=TimeoutCheckerTest,PlacementValidatorTest,DebugPlacementLoggerTest` → **15/15 passes** (nouveaux) ; suite complète **1511/1511 passes, 9 skipped** (stable vs 1496 avant).
 
-#### Étape 1.4 — Baseline JMH
+#### Étape 1.4 — Baseline JMH ✅
 
-*À faire après commit C1.* Lancer `mvn exec:exec -Pperf-baseline` et mettre à jour `.github/perf-baseline.json`.
+`.github/perf-baseline.json` est déjà à jour (`last_updated: 2026-04-17`, `FullSolveBenchmark.solve3x3` baseline 45 ms/op avec 20 % threshold, notes mentionnant "post AC-3 incremental restore"). Les commits AC-3 récents ont déjà incorporé le ajustement, pas de modif nécessaire. Gate `perf-gate.yml` actif.
 
-#### Étape 1.5 — Split SymmetryBreakingBugTrackingTest
+#### Étape 1.5 — Split SymmetryBreakingBugTrackingTest ✅
 
-*À faire après commit C1.* 731 LOC → séparer tests de régression et 12 tests diagnostic dans `SymmetryBreakingDiagnosticTest.java`.
+731 LOC → 175 (regression-only) + 375 (diagnostic).
+- `SymmetryBreakingBugTrackingTest` garde : 4 TL-rule tests + nested `RegressionCombos` (4 tests) + 2 helpers.
+- Nouveau `SymmetryBreakingDiagnosticTest` : 11 tests diagnostic [A1.x / A2.x] + 1 helper `realisticFit()`.
+- Validation : `mvn test` des deux → **19/19 passes**.
 
 ### Historique commits liés au plan
 

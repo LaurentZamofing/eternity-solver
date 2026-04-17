@@ -10,11 +10,7 @@ Documentation organisée et professionnelle du projet Eternity II Solver.
 docs/
 ├── user/           Guides utilisateur
 ├── developer/      Documentation développeur
-├── technical/      Spécifications techniques
-└── archive/        Historique et archives
-    ├── sessions/   Rapports de sessions
-    ├── fixes/      Documentation des correctifs
-    └── refactoring/ Historique de refactoring
+└── technical/      Spécifications techniques
 ```
 
 ---
@@ -69,39 +65,6 @@ Spécifications techniques détaillées et documentations d'architecture.
 
 ---
 
-## 📦 Archives (`archive/`)
-
-Documentation historique conservée pour référence.
-
-### Sessions (`archive/sessions/`)
-Rapports de sessions de développement :
-- ABSOLUTE_FINAL_ACHIEVEMENT.md
-- ULTIMATE_FINAL_REPORT.md
-- FINAL_SUMMARY.md
-- SESSION_SUMMARY.md
-
-### Fixes (`archive/fixes/`)
-Documentation des correctifs appliqués :
-- BACKTRACKING_FIX.md
-- FIX_GAPS_BORDERS.md
-- FIX_TRAPPED_GAPS.md
-- FIX_IDE_COMPILATION.md
-- DISPLAY_IMPROVEMENTS.md
-
-### Refactoring (`archive/refactoring/`)
-Historique des sessions de refactoring :
-- REFACTORING_GUIDE.md
-- REFACTORING_ROADMAP.md
-- REFACTORING_SUMMARY.md
-- REFACTORING_SESSION_SUMMARY.md
-- REFACTORING_SESSION_REPORT.md
-- PARALLEL_SEARCH_MANAGER_MIGRATION.md
-
-### Autres (`archive/`)
-- MAINTENANCE_REPORT.md
-
----
-
 ## 🚀 Démarrage Rapide
 
 **Nouvel utilisateur** :
@@ -141,13 +104,11 @@ Historique des sessions de refactoring :
 - Monitoring → `technical/MONITORING_ARCHITECTURE.md`
 - API → `technical/API_REFERENCE.md`
 - Performance → `developer/PERFORMANCE_TUNING.md`
-- Bugs résolus → `archive/fixes/`
 
 **Par audience** :
 - Utilisateur → `user/`
 - Développeur → `developer/`
 - Architecte → `technical/`
-- Historique → `archive/`
 
 ---
 
@@ -158,12 +119,7 @@ Historique des sessions de refactoring :
 | **user/** | 3 | ~2,500 |
 | **developer/** | 6 | ~7,000 |
 | **technical/** | 10 | ~8,500 |
-| **archive/** | 15 | ~4,500 |
-| **TOTAL** | 34 | ~22,500 |
-
-**Avant réorganisation** : 60+ fichiers dispersés
-**Après réorganisation** : 34 fichiers bien organisés
-**Réduction** : -43% fichiers
+| **TOTAL** | 19 | ~18,000 |
 
 ---
 

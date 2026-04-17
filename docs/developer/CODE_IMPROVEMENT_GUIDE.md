@@ -421,7 +421,7 @@ String help = """
 ```
 ```
 
-#### docs/ALGORITHM_OVERVIEW.md
+#### docs/developer/ALGORITHM_GUIDE.md
 - AC-3 constraint propagation explained
 - MRV (Minimum Remaining Values) heuristic
 - Singleton detection

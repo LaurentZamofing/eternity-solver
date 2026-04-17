@@ -173,6 +173,105 @@ class SymmetryBreakingBugTrackingTest {
         }
     }
 
+    /**
+     * Pré-place piece 7 rot 0 à TL et tente de résoudre SANS flags. Si le
+     * solveur trouve une solution complète, la théorie canonique tient et
+     * le bug 4x4 hard est dans le flow (pas dans le choix canonique). Si
+     * il ne trouve aucune solution, alors cette puzzle n'a pas de solution
+     * avec piece 7 rot 0 à TL — et la règle canonique doit être révisée.
+     */
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    @DisplayName("[A2.1 diag] 4x4 hard résout-il avec piece 7 rot 0 forcée à TL ?")
+    void diagnosticHardWithPiece7Rot0ForcedAtTL() {
+        Board board = new Board(4, 4);
+        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4HardV3();
+        Piece p7 = pieces.get(7);
+        board.place(0, 0, p7, 0);
+
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(120_000);
+        solver.setSymmetryBreakingFlags(false, false);
+        long t0 = System.currentTimeMillis();
+        boolean solved = solver.solve(board, pieces);
+        long elapsed = System.currentTimeMillis() - t0;
+        System.err.println("=== A2.1 diagnostic — piece 7 rot 0 forced at TL ===");
+        System.err.println("  solved with flags OFF, piece 7 rot 0 pre-placed: " + solved
+            + " (elapsed=" + elapsed + "ms)");
+    }
+
+    /**
+     * Isolates which flag combo fails on 4x4 hard. Informational only.
+     */
+    @Test
+    @DisplayName("[A2.1 diag] 4x4 hard flag combo matrix")
+    void diagnosticHardFlagMatrix() {
+        System.err.println("=== A2.1 diagnostic — 4x4 hard flag matrix ===");
+        for (boolean lex : new boolean[]{false, true}) {
+            for (boolean rot : new boolean[]{false, true}) {
+                Board b = new Board(4, 4);
+                EternitySolver s = new EternitySolver();
+                s.setVerbose(false);
+                s.setMaxExecutionTime(10_000);
+                s.setSymmetryBreakingFlags(lex, rot);
+                boolean solved = s.solve(b, PuzzleFactory.createExample4x4HardV3());
+                SymmetryBreakingManager m = s.getSymmetryBreakingManager();
+                System.err.println(String.format("  lex=%s rot=%s → solved=%s  lexRej=%d (sg=%d,va=%d) rotRej=%d  firstRej=(%d,%d) pid=%d rot=%d",
+                    lex, rot, solved,
+                    m.getLexRejections(), m.getLexRejectionsFromSingleton(), m.getLexRejectionsFromValidator(),
+                    m.getRotationRejections(),
+                    m.getFirstLexRejectionRow(), m.getFirstLexRejectionCol(),
+                    m.getFirstLexRejectionPieceId(), m.getFirstLexRejectionRotation()));
+            }
+        }
+    }
+
+    /**
+     * Diagnostic for the 4x4 hard variant bug: after the TL pre-filter fix,
+     * the easy puzzle solves with lex+rot ON but the hard one doesn't.
+     * Hypothesis: no valid solution of hardV3 has the canonical TL piece
+     * (piece 7) at (0,0) rot 0 in any board rotation.
+     *
+     * <p>This test solves the puzzle with flags OFF, then inspects what
+     * ended up at each corner and at what rotation. Purely informational.</p>
+     */
+    @Test
+    @DisplayName("[A2.1 diag] inspect TL piece in unconstrained 4x4 hard solution")
+    void diagnosticInspectHardSolutionCorners() {
+        Board board = new Board(4, 4);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(40_000);
+        solver.setSymmetryBreakingFlags(false, false);
+        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4HardV3();
+        boolean solved = solver.solve(board, pieces);
+        assertTrue(solved, "hard puzzle must solve with flags off");
+
+        System.err.println("=== A2.1 diagnostic — unconstrained 4x4 hard solution ===");
+        int[][] corners = {{0,0}, {0,3}, {3,0}, {3,3}};
+        String[] names = {"TL", "TR", "BL", "BR"};
+        for (int i = 0; i < 4; i++) {
+            int r = corners[i][0], c = corners[i][1];
+            model.Placement pl = board.getPlacement(r, c);
+            System.err.println("  " + names[i] + " (" + r + "," + c + "): piece "
+                + (pl == null ? "?" : pl.getPieceId()) + " rot "
+                + (pl == null ? "?" : pl.getRotation()));
+        }
+
+        // Full solved board dump
+        System.err.println("  Full solved board:");
+        for (int r = 0; r < 4; r++) {
+            StringBuilder line = new StringBuilder("    ");
+            for (int c = 0; c < 4; c++) {
+                model.Placement pl = board.getPlacement(r, c);
+                if (pl == null) line.append(" __ ");
+                else line.append(String.format(" %2d/%d", pl.getPieceId(), pl.getRotation()));
+            }
+            System.err.println(line);
+        }
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────
 
     private static Set<Integer> computeTLFittableAtRot0(Map<Integer, Piece> pieces) {

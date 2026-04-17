@@ -29,6 +29,14 @@ public class DomainManager {
     private Map<Integer, List<ValidPlacement>>[][] domains;
     private boolean ac3Initialized = false;
 
+    // TL restriction remembered so it can be re-applied after backtrack.
+    // Without this, restoreAC3Domains rebuilds (0,0) from scratch and drops
+    // the sym-breaking constraint, which re-lets AC-3 produce infeasible
+    // singletons / rotations at TL — the same class of bug the initial
+    // restrictTopLeftDomain was meant to fix. See SymmetryBreakingBugTrackingTest.
+    private Integer tlRestrictionPieceId = null;
+    private Integer tlRestrictionRotation = null;
+
     // Domain cache for non-AC-3 mode
     private Map<Integer, List<ValidPlacement>> domainCache = null;
     private boolean useDomainCache = true;
@@ -180,6 +188,9 @@ public class DomainManager {
         for (ValidPlacement vp : validPlacements) {
             target.computeIfAbsent(vp.pieceId, k -> new ArrayList<>()).add(vp);
         }
+        if (r == 0 && c == 0) {
+            applyTopLeftRestriction();
+        }
         if (mrvIndex != null && board.isEmpty(r, c)) {
             mrvIndex.onDomainChanged(r, c, totalRotationsIn(target), countOccupiedNeighbors(board, r, c));
         }
@@ -245,23 +256,32 @@ public class DomainManager {
      * @param requiredRotation the only rotation allowed at (0,0), or {@code null} to not constrain rotation
      */
     public void restrictTopLeftDomain(Integer canonicalPieceId, Integer requiredRotation) {
+        this.tlRestrictionPieceId = canonicalPieceId;
+        this.tlRestrictionRotation = requiredRotation;
+        applyTopLeftRestriction();
+    }
+
+    /** Re-applies the stored TL restriction to {@code domains[0][0]}. Called
+     *  after backtrack rebuilds, since {@link #recomputeDomainAt} would
+     *  otherwise restore every rotation/piece and drop sym-breaking alignment. */
+    private void applyTopLeftRestriction() {
         if (!ac3Initialized || domains == null) return;
-        if (canonicalPieceId == null && requiredRotation == null) return;
+        if (tlRestrictionPieceId == null && tlRestrictionRotation == null) return;
         Map<Integer, List<ValidPlacement>> tl = domains[0][0];
         if (tl == null || tl.isEmpty()) return;
 
-        if (canonicalPieceId != null) {
-            List<ValidPlacement> kept = tl.get(canonicalPieceId);
+        if (tlRestrictionPieceId != null) {
+            List<ValidPlacement> kept = tl.get(tlRestrictionPieceId);
             tl.clear();
             if (kept != null) {
-                tl.put(canonicalPieceId, new ArrayList<>(kept));
+                tl.put(tlRestrictionPieceId, new ArrayList<>(kept));
             }
         }
-        if (requiredRotation != null) {
+        if (tlRestrictionRotation != null) {
             for (Map.Entry<Integer, List<ValidPlacement>> entry : new ArrayList<>(tl.entrySet())) {
                 List<ValidPlacement> filtered = new ArrayList<>();
                 for (ValidPlacement vp : entry.getValue()) {
-                    if (vp.rotation == requiredRotation) filtered.add(vp);
+                    if (vp.rotation == tlRestrictionRotation) filtered.add(vp);
                 }
                 if (filtered.isEmpty()) {
                     tl.remove(entry.getKey());
@@ -285,6 +305,9 @@ public class DomainManager {
     public void setDomain(int r, int c, Map<Integer, List<ValidPlacement>> domain) {
         if (domains != null && r >= 0 && r < domains.length && c >= 0 && c < domains[0].length) {
             domains[r][c] = domain;
+            if (r == 0 && c == 0) {
+                applyTopLeftRestriction();
+            }
             if (mrvIndex != null && boardRef != null && boardRef.isEmpty(r, c)) {
                 mrvIndex.onDomainChanged(r, c, totalRotationsIn(domain), countOccupiedNeighbors(boardRef, r, c));
             }
@@ -300,6 +323,8 @@ public class DomainManager {
     public void resetAC3() {
         ac3Initialized = false;
         domains = null;
+        tlRestrictionPieceId = null;
+        tlRestrictionRotation = null;
     }
 
     /** Enables or disables domain caching. */

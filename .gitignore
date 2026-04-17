@@ -77,3 +77,10 @@ out/
 saves/thread_*.txt
 *.bak*
 *.old
+
+# Runtime stats (regenerated on every solve)
+saves/**/stats_history.jsonl
+
+# Claude Code local state
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

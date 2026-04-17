@@ -161,6 +161,20 @@ public class MRVCellSelector implements HeuristicStrategy {
      * @return coordinates [r, c] of most constrained cell, or null if none
      */
     public int[] findNextCellMRV(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
+        // Fast path: when the MRV index is wired up and we're not in border-
+        // priority or debug mode, the priority queue gives us the answer in
+        // O(log N). The legacy O(N²) scan below remains the fallback because
+        // its border-first / gap-avoidance / trap-detection logic is not yet
+        // captured by the index, and the debug paths emit per-candidate
+        // diagnostics the index can't reproduce.
+        if (!prioritizeBorders && !debugBacktracking && !silentMode
+            && useAC3 && domainManager.isMRVIndexEnabled()) {
+            int[] fast = domainManager.peekMRVCell();
+            if (fast != null) {
+                return fast;
+            }
+        }
+
         int[] bestCell = null;
         int minUniquePieces = Integer.MAX_VALUE;
         boolean bestIsBorder = false;

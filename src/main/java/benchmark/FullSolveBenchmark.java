@@ -49,25 +49,37 @@ import java.util.concurrent.TimeUnit;
 @Fork(0)
 public class FullSolveBenchmark {
 
-    private Map<Integer, Piece> pieces;
-    private int rows;
-    private int cols;
-    private int totalPieces;
+    private Map<Integer, Piece> pieces3x3;
+    private Map<Integer, Piece> pieces4x4Hard;
 
     @Setup(Level.Trial)
-    public void loadPuzzle() {
-        pieces = PuzzleFactory.createExample3x3();
-        rows = cols = 3;
-        totalPieces = pieces.size();
+    public void loadPuzzles() {
+        pieces3x3 = PuzzleFactory.createExample3x3();
+        pieces4x4Hard = PuzzleFactory.createExample4x4HardV3();
     }
 
     @Benchmark
     public boolean solve3x3() {
-        Board board = new Board(rows, cols);
+        Board board = new Board(3, 3);
         EternitySolver solver = new EternitySolver();
         solver.setVerbose(false);
         solver.setMaxExecutionTime(30_000);
-        return solver.solve(board, pieces);
+        return solver.solve(board, pieces3x3);
+    }
+
+    /**
+     * 4x4 hard variant — bigger board where MRV cell-selection cost actually
+     * dominates the per-decision overhead. Used to validate the MRV
+     * priority-queue optimization (gain on 3x3 is invisible since the legacy
+     * scan only inspects 9 cells).
+     */
+    @Benchmark
+    public boolean solve4x4Hard() {
+        Board board = new Board(4, 4);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(30_000);
+        return solver.solve(board, pieces4x4Hard);
     }
 
     /**

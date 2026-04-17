@@ -39,6 +39,13 @@ public class DomainManager {
     // Sort order for piece iteration: "ascending" or "descending"
     private String sortOrder = "ascending";
 
+    // MRV index — optional priority queue for O(log N) cell selection.
+    // Owned here because every domain mutation flows through this class.
+    // The Board ref is captured at initializeAC3Domains for occupied-neighbor
+    // computation; it stays valid for the duration of a solve.
+    private solver.heuristics.MRVIndex mrvIndex;
+    private Board boardRef;
+
     /** Interface for checking if a piece fits at a position. */
     public interface FitChecker {
         boolean fits(Board board, int r, int c, int[] candidateEdges);
@@ -61,6 +68,14 @@ public class DomainManager {
         int rows = board.getRows();
         int cols = board.getCols();
         domains = (Map<Integer, List<ValidPlacement>>[][]) new Map[rows][cols];
+        this.boardRef = board;
+
+        // Lazily build the MRV index. setMRVIndexEnabled(true) toggles it on
+        // before initialize is called; otherwise the legacy MRV scan runs.
+        if (mrvIndex != null) {
+            mrvIndex = new solver.heuristics.MRVIndex(rows, cols);
+            mrvIndex.setEmptinessProbe(board::isEmpty);
+        }
 
         // Compute initial domains for all empty cells
         for (int r = 0; r < rows; r++) {
@@ -73,10 +88,56 @@ public class DomainManager {
                     for (ValidPlacement vp : validPlacements) {
                         domains[r][c].computeIfAbsent(vp.pieceId, k -> new ArrayList<>()).add(vp);
                     }
+                    if (mrvIndex != null) {
+                        mrvIndex.onDomainChanged(r, c, totalRotationsIn(domains[r][c]), countOccupiedNeighbors(board, r, c));
+                    }
                 }
             }
         }
         ac3Initialized = true;
+    }
+
+    /** Enable / disable the MRV priority-queue index. Must be called before
+     *  {@link #initializeAC3Domains} so the index is allocated with the right
+     *  board dimensions. */
+    public void setMRVIndexEnabled(boolean enabled) {
+        if (enabled && mrvIndex == null) {
+            // Sentinel non-null instance; replaced with the real one in
+            // initializeAC3Domains once we know the board dimensions.
+            this.mrvIndex = new solver.heuristics.MRVIndex(1, 1);
+        } else if (!enabled) {
+            this.mrvIndex = null;
+        }
+    }
+
+    /** Returns the next empty cell with the smallest domain via the MRV index,
+     *  or {@code null} if the index is disabled / empty. */
+    public int[] peekMRVCell() {
+        return mrvIndex == null ? null : mrvIndex.peek();
+    }
+
+    /** Returns true when the MRV priority queue is wired up. */
+    public boolean isMRVIndexEnabled() {
+        return mrvIndex != null;
+    }
+
+    /** Sums sizes of every per-piece rotation list in a domain. */
+    private static int totalRotationsIn(Map<Integer, List<ValidPlacement>> domain) {
+        if (domain == null || domain.isEmpty()) return 0;
+        int total = 0;
+        for (List<ValidPlacement> list : domain.values()) total += list.size();
+        return total;
+    }
+
+    /** Counts how many of the 4 orthogonal neighbors are occupied (for the
+     *  MRV index tie-breaker). */
+    private static int countOccupiedNeighbors(Board board, int r, int c) {
+        int n = 0;
+        if (r > 0 && !board.isEmpty(r - 1, c)) n++;
+        if (r < board.getRows() - 1 && !board.isEmpty(r + 1, c)) n++;
+        if (c > 0 && !board.isEmpty(r, c - 1)) n++;
+        if (c < board.getCols() - 1 && !board.isEmpty(r, c + 1)) n++;
+        return n;
     }
 
     /** Restores AC-3 domains after backtracking by recomputing domains for (r,c) and neighbors. */
@@ -118,6 +179,9 @@ public class DomainManager {
         List<ValidPlacement> validPlacements = computeDomain(board, r, c, piecesById, pieceUsed, totalPieces);
         for (ValidPlacement vp : validPlacements) {
             target.computeIfAbsent(vp.pieceId, k -> new ArrayList<>()).add(vp);
+        }
+        if (mrvIndex != null && board.isEmpty(r, c)) {
+            mrvIndex.onDomainChanged(r, c, totalRotationsIn(target), countOccupiedNeighbors(board, r, c));
         }
     }
 
@@ -176,6 +240,9 @@ public class DomainManager {
     public void setDomain(int r, int c, Map<Integer, List<ValidPlacement>> domain) {
         if (domains != null && r >= 0 && r < domains.length && c >= 0 && c < domains[0].length) {
             domains[r][c] = domain;
+            if (mrvIndex != null && boardRef != null && boardRef.isEmpty(r, c)) {
+                mrvIndex.onDomainChanged(r, c, totalRotationsIn(domain), countOccupiedNeighbors(boardRef, r, c));
+            }
         }
     }
 

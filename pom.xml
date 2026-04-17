@@ -321,7 +321,10 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.11</version>
+                <!-- 0.8.12+ supports Java 22-25 bytecode (newer JDK builds skip
+                     instrumentation silently otherwise, producing an empty
+                     jacoco.exec and a 0% coverage rule violation). -->
+                <version>0.8.13</version>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>

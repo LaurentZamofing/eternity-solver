@@ -284,6 +284,125 @@ class SymmetryBreakingBugTrackingTest {
     }
 
     /**
+     * Après pré-placement de piece 7 rot 0 à TL + propagation AC-3 réelle,
+     * on vérifie pour chaque cellule si la (piece, rot) attendue par la
+     * rotated solution est toujours dans le domain. Si non → bug dans
+     * AC-3 propagation initiale.
+     */
+    @Test
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
+    @DisplayName("[A2.1 diag] AC-3 élimine-t-il (piece,rot) attendu ?")
+    void diagnosticAC3EliminatesExpectedPlacement() {
+        // Rotated solution
+        Board solved = new Board(4, 4);
+        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4HardV3();
+        EternitySolver prep = new EternitySolver();
+        prep.setVerbose(false);
+        prep.setMaxExecutionTime(20_000);
+        prep.setSymmetryBreakingFlags(false, false);
+        assertTrue(prep.solve(solved, pieces));
+        int[][] expPid = new int[4][4], expRot = new int[4][4];
+        for (int r = 0; r < 4; r++) for (int c = 0; c < 4; c++) {
+            model.Placement pl = solved.getPlacement(r, c);
+            expPid[c][3-r] = pl.getPieceId();
+            expRot[c][3-r] = (pl.getRotation() + 1) % 4;
+        }
+
+        // Init AC-3 réelle + propagation avec piece 7 rot 0 à TL
+        Board board = new Board(4, 4);
+        board.place(0, 0, pieces.get(expPid[0][0]), expRot[0][0]); // piece 7 rot 0
+
+        ConstraintPropagator.Statistics cpStats = new ConstraintPropagator.Statistics();
+        DomainManager dm = new DomainManager((b, r, c, edges) -> {
+            // Same fit logic as PlacementValidator.fits
+            if (r == 0 && edges[0] != 0) return false;
+            if (c == 0 && edges[3] != 0) return false;
+            if (r == 3 && edges[2] != 0) return false;
+            if (c == 3 && edges[1] != 0) return false;
+            if (r > 0 && !b.isEmpty(r-1, c) && b.getPlacement(r-1, c).edges[2] != edges[0]) return false;
+            if (c > 0 && !b.isEmpty(r, c-1) && b.getPlacement(r, c-1).edges[1] != edges[3]) return false;
+            if (r < 3 && !b.isEmpty(r+1, c) && b.getPlacement(r+1, c).edges[0] != edges[2]) return false;
+            if (c < 3 && !b.isEmpty(r, c+1) && b.getPlacement(r, c+1).edges[3] != edges[1]) return false;
+            return true;
+        });
+        java.util.BitSet used = new java.util.BitSet();
+        used.set(expPid[0][0]);
+        dm.initializeAC3Domains(board, pieces, used, 16);
+
+        ConstraintPropagator cp = new ConstraintPropagator(dm, cpStats);
+        cp.propagateAC3(board, 0, 0, expPid[0][0], expRot[0][0], pieces, used, 16);
+
+        System.err.println("=== A2.1 diagnostic — expected (piece,rot) in domain après AC-3 ===");
+        int missingCount = 0;
+        for (int r = 0; r < 4; r++) for (int c = 0; c < 4; c++) {
+            if (r == 0 && c == 0) continue;
+            Map<Integer, List<DomainManager.ValidPlacement>> dom = dm.getDomain(r, c);
+            boolean found = false;
+            int domSize = 0;
+            if (dom != null && dom.containsKey(expPid[r][c])) {
+                domSize = dom.get(expPid[r][c]).size();
+                for (DomainManager.ValidPlacement vp : dom.get(expPid[r][c])) {
+                    if (vp.rotation == expRot[r][c]) { found = true; break; }
+                }
+            }
+            String mark = found ? "✓" : "❌";
+            if (!found) missingCount++;
+            System.err.println(String.format("  %s (%d,%d) expected piece %d rot %d  %s",
+                mark, r, c, expPid[r][c], expRot[r][c],
+                found ? "present" : "MISSING from domain (domSize for pid=" + domSize + ")"));
+        }
+        System.err.println("  total missing: " + missingCount);
+    }
+
+    /**
+     * Test incrémental : pré-place les N premières pieces de la rotated
+     * solution (ordre ligne par ligne) et demande au solver avec AC-3
+     * ON de compléter. Localise exactement à quel step AC-3 casse.
+     */
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    @DisplayName("[A2.1 diag] AC-3 complète-t-il depuis N pieces pré-placées ?")
+    void diagnosticAC3CompleteFromNPreplaced() {
+        Board solved = new Board(4, 4);
+        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4HardV3();
+        EternitySolver prep = new EternitySolver();
+        prep.setVerbose(false);
+        prep.setMaxExecutionTime(20_000);
+        prep.setSymmetryBreakingFlags(false, false);
+        assertTrue(prep.solve(solved, pieces));
+
+        // Liste des placements rotated dans l'ordre (0,0), (0,1), ... (3,3)
+        int[][] rotPid = new int[4][4];
+        int[][] rotRot = new int[4][4];
+        for (int r = 0; r < 4; r++) for (int c = 0; c < 4; c++) {
+            model.Placement pl = solved.getPlacement(r, c);
+            rotPid[c][3-r] = pl.getPieceId();
+            rotRot[c][3-r] = (pl.getRotation() + 1) % 4;
+        }
+
+        System.err.println("=== A2.1 diagnostic — incremental AC-3 completion ===");
+        // Teste N = 1, 2, 4, 8 cells pre-placed
+        for (int n : new int[]{1, 2, 4, 6, 8, 12}) {
+            Board b = new Board(4, 4);
+            int placed = 0;
+            outer:
+            for (int r = 0; r < 4; r++) for (int c = 0; c < 4; c++) {
+                b.place(r, c, pieces.get(rotPid[r][c]), rotRot[r][c]);
+                placed++;
+                if (placed >= n) break outer;
+            }
+            EternitySolver s = new EternitySolver();
+            s.setVerbose(false);
+            s.setMaxExecutionTime(20_000);
+            s.setSymmetryBreakingFlags(false, false);
+            long t0 = System.currentTimeMillis();
+            boolean ok = s.solve(b, pieces);
+            long dt = System.currentTimeMillis() - t0;
+            System.err.println(String.format("  n=%d pre-placed → solved=%s in %dms", n, ok, dt));
+        }
+    }
+
+    /**
      * Compare la rotated solution à l'état du domain AC-3 APRÈS propagation
      * initiale. Pour chaque cellule, vérifie si la (piece, rot) attendue de
      * la rotated solution est toujours dans le domain. Si AC-3 a éliminé un

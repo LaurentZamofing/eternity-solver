@@ -406,14 +406,18 @@ public class EternitySolver {
         symmetryBreakingManager.logConfiguration();
     }
 
-    // Defaults stay OFF: the TL-domain pre-filter (2026-04-17) fixed the
-    // 4x4 easy deadlock, but 4x4 hard still can't solve with lex+rot on
-    // (a separate canonical-piece selection bug — lex forces piece 7 at TL
-    // rot 0, but no valid solution of that variant has piece 7 at TL rot 0
-    // in any board rotation). Flags stay OFF until the hard-variant bug
-    // is fixed. Tests override explicitly via setSymmetryBreakingFlags.
-    private boolean pendingLexFlag = false;
-    private boolean pendingRotationFlag = false;
+    // Defaults ON after two fixes landed together (2026-04-17):
+    //   1. TL-domain pre-filter in DomainManager aligns AC-3 with
+    //      sym-breaking, so AC-3 cannot produce infeasible singletons at TL.
+    //   2. restoreAC3Domains now recomputes every empty cell (not just the
+    //      cell + 4 neighbors), fixing a long-standing bug where cascading
+    //      AC-3 propagation left stale over-reduced domains after a
+    //      backtrack. Together they unlock 4x4 easy AND 4x4 hard with
+    //      lex+rotation flags on, per SymmetryBreakingBugTrackingTest.
+    // Tests override explicitly via setSymmetryBreakingFlags(false, false)
+    // when they want to exercise the unconstrained search path.
+    private boolean pendingLexFlag = true;
+    private boolean pendingRotationFlag = true;
 
     /**
      * Overrides the symmetry-breaking flags for the next call to {@link #solve}.

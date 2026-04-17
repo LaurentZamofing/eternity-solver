@@ -148,20 +148,32 @@ public class DomainManager {
         return n;
     }
 
-    /** Restores AC-3 domains after backtracking by recomputing domains for (r,c) and neighbors. */
+    /**
+     * Restores AC-3 domains after backtracking.
+     *
+     * <p>Previously recomputed only (r,c) and its 4 neighbors. That's
+     * insufficient because AC-3 propagation is cascading — a single
+     * placement can reduce domains of cells several hops away via the
+     * queue in {@link ConstraintPropagator#propagateAC3}. Restoring only
+     * the local neighborhood left distant cells with stale, over-reduced
+     * domains, which caused deterministic dead-ends on search paths that
+     * should have solutions (surfaced by 4x4 hard with piece 7 rot 0
+     * forced at TL — the pre-existing bug documented in
+     * {@code SymmetryBreakingBugTrackingTest}).</p>
+     *
+     * <p>Now recomputes every empty cell. Simple and correct; the cost
+     * is O(W·H) per backtrack, acceptable for small boards and still a
+     * small fraction of the placement attempt cost.</p>
+     */
     public void restoreAC3Domains(Board board, int r, int c, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (!ac3Initialized) return;
 
-        // Recompute cell itself
-        recomputeDomainAt(board, r, c, piecesById, pieceUsed, totalPieces);
-
-        // Recompute every empty neighbor
-        int[][] neighbors = {{r-1, c}, {r+1, c}, {r, c-1}, {r, c+1}};
-        for (int[] nbr : neighbors) {
-            int nr = nbr[0], nc = nbr[1];
-            if (nr < 0 || nr >= board.getRows() || nc < 0 || nc >= board.getCols()) continue;
-            if (!board.isEmpty(nr, nc)) continue;
-            recomputeDomainAt(board, nr, nc, piecesById, pieceUsed, totalPieces);
+        for (int rr = 0; rr < board.getRows(); rr++) {
+            for (int cc = 0; cc < board.getCols(); cc++) {
+                if (board.isEmpty(rr, cc)) {
+                    recomputeDomainAt(board, rr, cc, piecesById, pieceUsed, totalPieces);
+                }
+            }
         }
     }
 

@@ -65,20 +65,10 @@ public class ConstraintPropagator {
         // Format: {rowOffset, colOffset, placedSide, neighborSide}
         int[][] neighborOffsets = {{-1, 0, 0, 2}, {1, 0, 2, 0}, {0, -1, 3, 1}, {0, 1, 1, 3}};
 
-        // Add ALL empty cells to the queue to propagate both:
-        // 1. Edge constraints from adjacent placed pieces
-        // 2. Piece availability (the placed piece is no longer available)
-        for (int row = 0; row < board.getRows(); row++) {
-            for (int col = 0; col < board.getCols(); col++) {
-                if (board.isEmpty(row, col)) {
-                    PositionKey key = new PositionKey(row, col);
-                    if (!inQueue.contains(key)) {
-                        queue.offer(new int[]{row, col});
-                        inQueue.add(key);
-                    }
-                }
-            }
-        }
+        // Seed the queue with every empty cell — both the edge constraints
+        // from any adjacent placed piece and the change in piece availability
+        // need to propagate from each one.
+        enqueueAllEmptyCells(board, queue, inQueue);
 
         // Propagate constraints in cascade
         while (!queue.isEmpty()) {
@@ -93,7 +83,7 @@ public class ConstraintPropagator {
                 stats.incrementDeadEnds();
 
                 // Debug: Log which cell caused the dead-end
-                String cellLabel = String.valueOf((char) ('A' + cellRow)) + (cellCol + 1);
+                String cellLabel = util.CellLabelFormatter.format(cellRow, cellCol);
                 util.SolverLogger.error("       ❌ AC-3 DEAD-END: Cell " + cellLabel + " (" + cellRow + "," + cellCol + ") has EMPTY domain!");
                 util.SolverLogger.error("          This cell has NO valid pieces after constraint propagation");
 
@@ -152,7 +142,7 @@ public class ConstraintPropagator {
                     stats.incrementDeadEnds();
 
                     // Debug: Log which cell became empty after neighbor filtering
-                    String cellLabel = String.valueOf((char) ('A' + cellRow)) + (cellCol + 1);
+                    String cellLabel = util.CellLabelFormatter.format(cellRow, cellCol);
                     util.SolverLogger.error("       ❌ AC-3 DEAD-END: Cell " + cellLabel + " domain became EMPTY after filtering neighbors!");
                     util.SolverLogger.error("          Domain had " + currentDomain.size() + " pieces before filtering");
 
@@ -173,7 +163,7 @@ public class ConstraintPropagator {
                 stats.incrementDeadEnds();
 
                 // Debug: Log which cell has no available pieces
-                String cellLabel = String.valueOf((char) ('A' + cellRow)) + (cellCol + 1);
+                String cellLabel = util.CellLabelFormatter.format(cellRow, cellCol);
                 util.SolverLogger.error("       ❌ AC-3 DEAD-END: Cell " + cellLabel + " has NO AVAILABLE pieces!");
                 util.SolverLogger.error("          Domain had " + newDomain.size() + " pieces, but all are already used");
 
@@ -187,29 +177,14 @@ public class ConstraintPropagator {
 
                 // Debug: Log significant domain reductions
                 if (newSize < oldSize && newSize <= 5) {
-                    String cellLabel = String.valueOf((char) ('A' + cellRow)) + (cellCol + 1);
+                    String cellLabel = util.CellLabelFormatter.format(cellRow, cellCol);
                     util.SolverLogger.warn("       ⚠️  AC-3: Cell " + cellLabel + " domain reduced: " +
                                          oldSize + " → " + newSize + " pieces " +
                                          (newSize == 1 ? "(SINGLETON!)" : newSize <= 3 ? "(CRITICAL)" : "(WARNING)"));
                 }
 
                 domainManager.setDomain(cellRow, cellCol, availableDomain);
-
-                // Add all empty neighbors to queue to propagate changes
-                for (int[] offset : neighborOffsets) {
-                    int nbrRow = cellRow + offset[0];
-                    int nbrCol = cellCol + offset[1];
-
-                    if (nbrRow >= 0 && nbrRow < board.getRows() &&
-                        nbrCol >= 0 && nbrCol < board.getCols() &&
-                        board.isEmpty(nbrRow, nbrCol)) {
-                        PositionKey key = new PositionKey(nbrRow, nbrCol);
-                        if (!inQueue.contains(key)) {
-                            queue.offer(new int[]{nbrRow, nbrCol});
-                            inQueue.add(key);
-                        }
-                    }
-                }
+                enqueueEmptyNeighbors(board, cellRow, cellCol, queue, inQueue);
             }
         }
 
@@ -327,5 +302,33 @@ public class ConstraintPropagator {
     public int getSingletonPieceId(Map<Integer, List<ValidPlacement>> domain) {
         if (!isSingleton(domain)) return -1;
         return domain.keySet().iterator().next();
+    }
+
+    /** Pushes every empty cell of the board onto the AC-3 work queue (deduped via {@code inQueue}). */
+    private static void enqueueAllEmptyCells(Board board, Queue<int[]> queue, Set<PositionKey> inQueue) {
+        for (int row = 0; row < board.getRows(); row++) {
+            for (int col = 0; col < board.getCols(); col++) {
+                if (!board.isEmpty(row, col)) continue;
+                PositionKey key = new PositionKey(row, col);
+                if (inQueue.add(key)) {
+                    queue.offer(new int[]{row, col});
+                }
+            }
+        }
+    }
+
+    /** Pushes every empty 4-neighbor of {@code (r,c)} onto the queue (skips out-of-bounds and occupied cells). */
+    private static void enqueueEmptyNeighbors(Board board, int r, int c,
+                                              Queue<int[]> queue, Set<PositionKey> inQueue) {
+        int[][] offsets = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+        for (int[] off : offsets) {
+            int nr = r + off[0], nc = c + off[1];
+            if (nr < 0 || nr >= board.getRows() || nc < 0 || nc >= board.getCols()) continue;
+            if (!board.isEmpty(nr, nc)) continue;
+            PositionKey key = new PositionKey(nr, nc);
+            if (inQueue.add(key)) {
+                queue.offer(new int[]{nr, nc});
+            }
+        }
     }
 }

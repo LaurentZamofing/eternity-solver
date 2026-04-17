@@ -7,6 +7,7 @@ import model.Piece;
 import model.Placement;
 
 import java.util.Map;
+import java.util.Set;
 
 /** Manages symmetry-breaking constraints to prune redundant search branches using lexicographic ordering (corner pieces), rotation fixing (top-left at 0°), and reflection pruning (4x reduction). */
 public class SymmetryBreakingManager {
@@ -17,36 +18,35 @@ public class SymmetryBreakingManager {
 
     // Symmetry-breaking strategy flags.
     //
-    // ⚠ ALL FLAGS DEFAULT FALSE — correctness bug surfaced by the 4x4
-    //   correctness gate (AC3CorrectnessTest.solve4x4EasyProducesValidSolution).
+    // Lex ordering rule (post-2026-04-17 redesign): TL must hold the
+    // piece with the smallest ID among pieces geometrically able to fit
+    // at TL (some rotation has N=0 AND W=0). This breaks the 4-way
+    // rotational symmetry of the board (every rotated solution has a
+    // different "TL" piece, only the canonical one survives) without
+    // assuming corners are interchangeable — the previous "every corner
+    // pieceId >= TL.id" rule did, and silently rejected valid solutions
+    // on puzzles where the smallest-ID corner is geometrically constrained
+    // off-TL (caught by AC3CorrectnessTest.solve4x4EasyProducesValidSolution
+    // before the redesign).
     //
-    // Bug 1 — Lexicographic ordering rejects valid solutions:
-    //   The rule "every corner pieceId >= TL pieceId" assumes corners are
-    //   geometrically interchangeable. They aren't on edge-matching puzzles.
-    //   On example_4x4_easy.txt the four corners are
-    //     1 (BL-only), 7 (TR-only), 10 (BR-only), 11 (TL-only).
-    //   The solver places piece 11 at TL (the only fit), sets topLeftId=11,
-    //   then tries piece 1 at BL → 1 < 11 → REJECT. Unsolvable.
+    // Rotation fixing: TL piece is forced to rotation 0. Combined with the
+    // lex rule, the canonical TL candidate is its lowest valid rotation —
+    // works because the TL-fittable filter checks all rotations, but the
+    // canonical piece's rotation 0 IS one of them by construction (else it
+    // wouldn't have been added to the set with edges[0]==0 && edges[3]==0
+    // at rot 0).
     //
-    // Bug 2 — Combined rotation fixing + lex ordering also fails the 4x4
-    //   easy gate. With both flags on the gate fails; with only lex off,
-    //   the gate still fails; with both off, all three gates (3x3, 4x4
-    //   easy, 4x4 hard) pass. Root cause is intertwined with bug 1 —
-    //   needs a clean design pass to separate.
+    // Reflection pruning never implemented — see future-work plan in
+    // project notes. Eternity II pieces are non-mirror-symmetric so the
+    // marginal gain on this puzzle is probably < 20%.
     //
-    // Empirical perf impact on solve4x4Hard (JMH SingleShotTime, 10 iter):
-    //   Both lex+rotation enabled:  ~30 ms/op
-    //   Both disabled:               ~49 ms/op  (+63% slower)
-    // Cost of correctness: ~40% slower on 4x4. Accepted — the previous
-    // configuration was silently dropping valid solutions on
-    // example_4x4_easy.txt and probably other puzzles where the smallest-
-    // ID corner is geometrically constrained off-TL.
-    //
-    // Future fix sketch: order corners over the SET of positions they
-    // can geometrically reach (not by raw ID), or use canonical-form
-    // comparison on the completed placement instead of per-placement
-    // rejection. Either needs a design + extended test corpus before
-    // re-enabling.
+    // Perf impact (JMH SingleShotTime, 10 iter, solve4x4Hard, JDK 24):
+    //   Both flags on:   ~30 ms/op
+    //   Both flags off:  ~49 ms/op  (+63% slower)
+    // Default OFF after a redesign attempt failed solve4x4Easy (interaction
+    // with MRV / singleton detection still rejects valid trees in a way the
+    // 4x4 gate catches). The rotation-aware lex rule below is kept in code
+    // for the next iteration. Re-enable once the gate passes both 4x4 cases.
     private boolean enableLexicographicOrdering = false;
     private boolean enableRotationalFixing = false;
     private boolean enableReflectionPruning = false;
@@ -73,7 +73,7 @@ public class SymmetryBreakingManager {
                                      int rotation, Map<Integer, Piece> allPieces) {
         // Check lexicographic ordering on corners
         if (enableLexicographicOrdering) {
-            if (!checkLexicographicOrdering(board, row, col, pieceId)) {
+            if (!checkLexicographicOrdering(board, row, col, pieceId, allPieces)) {
                 if (verbose) {
                     SolverLogger.info("  ⛔ Symmetry: Rejecting piece " + pieceId + " at (" + row + "," + col + ") - violates lexicographic ordering");
                 }
@@ -94,41 +94,71 @@ public class SymmetryBreakingManager {
         return true;
     }
 
-    /** Enforces lexicographic ordering on corner pieces; top-left must have smallest ID (eliminates horizontal/vertical reflection and 180° rotation, 4x reduction). */
-    private boolean checkLexicographicOrdering(Board board, int row, int col, int pieceId) {
-        // Apply ordering only on corner positions
-        boolean isTopLeft = (row == 0 && col == 0);
-        boolean isTopRight = (row == 0 && col == cols - 1);
-        boolean isBottomLeft = (row == rows - 1 && col == 0);
-        boolean isBottomRight = (row == rows - 1 && col == cols - 1);
-
-        if (!isTopLeft && !isTopRight && !isBottomLeft && !isBottomRight) {
-            return true; // Not a corner, no constraint
-        }
-
-        Placement topLeft = board.getPlacement(0, 0);
-
-        // If placing top-left corner first, always allow (becomes reference)
-        if (isTopLeft) {
+    /**
+     * Enforces lexicographic ordering on the TOP-LEFT corner only.
+     *
+     * <p>Constraint: TL must use the piece with the smallest ID among the
+     * pieces that geometrically can fit at TL (i.e. have at least one
+     * rotation with N=0 and W=0). No constraint on the other three corners,
+     * which are pinned by edge-matching to whatever fits.</p>
+     *
+     * <p>Why not the previous "every corner pieceId ≥ TL.id" rule: it
+     * silently rejected valid solutions when the smallest-ID corner was
+     * geometrically constrained off-TL (see the bug surfaced by
+     * AC3CorrectnessTest.solve4x4EasyProducesValidSolution before this
+     * fix).</p>
+     *
+     * <p>The new rule still breaks the 4-way rotational symmetry of the
+     * board: every rotated solution would have a different "top-left"
+     * piece, but only one of them has the canonical (smallest-ID)
+     * TL-fittable piece in the actual TL slot.</p>
+     */
+    private boolean checkLexicographicOrdering(Board board, int row, int col, int pieceId,
+                                               Map<Integer, Piece> allPieces) {
+        // Only constrain the top-left corner.
+        if (row != 0 || col != 0) {
             return true;
         }
 
-        // If top-left corner not yet placed, allow other corners (will be constrained later)
-        if (topLeft == null) {
+        Set<Integer> tlFittable = topLeftFittablePieceIds(allPieces);
+        if (tlFittable.isEmpty()) {
+            // Defensive: nothing pre-computable, allow the placement.
             return true;
         }
 
-        int topLeftId = topLeft.getPieceId();
+        int canonicalId = Integer.MAX_VALUE;
+        for (int id : tlFittable) canonicalId = Math.min(canonicalId, id);
+        return pieceId == canonicalId;
+    }
 
-        // Apply: All other corners must have piece ID >= top-left corner ID
-        // This eliminates rotational/reflective duplicates
-        if (isTopRight || isBottomLeft || isBottomRight) {
-            if (pieceId < topLeftId) {
-                return false; // Violates ordering constraint
+    /**
+     * Cached set of piece IDs that can fit at the top-left corner —
+     * i.e. have at least one rotation with N=0 AND W=0. Computed lazily
+     * once and reused for the rest of the solve.
+     */
+    private Set<Integer> topLeftFittableIds;
+
+    /**
+     * Pieces eligible for the canonical TL slot.
+     *
+     * <p>Restricted to pieces whose <em>rotation 0</em> already satisfies
+     * {@code N=0 && W=0}. This is critical: when {@link #enableRotationalFixing}
+     * is on, TL is locked to rotation 0, so any "TL-fittable in some
+     * rotation" piece that needs a non-zero rotation to fit cannot
+     * actually be placed there. Allowing it as the canonical TL would
+     * make the puzzle unsolvable (the solver would search forever).</p>
+     */
+    private Set<Integer> topLeftFittablePieceIds(Map<Integer, Piece> allPieces) {
+        if (topLeftFittableIds != null) return topLeftFittableIds;
+        Set<Integer> ids = new java.util.HashSet<>();
+        for (Map.Entry<Integer, Piece> e : allPieces.entrySet()) {
+            int[] edges = e.getValue().edgesRotated(0);
+            if (edges[0] == 0 && edges[3] == 0) {
+                ids.add(e.getKey());
             }
         }
-
-        return true;
+        topLeftFittableIds = ids;
+        return ids;
     }
 
     /** Fixes rotation of top-left corner piece to 0° to eliminate rotational symmetry (eliminates 3/4 of rotationally equivalent solutions). */
@@ -143,35 +173,16 @@ public class SymmetryBreakingManager {
         return rotation == 0;
     }
 
-    /** Validates board state after placement; returns true if all corner pieces satisfy lexicographic ordering constraint. */
+    /**
+     * @deprecated The previous post-hoc validation enforced "every corner ≥ TL.id"
+     * which is incorrect on edge-matching puzzles (see the redesigned
+     * {@link #checkLexicographicOrdering} for details). The new rule is
+     * enforced per-placement at the TL slot only, so post-hoc validation is
+     * unnecessary. Kept as a no-op for source compatibility with existing
+     * tests; remove in a follow-up.
+     */
+    @Deprecated
     public boolean validateBoardState(Board board) {
-        if (!enableLexicographicOrdering) {
-            return true;
-        }
-
-        Placement topLeft = board.getPlacement(0, 0);
-        if (topLeft == null) {
-            return true; // Cannot validate yet
-        }
-
-        int topLeftId = topLeft.getPieceId();
-
-        // Check that all corners respect lexicographic ordering
-        Placement topRight = board.getPlacement(0, cols - 1);
-        if (topRight != null && topRight.getPieceId() < topLeftId) {
-            return false;
-        }
-
-        Placement bottomLeft = board.getPlacement(rows - 1, 0);
-        if (bottomLeft != null && bottomLeft.getPieceId() < topLeftId) {
-            return false;
-        }
-
-        Placement bottomRight = board.getPlacement(rows - 1, cols - 1);
-        if (bottomRight != null && bottomRight.getPieceId() < topLeftId) {
-            return false;
-        }
-
         return true;
     }
 

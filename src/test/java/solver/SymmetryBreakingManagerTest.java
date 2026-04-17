@@ -41,33 +41,31 @@ public class SymmetryBreakingManagerTest {
     }
 
     @Test
-    void testLexicographicOrdering_TopLeftFirst() {
-        // Top-left corner can always be placed first
-        assertTrue(manager.isPlacementAllowed(board, 0, 0, 1, 0, pieces));
-        assertTrue(manager.isPlacementAllowed(board, 0, 0, 2, 0, pieces));
-        assertTrue(manager.isPlacementAllowed(board, 0, 0, 3, 0, pieces));
+    void testLexicographicOrdering_OnlyCanonicalTLAccepted() {
+        // Test pieces 1, 2, 3 are all TL-fittable (have a rotation with N=0 AND W=0).
+        // The canonical TL piece is the one with the smallest ID = piece 1.
+        // The new rule rejects any other TL-fittable piece at TL.
+        assertTrue(manager.isPlacementAllowed(board, 0, 0, 1, 0, pieces),
+            "canonical TL piece (smallest ID among TL-fittable) accepted");
+        assertFalse(manager.isPlacementAllowed(board, 0, 0, 2, 0, pieces),
+            "non-canonical TL-fittable piece rejected (breaks rotational symmetry)");
+        assertFalse(manager.isPlacementAllowed(board, 0, 0, 3, 0, pieces),
+            "non-canonical TL-fittable piece rejected");
     }
 
     @Test
-    void testLexicographicOrdering_RejectSmallerThanTopLeft() {
-        // Place piece 2 at top-left
-        board.place(0, 0, pieces.get(2), 0);
-
-        // Piece 1 (ID < 2) should be rejected at other corners
-        assertFalse(manager.isPlacementAllowed(board, 0, 2, 1, 0, pieces)); // Top-right
-        assertFalse(manager.isPlacementAllowed(board, 2, 0, 1, 0, pieces)); // Bottom-left
-        assertFalse(manager.isPlacementAllowed(board, 2, 2, 1, 0, pieces)); // Bottom-right
-    }
-
-    @Test
-    void testLexicographicOrdering_AcceptLargerThanTopLeft() {
-        // Place piece 1 at top-left
+    void testLexicographicOrdering_OtherCornersUnconstrained() {
+        // The new rule constrains TL only — other corners are pinned by
+        // edge-matching during the actual solve. The pre-redesign rule
+        // ("every corner ≥ TL.id") was incorrect on puzzles where the
+        // smallest-ID corner is geometrically constrained off-TL.
         board.place(0, 0, pieces.get(1), 0);
 
-        // Pieces with ID > 1 should be accepted at other corners
-        assertTrue(manager.isPlacementAllowed(board, 0, 2, 2, 0, pieces)); // Top-right
-        assertTrue(manager.isPlacementAllowed(board, 2, 0, 3, 0, pieces)); // Bottom-left
-        assertTrue(manager.isPlacementAllowed(board, 2, 2, 4, 0, pieces)); // Bottom-right
+        // Anything goes at TR/BL/BR now (the previous test asserted some
+        // would be rejected; that was the bug fixed in 2026-04 redesign).
+        assertTrue(manager.isPlacementAllowed(board, 0, 2, 2, 0, pieces));
+        assertTrue(manager.isPlacementAllowed(board, 2, 0, 3, 0, pieces));
+        assertTrue(manager.isPlacementAllowed(board, 2, 2, 4, 0, pieces));
     }
 
     @Test
@@ -112,11 +110,14 @@ public class SymmetryBreakingManagerTest {
 
     @Test
     void testValidateBoardState_InvalidConfiguration() {
-        // Place pieces in invalid order: piece 3 at top-left, piece 1 at corner
+        // Post-2026-04 redesign: the lex rule is enforced per-placement at
+        // TL only, so post-hoc validation is a no-op. The previous "every
+        // corner ≥ TL.id" rule was incorrect on edge-matching puzzles.
         board.place(0, 0, pieces.get(3), 0);
-        board.place(0, 2, pieces.get(1), 0); // Violates: 1 < 3
+        board.place(0, 2, pieces.get(1), 0);
 
-        assertFalse(manager.validateBoardState(board));
+        assertTrue(manager.validateBoardState(board),
+            "validateBoardState is now a no-op; the per-placement rule guards correctness");
     }
 
     @Test

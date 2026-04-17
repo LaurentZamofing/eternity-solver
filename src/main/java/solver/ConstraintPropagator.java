@@ -36,6 +36,11 @@ public class ConstraintPropagator {
     private final Statistics stats;
     private boolean useAC3 = true;
 
+    // Reusable buffers for AC-3 domain filtering (double-buffered).
+    // Each solver thread owns its own ConstraintPropagator, so no synchronization needed.
+    private final HashMap<Integer, List<ValidPlacement>> bufferA = new HashMap<>();
+    private final HashMap<Integer, List<ValidPlacement>> bufferB = new HashMap<>();
+
     /** Creates propagator with domain manager and statistics tracker for AC-3 constraint propagation. */
     public ConstraintPropagator(DomainManager domainManager, Statistics stats) {
         this.domainManager = domainManager;
@@ -95,8 +100,11 @@ public class ConstraintPropagator {
                 return false;
             }
 
-            // Compute new domain by checking all placed neighbors
-            Map<Integer, List<ValidPlacement>> newDomain = new HashMap<>(currentDomain);
+            // Compute new domain by checking all placed neighbors.
+            // Alias currentDomain (no copy): the filtering loop writes into an alternating
+            // buffer (bufferA/bufferB) and newDomain is re-aliased after each neighbor.
+            Map<Integer, List<ValidPlacement>> newDomain = currentDomain;
+            HashMap<Integer, List<ValidPlacement>> writeBuf = bufferA;
             boolean domainChanged = false;
 
             // Check each neighbor of this cell
@@ -115,26 +123,30 @@ public class ConstraintPropagator {
 
                 int requiredEdge = nbrPlacement.edges[nbrSide];
 
-                // Filter domain: keep only compatible placements
-                Map<Integer, List<ValidPlacement>> filteredDomain = new HashMap<>();
+                // Filter domain: keep only compatible placements (reuse pooled HashMap)
+                writeBuf.clear();
                 for (Map.Entry<Integer, List<ValidPlacement>> entry : newDomain.entrySet()) {
-                    List<ValidPlacement> validRotations = new ArrayList<>();
+                    List<ValidPlacement> validRotations = null;
                     for (ValidPlacement vp : entry.getValue()) {
                         int[] edges = piecesById.get(vp.pieceId).edgesRotated(vp.rotation);
                         if (edges[cellSide] == requiredEdge) {
+                            if (validRotations == null) validRotations = new ArrayList<>(4);
                             validRotations.add(vp);
                         }
                     }
-                    if (!validRotations.isEmpty()) {
-                        filteredDomain.put(entry.getKey(), validRotations);
+                    if (validRotations != null) {
+                        writeBuf.put(entry.getKey(), validRotations);
                     }
                 }
 
-                if (filteredDomain.size() < newDomain.size() ||
-                    !filteredDomain.keySet().equals(newDomain.keySet())) {
+                if (writeBuf.size() < newDomain.size() ||
+                    !writeBuf.keySet().equals(newDomain.keySet())) {
                     domainChanged = true;
                 }
-                newDomain = filteredDomain;
+                // Swap buffers: newDomain is now the just-written buffer;
+                // next neighbor iteration writes into the other one.
+                newDomain = writeBuf;
+                writeBuf = (writeBuf == bufferA) ? bufferB : bufferA;
 
                 if (newDomain.isEmpty()) {
                     stats.incrementDeadEnds();
@@ -148,8 +160,9 @@ public class ConstraintPropagator {
                 }
             }
 
-            // Check if pieces are still available
-            Map<Integer, List<ValidPlacement>> availableDomain = new HashMap<>();
+            // Check if pieces are still available. This map is stored in domainManager
+            // when a change is detected, so it must be a fresh HashMap (not a pooled buffer).
+            Map<Integer, List<ValidPlacement>> availableDomain = new HashMap<>(newDomain.size());
             for (Map.Entry<Integer, List<ValidPlacement>> entry : newDomain.entrySet()) {
                 if (!pieceUsed.get(entry.getKey())) {
                     availableDomain.put(entry.getKey(), entry.getValue());

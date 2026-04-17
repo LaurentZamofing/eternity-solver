@@ -236,4 +236,95 @@ public class ConstraintPropagatorTest {
 
         assertNotNull(result);
     }
+
+    // ─── Coverage for the secondary methods (filterDomain, getDomainSize,
+    //     isSingleton, getSingletonPieceId, isDomainEmpty,
+    //     getUniquePieceCount). These are pure queries, easy to lock down. ──
+
+    @Test
+    @DisplayName("filterDomain returns empty list for null/empty input")
+    public void testFilterDomainNullEmpty() {
+        assertTrue(propagator.filterDomain(null, 0, 0, pieces).isEmpty());
+        assertTrue(propagator.filterDomain(java.util.Collections.emptyList(), 0, 0, pieces).isEmpty());
+    }
+
+    @Test
+    @DisplayName("filterDomain keeps only placements whose edge[edgeIndex] matches required")
+    public void testFilterDomainEdgeMatching() {
+        // Piece 1 = {1,2,3,4} ; piece 2 = {5,6,7,8}.
+        // North edges: 1, 5. Filter for edge[0] == 1 → keep only piece 1 rotation 0.
+        java.util.List<DomainManager.ValidPlacement> input = java.util.List.of(
+            new DomainManager.ValidPlacement(1, 0),
+            new DomainManager.ValidPlacement(2, 0)
+        );
+        java.util.List<DomainManager.ValidPlacement> kept = propagator.filterDomain(input, 1, 0, pieces);
+
+        assertEquals(1, kept.size());
+        assertEquals(1, kept.get(0).pieceId);
+        assertEquals(0, kept.get(0).rotation);
+    }
+
+    @Test
+    @DisplayName("getDomainSize sums per-piece rotation lists")
+    public void testGetDomainSize() {
+        Map<Integer, java.util.List<DomainManager.ValidPlacement>> domain = new HashMap<>();
+        domain.put(1, java.util.List.of(
+            new DomainManager.ValidPlacement(1, 0),
+            new DomainManager.ValidPlacement(1, 1)));
+        domain.put(2, java.util.List.of(new DomainManager.ValidPlacement(2, 3)));
+
+        assertEquals(3, propagator.getDomainSize(domain), "2 + 1 rotations across 2 pieces");
+        assertEquals(0, propagator.getDomainSize(null));
+        assertEquals(0, propagator.getDomainSize(new HashMap<>()));
+    }
+
+    @Test
+    @DisplayName("getUniquePieceCount counts distinct piece IDs (ignores rotations)")
+    public void testGetUniquePieceCount() {
+        Map<Integer, java.util.List<DomainManager.ValidPlacement>> domain = new HashMap<>();
+        domain.put(1, java.util.List.of(
+            new DomainManager.ValidPlacement(1, 0),
+            new DomainManager.ValidPlacement(1, 1),
+            new DomainManager.ValidPlacement(1, 2)));
+        domain.put(2, java.util.List.of(new DomainManager.ValidPlacement(2, 0)));
+
+        assertEquals(2, propagator.getUniquePieceCount(domain),
+            "2 piece IDs even if piece 1 has 3 rotations");
+        assertEquals(0, propagator.getUniquePieceCount(null));
+    }
+
+    @Test
+    @DisplayName("isDomainEmpty handles null, empty, and populated maps")
+    public void testIsDomainEmpty() {
+        assertTrue(propagator.isDomainEmpty(null));
+        assertTrue(propagator.isDomainEmpty(new HashMap<>()));
+        Map<Integer, java.util.List<DomainManager.ValidPlacement>> domain = new HashMap<>();
+        domain.put(1, java.util.List.of(new DomainManager.ValidPlacement(1, 0)));
+        assertFalse(propagator.isDomainEmpty(domain));
+    }
+
+    @Test
+    @DisplayName("isSingleton + getSingletonPieceId roundtrip")
+    public void testSingletonDetection() {
+        Map<Integer, java.util.List<DomainManager.ValidPlacement>> domain = new HashMap<>();
+        domain.put(7, java.util.List.of(new DomainManager.ValidPlacement(7, 1)));
+
+        assertTrue(propagator.isSingleton(domain));
+        assertEquals(7, propagator.getSingletonPieceId(domain));
+
+        domain.put(8, java.util.List.of(new DomainManager.ValidPlacement(8, 0)));
+        assertFalse(propagator.isSingleton(domain));
+        assertEquals(-1, propagator.getSingletonPieceId(domain));
+    }
+
+    @Test
+    @DisplayName("setUseAC3 toggles short-circuit in propagateAC3")
+    public void testSetUseAC3() {
+        propagator.setUseAC3(false);
+        // With AC-3 disabled, propagate is a no-op returning true regardless of state
+        boolean result = propagator.propagateAC3(board, 0, 0, 1, 0, pieces, pieceUsed,
+                board.getRows() * board.getCols());
+        assertTrue(result, "AC-3 disabled returns true (skip propagation)");
+        assertEquals(0, stats.getDeadEndsDetected(), "no dead-ends counted when disabled");
+    }
 }

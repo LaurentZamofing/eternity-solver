@@ -259,53 +259,58 @@ public class SaveStateIO {
         writer.println();
     }
 
+    private static final String SECTION_SEPARATOR =
+        "# ═══════════════════════════════════════════════════════════";
+
+    /**
+     * Writes a titled section with the canonical separator / body / separator
+     * envelope used by every {@code write*Section} below. Extracted 2026-04-18
+     * to dedupe the 3 writers that previously inlined identical boilerplate.
+     */
+    private static void writeSection(PrintWriter writer, String title, Runnable body) {
+        writer.println(SECTION_SEPARATOR);
+        writer.println("# " + title);
+        writer.println(SECTION_SEPARATOR);
+        writer.println("#");
+        body.run();
+        writer.println("#");
+        writer.println(SECTION_SEPARATOR);
+        writer.println();
+    }
+
     private static void writeBoardVisual(PrintWriter writer, Board board, int depth,
                                         int numFixedPieces, List<PlacementInfo> initialFixedPieces,
                                         Map<Integer, Piece> allPieces, List<PlacementInfo> placementOrder) {
         int fixedCount = (initialFixedPieces != null) ? initialFixedPieces.size() : 0;
-        writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println("# VISUAL BOARD DISPLAY (" + (depth + fixedCount) +
-                      " pieces: " + fixedCount + " fixed + " + depth + " backtracking)");
-        writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println("#");
-
-        // Build placement order map: position -> step number
-        java.util.Map<util.PositionKey, Integer> placementOrderMap = new java.util.HashMap<>();
-        if (placementOrder != null) {
-            int step = 1;
-            for (PlacementInfo info : placementOrder) {
-                util.PositionKey key = new util.PositionKey(info.row, info.col);
-                placementOrderMap.put(key, step++);
-            }
-        }
-
-        if (allPieces != null && !allPieces.isEmpty()) {
-            // Use detailed display with AC-3 domains if available (null = estimation mode)
-            solver.display.BoardDisplayService.writeToSaveFileDetailed(writer, board, allPieces, null, placementOrderMap);
-        } else {
-            solver.display.BoardDisplayService.writeToSaveFile(writer, board);
-        }
-        writer.println("#");
-        writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println();
+        writeSection(writer,
+            "VISUAL BOARD DISPLAY (" + (depth + fixedCount) +
+                " pieces: " + fixedCount + " fixed + " + depth + " backtracking)",
+            () -> {
+                java.util.Map<util.PositionKey, Integer> placementOrderMap = new java.util.HashMap<>();
+                if (placementOrder != null) {
+                    int step = 1;
+                    for (PlacementInfo info : placementOrder) {
+                        placementOrderMap.put(new util.PositionKey(info.row, info.col), step++);
+                    }
+                }
+                if (allPieces != null && !allPieces.isEmpty()) {
+                    solver.display.BoardDisplayService.writeToSaveFileDetailed(
+                        writer, board, allPieces, null, placementOrderMap);
+                } else {
+                    solver.display.BoardDisplayService.writeToSaveFile(writer, board);
+                }
+            });
     }
 
     private static void writeFixedPiecesSection(PrintWriter writer, int numFixedPieces,
                                                List<PlacementInfo> initialFixedPieces) {
-        writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println("# FIXED PIECES (pre-placed at startup)");
-        writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println("#");
-
-        if (numFixedPieces > 0) {
-            writer.println("# " + numFixedPieces + " fixed pieces (corners + hints - see configuration file)");
-        } else {
-            writer.println("# (no fixed pieces)");
-        }
-
-        writer.println("#");
-        writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println();
+        writeSection(writer, "FIXED PIECES (pre-placed at startup)", () -> {
+            if (numFixedPieces > 0) {
+                writer.println("# " + numFixedPieces + " fixed pieces (corners + hints - see configuration file)");
+            } else {
+                writer.println("# (no fixed pieces)");
+            }
+        });
     }
 
     private static void writePlacementOrderSection(PrintWriter writer,
@@ -314,27 +319,19 @@ public class SaveStateIO {
         int fixedCount = (initialFixedPieces != null) ? initialFixedPieces.size() : 0;
         int backtrackingCount = (placementOrder != null) ?
                                Math.max(0, placementOrder.size() - fixedCount) : 0;
-
-        writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println("# PLACEMENT ORDER (backtracking) - " + backtrackingCount + " pieces");
-        writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println("#");
-
-        if (placementOrder != null && placementOrder.size() > fixedCount) {
-            writer.println("# Step   Position    Piece  Rotation");
-            writer.println("# ────── ─────────── ────── ────────");
-            for (int i = fixedCount; i < placementOrder.size(); i++) {
-                PlacementInfo info = placementOrder.get(i);
-                writer.println(String.format("# %4d   (%2d,%2d)     %3d      %d (×90°)",
-                    (i - fixedCount + 1), info.row, info.col, info.pieceId, info.rotation));
+        writeSection(writer, "PLACEMENT ORDER (backtracking) - " + backtrackingCount + " pieces", () -> {
+            if (placementOrder != null && placementOrder.size() > fixedCount) {
+                writer.println("# Step   Position    Piece  Rotation");
+                writer.println("# ────── ─────────── ────── ────────");
+                for (int i = fixedCount; i < placementOrder.size(); i++) {
+                    PlacementInfo info = placementOrder.get(i);
+                    writer.println(String.format("# %4d   (%2d,%2d)     %3d      %d (×90°)",
+                        (i - fixedCount + 1), info.row, info.col, info.pieceId, info.rotation));
+                }
+            } else {
+                writer.println("# (no pieces placed by backtracking)");
             }
-        } else {
-            writer.println("# (no pieces placed by backtracking)");
-        }
-
-        writer.println("#");
-        writer.println("# ═══════════════════════════════════════════════════════════");
-        writer.println();
+        });
     }
 
     private static void writeDataSections(PrintWriter writer, Board board,

@@ -1,5 +1,7 @@
 package solver;
 
+
+import util.PositionKey;
 import model.Board;
 import model.Piece;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +37,7 @@ public class RecordManagerTest {
     private AtomicReference<Map<Integer, Piece>> globalBestPieces;
     private Object lockObject;
     private PlacementValidator validator;
-    private Set<String> fixedPositions;
+    private Set<PositionKey> fixedPositions;
 
     @BeforeEach
     public void setUp() {
@@ -319,7 +321,7 @@ public class RecordManagerTest {
 
         // Should not throw exception
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 9, stats,
-                board, piecesById, unusedIds, fixedPositions, validator, null, null));
+                board, piecesById, unusedIds, fixedPositions, validator, null, null, new PlacementOrderTracker()));
     }
 
     @Test
@@ -342,7 +344,7 @@ public class RecordManagerTest {
 
         // Should not throw exception
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 9, stats,
-                board, piecesById, unusedIds, fixedPositions, validator, null, null));
+                board, piecesById, unusedIds, fixedPositions, validator, null, null, new PlacementOrderTracker()));
     }
 
     @Test
@@ -562,7 +564,7 @@ public class RecordManagerTest {
         // Last piece placed is at C3 (piece 4), no next cell (board is complete)
         SaveStateManager.PlacementInfo lastPlacement = new SaveStateManager.PlacementInfo(2, 2, 4, 0);
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 9, stats,
-                testBoard, simplePieces, unusedIds, fixedPositions, validator, lastPlacement, null));
+                testBoard, simplePieces, unusedIds, fixedPositions, validator, lastPlacement, null, new PlacementOrderTracker()));
 
         // Verify all edges match (this is a valid solution)
         int[] scoreData = testBoard.calculateScore();
@@ -605,7 +607,7 @@ public class RecordManagerTest {
         SaveStateManager.PlacementInfo lastPlacement = new SaveStateManager.PlacementInfo(0, 2, 2, 2);
         int[] nextTarget = new int[]{1, 0}; // B1
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 3, stats,
-                testBoard, rotationPieces, unusedIds, fixedPositions, validator, lastPlacement, nextTarget));
+                testBoard, rotationPieces, unusedIds, fixedPositions, validator, lastPlacement, nextTarget, new PlacementOrderTracker()));
     }
 
     @Test
@@ -635,7 +637,7 @@ public class RecordManagerTest {
         SaveStateManager.PlacementInfo lastPlacement = new SaveStateManager.PlacementInfo(2, 2, 4, 0);
         int[] nextTarget = new int[]{0, 1}; // A2
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 4, stats,
-                testBoard, testPieces, unusedIds, fixedPositions, validator, lastPlacement, nextTarget));
+                testBoard, testPieces, unusedIds, fixedPositions, validator, lastPlacement, nextTarget, new PlacementOrderTracker()));
 
         // Verify that some cells should have valid options
         // For example, A2 (top edge) should be able to fit piece 5
@@ -671,7 +673,7 @@ public class RecordManagerTest {
         SaveStateManager.PlacementInfo lastPlacement = new SaveStateManager.PlacementInfo(1, 0, 6, 0);
         int[] nextTarget = new int[]{0, 2}; // A3
         assertDoesNotThrow(() -> recordManager.displayRecord(result, 3, stats,
-                testBoard, backtrackPieces, unusedIds, fixedPositions, validator, lastPlacement, nextTarget));
+                testBoard, backtrackPieces, unusedIds, fixedPositions, validator, lastPlacement, nextTarget, new PlacementOrderTracker()));
 
         // The display should show cells with low valid piece counts (warning colors)
         // indicating that backtracking may be needed

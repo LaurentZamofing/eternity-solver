@@ -1,5 +1,7 @@
 package solver;
 
+
+import util.PositionKey;
 import model.Board;
 import model.Piece;
 import org.junit.jupiter.api.*;
@@ -253,7 +255,7 @@ class BacktrackingHistoryManagerTest {
     @Test
     @DisplayName("Should return empty set for fixed positions")
     void testGetFixedPositions() {
-        Set<String> fixedPositions = manager.getFixedPositions();
+        Set<PositionKey> fixedPositions = manager.getFixedPositions();
 
         assertNotNull(fixedPositions, "Fixed positions should not be null");
         assertEquals(0, fixedPositions.size(), "Fixed positions should be empty");
@@ -262,9 +264,9 @@ class BacktrackingHistoryManagerTest {
     @Test
     @DisplayName("Should check if position is fixed")
     void testIsFixedPosition() {
-        Set<String> fixedPositions = new HashSet<>();
-        fixedPositions.add("0,0");
-        fixedPositions.add("0,2");
+        Set<PositionKey> fixedPositions = new HashSet<>();
+        fixedPositions.add(new PositionKey(0, 0));
+        fixedPositions.add(new PositionKey(0, 2));
 
         assertTrue(manager.isFixedPosition(0, 0, fixedPositions),
                   "Position (0,0) should be fixed");
@@ -277,7 +279,7 @@ class BacktrackingHistoryManagerTest {
     @Test
     @DisplayName("Should handle empty fixed positions set")
     void testIsFixedPositionEmptySet() {
-        Set<String> fixedPositions = new HashSet<>();
+        Set<PositionKey> fixedPositions = new HashSet<>();
 
         assertFalse(manager.isFixedPosition(0, 0, fixedPositions),
                    "No position should be fixed in empty set");

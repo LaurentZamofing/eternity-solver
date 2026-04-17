@@ -1,9 +1,10 @@
 package solver;
 
+import util.CellLabelFormatter;
+import util.PositionKey;
 import util.SaveStateManager;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Tracks piece placement order to enable intelligent backtracking
@@ -17,14 +18,15 @@ import java.util.List;
  */
 public class PlacementOrderTracker {
 
-    private List<SaveStateManager.PlacementInfo> placementHistory;
+    // Use LinkedHashMap to maintain insertion order while preventing duplicates
+    private java.util.LinkedHashMap<PositionKey, SaveStateManager.PlacementInfo> placementMap;
     private final List<SaveStateManager.PlacementInfo> initialFixedPieces;
 
     /**
      * Constructor without initial fixed pieces
      */
     public PlacementOrderTracker() {
-        this.placementHistory = new ArrayList<>();
+        this.placementMap = new java.util.LinkedHashMap<>();
         this.initialFixedPieces = new ArrayList<>();
     }
 
@@ -33,7 +35,7 @@ public class PlacementOrderTracker {
      * @param initialFixedPieces pieces that were fixed at puzzle startup
      */
     public PlacementOrderTracker(List<SaveStateManager.PlacementInfo> initialFixedPieces) {
-        this.placementHistory = new ArrayList<>();
+        this.placementMap = new java.util.LinkedHashMap<>();
         this.initialFixedPieces = (initialFixedPieces != null)
             ? new ArrayList<>(initialFixedPieces)
             : new ArrayList<>();
@@ -43,8 +45,8 @@ public class PlacementOrderTracker {
      * Initializes placement history (call at start of solving)
      */
     public void initialize() {
-        if (placementHistory == null) {
-            placementHistory = new ArrayList<>();
+        if (placementMap == null) {
+            placementMap = new java.util.LinkedHashMap<>();
         }
     }
 
@@ -53,11 +55,14 @@ public class PlacementOrderTracker {
      * @param fixedPieces list of fixed pieces to add to placement history
      */
     public void initializeWithFixedPieces(List<SaveStateManager.PlacementInfo> fixedPieces) {
-        if (placementHistory == null) {
-            placementHistory = new ArrayList<>();
+        if (placementMap == null) {
+            placementMap = new java.util.LinkedHashMap<>();
         }
         if (fixedPieces != null) {
-            placementHistory.addAll(fixedPieces);
+            for (SaveStateManager.PlacementInfo piece : fixedPieces) {
+                PositionKey key = new PositionKey(piece.row, piece.col);
+                placementMap.put(key, piece);
+            }
         }
     }
 
@@ -66,46 +71,85 @@ public class PlacementOrderTracker {
      * @param preloadedOrder placement order preloaded from save file
      */
     public void initializeWithHistory(List<SaveStateManager.PlacementInfo> preloadedOrder) {
+        placementMap = new java.util.LinkedHashMap<>();
         if (preloadedOrder != null) {
-            placementHistory = new ArrayList<>(preloadedOrder);
-        } else {
-            placementHistory = new ArrayList<>();
+            for (SaveStateManager.PlacementInfo piece : preloadedOrder) {
+                PositionKey key = new PositionKey(piece.row, piece.col);
+                placementMap.put(key, piece);
+            }
         }
     }
 
     /**
-     * Records a new placement in history
+     * Records a new placement in history.
+     * If a piece already exists at this position, it will be replaced (updated).
+     * This prevents duplicates at the same position.
+     *
      * @param row row position
      * @param col column position
      * @param pieceId ID of the placed piece
      * @param rotation piece rotation (0-3)
      */
     public void recordPlacement(int row, int col, int pieceId, int rotation) {
-        if (placementHistory != null) {
-            placementHistory.add(new SaveStateManager.PlacementInfo(row, col, pieceId, rotation));
+        if (placementMap != null) {
+            PositionKey key = new PositionKey(row, col);
+            placementMap.put(key, new SaveStateManager.PlacementInfo(row, col, pieceId, rotation));
         }
     }
 
     /**
-     * Removes the last placement from history (for backtracking)
-     * @return information about the removed placement, or null if history is empty
+     * Removes a placement from history for a specific position (for backtracking).
+     * This should be called when a piece is removed from the board.
+     *
+     * @param row row position
+     * @param col column position
+     * @return information about the removed placement, or null if not found
      */
-    public SaveStateManager.PlacementInfo removeLastPlacement() {
-        if (placementHistory != null && !placementHistory.isEmpty()) {
-            return placementHistory.remove(placementHistory.size() - 1);
+    public SaveStateManager.PlacementInfo removePlacement(int row, int col) {
+        if (placementMap != null) {
+            PositionKey key = new PositionKey(row, col);
+            SaveStateManager.PlacementInfo removed = placementMap.remove(key);
+
+            // Debug log to trace every removal for LIFO verification
+            if (removed != null) {
+                String cellLabel = CellLabelFormatter.format(removed.row, removed.col);
+                int remainingPieces = placementMap.size();
+
+                util.SolverLogger.info("      🗑 Removed from history: " + cellLabel + " piece " + removed.pieceId +
+                                     " (remaining: " + remainingPieces + " pieces)");
+            }
+            return removed;
         }
         return null;
     }
 
     /**
-     * Gets the complete placement history
+     * Legacy method for backward compatibility.
+     * Removes the LAST placement from history (LIFO).
+     * NOTE: With the new Map-based implementation, this removes by position, not by time.
+     * Callers should use removePlacement(row, col) instead.
+     *
+     * @return information about the removed placement, or null if history is empty
+     * @deprecated Use removePlacement(row, col) instead
+     */
+    @Deprecated
+    public SaveStateManager.PlacementInfo removeLastPlacement() {
+        // This method is problematic with Map-based implementation
+        // Return null to indicate it shouldn't be used
+        util.SolverLogger.warn("⚠ removeLastPlacement() called but deprecated - use removePlacement(row, col)");
+        return null;
+    }
+
+    /**
+     * Gets the complete placement history in chronological order.
      * @return list of all placements made (read-only view)
      */
     public List<SaveStateManager.PlacementInfo> getPlacementHistory() {
-        if (placementHistory == null) {
+        if (placementMap == null) {
             return new ArrayList<>();
         }
-        return new ArrayList<>(placementHistory);
+        // LinkedHashMap maintains insertion order, so values() returns chronological order
+        return new ArrayList<>(placementMap.values());
     }
 
     /**
@@ -120,8 +164,8 @@ public class PlacementOrderTracker {
      * Clears the entire placement history
      */
     public void clearHistory() {
-        if (placementHistory != null) {
-            placementHistory.clear();
+        if (placementMap != null) {
+            placementMap.clear();
         }
     }
 
@@ -130,7 +174,7 @@ public class PlacementOrderTracker {
      * @return number of placements in history
      */
     public int getCurrentDepth() {
-        return placementHistory != null ? placementHistory.size() : 0;
+        return placementMap != null ? placementMap.size() : 0;
     }
 
     /**
@@ -138,7 +182,7 @@ public class PlacementOrderTracker {
      * @return true if tracking is enabled
      */
     public boolean isTracking() {
-        return placementHistory != null;
+        return placementMap != null;
     }
 
     /**
@@ -153,24 +197,31 @@ public class PlacementOrderTracker {
     }
 
     /**
-     * Gets a specific placement from history by index
+     * Gets a specific placement from history by index (chronological order).
      * @param index index in history
      * @return placement information at this index, or null if out of bounds
      */
     public SaveStateManager.PlacementInfo getPlacement(int index) {
-        if (placementHistory != null && index >= 0 && index < placementHistory.size()) {
-            return placementHistory.get(index);
+        if (placementMap != null && index >= 0 && index < placementMap.size()) {
+            // Convert map values to list to get by index
+            List<SaveStateManager.PlacementInfo> list = new ArrayList<>(placementMap.values());
+            return list.get(index);
         }
         return null;
     }
 
     /**
-     * Gets the last placement from history (most recently placed piece)
+     * Gets the last placement from history (most recently placed piece).
      * @return information about the last placement, or null if history is empty
      */
     public SaveStateManager.PlacementInfo getLastPlacement() {
-        if (placementHistory != null && !placementHistory.isEmpty()) {
-            return placementHistory.get(placementHistory.size() - 1);
+        if (placementMap != null && !placementMap.isEmpty()) {
+            // Get last entry from LinkedHashMap
+            SaveStateManager.PlacementInfo last = null;
+            for (SaveStateManager.PlacementInfo info : placementMap.values()) {
+                last = info;
+            }
+            return last;
         }
         return null;
     }

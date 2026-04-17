@@ -190,7 +190,7 @@ public class WorkStealingExecutor {
                     }
                 } catch (RuntimeException e) {
                     // Continue with next placement if copy fails
-                    SolverLogger.debug("Failed to create parallel task: " + e.getMessage());
+                    SolverLogger.info("Failed to create parallel task: " + e.getMessage());
                 }
             }
 
@@ -205,7 +205,7 @@ public class WorkStealingExecutor {
                     }
                 } catch (RuntimeException e) {
                     // Continue with next task
-                    SolverLogger.debug("Task join failed: " + e.getMessage());
+                    SolverLogger.info("Task join failed: " + e.getMessage());
                 }
             }
 

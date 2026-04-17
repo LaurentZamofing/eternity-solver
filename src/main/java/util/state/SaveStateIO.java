@@ -270,11 +270,11 @@ public class SaveStateIO {
         writer.println("#");
 
         // Build placement order map: position -> step number
-        java.util.Map<String, Integer> placementOrderMap = new java.util.HashMap<>();
+        java.util.Map<util.PositionKey, Integer> placementOrderMap = new java.util.HashMap<>();
         if (placementOrder != null) {
             int step = 1;
             for (PlacementInfo info : placementOrder) {
-                String key = info.row + "," + info.col;
+                util.PositionKey key = new util.PositionKey(info.row, info.col);
                 placementOrderMap.put(key, step++);
             }
         }

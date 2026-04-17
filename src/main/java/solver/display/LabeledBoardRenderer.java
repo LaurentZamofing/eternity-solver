@@ -3,6 +3,7 @@ package solver.display;
 import model.Board;
 import model.Piece;
 import solver.PlacementValidator;
+import util.PositionKey;
 
 import java.util.List;
 import java.util.Map;
@@ -47,11 +48,11 @@ public class LabeledBoardRenderer extends AbstractBoardRenderer {
      * @param unusedIds List of unused piece IDs
      * @param validator Placement validator for edge checking
      * @param validPieceCounter Counter for valid pieces
-     * @param fixedPositions Set of fixed position keys ("row,col")
+     * @param fixedPositions Set of fixed position keys (PositionKey)
      */
     public LabeledBoardRenderer(Board board, Map<Integer, Piece> piecesById,
                                  List<Integer> unusedIds, PlacementValidator validator,
-                                 ValidPieceCounter validPieceCounter, Set<String> fixedPositions) {
+                                 ValidPieceCounter validPieceCounter, Set<PositionKey> fixedPositions) {
         this(board, piecesById, unusedIds, validator, validPieceCounter, fixedPositions, null);
     }
 
@@ -63,13 +64,13 @@ public class LabeledBoardRenderer extends AbstractBoardRenderer {
      * @param unusedIds List of unused piece IDs
      * @param validator Placement validator for edge checking
      * @param validPieceCounter Counter for valid pieces
-     * @param fixedPositions Set of fixed position keys ("row,col")
-     * @param highlightedPositions Set of positions to highlight ("row,col")
+     * @param fixedPositions Set of fixed position keys (PositionKey)
+     * @param highlightedPositions Set of positions to highlight (PositionKey)
      */
     public LabeledBoardRenderer(Board board, Map<Integer, Piece> piecesById,
                                  List<Integer> unusedIds, PlacementValidator validator,
-                                 ValidPieceCounter validPieceCounter, Set<String> fixedPositions,
-                                 Set<String> highlightedPositions) {
+                                 ValidPieceCounter validPieceCounter, Set<PositionKey> fixedPositions,
+                                 Set<PositionKey> highlightedPositions) {
         this(board, piecesById, unusedIds, validator, validPieceCounter, fixedPositions, highlightedPositions, null);
     }
 
@@ -81,24 +82,70 @@ public class LabeledBoardRenderer extends AbstractBoardRenderer {
      * @param unusedIds List of unused piece IDs
      * @param validator Placement validator for edge checking
      * @param validPieceCounter Counter for valid pieces
-     * @param fixedPositions Set of fixed position keys ("row,col")
-     * @param highlightedPositions Set of positions to highlight ("row,col")
+     * @param fixedPositions Set of fixed position keys (PositionKey)
+     * @param highlightedPositions Set of positions to highlight (PositionKey) - shown in magenta
      * @param placementOrderMap Map of position to placement order number (null = no order)
      */
     public LabeledBoardRenderer(Board board, Map<Integer, Piece> piecesById,
                                  List<Integer> unusedIds, PlacementValidator validator,
-                                 ValidPieceCounter validPieceCounter, Set<String> fixedPositions,
-                                 Set<String> highlightedPositions, java.util.Map<String, Integer> placementOrderMap) {
+                                 ValidPieceCounter validPieceCounter, Set<PositionKey> fixedPositions,
+                                 Set<PositionKey> highlightedPositions, java.util.Map<PositionKey, Integer> placementOrderMap) {
+        this(board, piecesById, unusedIds, validator, validPieceCounter, fixedPositions,
+             highlightedPositions, null, placementOrderMap);
+    }
+
+    /**
+     * Creates labeled board renderer with highlighted, next cell, and placement order.
+     *
+     * @param board Board to render
+     * @param piecesById Map of all pieces by ID
+     * @param unusedIds List of unused piece IDs
+     * @param validator Placement validator for edge checking
+     * @param validPieceCounter Counter for valid pieces
+     * @param fixedPositions Set of fixed position keys (PositionKey)
+     * @param highlightedPositions Set of positions to highlight (PositionKey) - shown in magenta
+     * @param nextCellPositions Set of next cells to process (PositionKey) - shown in blue
+     * @param placementOrderMap Map of position to placement order number (null = no order)
+     */
+    public LabeledBoardRenderer(Board board, Map<Integer, Piece> piecesById,
+                                 List<Integer> unusedIds, PlacementValidator validator,
+                                 ValidPieceCounter validPieceCounter, Set<PositionKey> fixedPositions,
+                                 Set<PositionKey> highlightedPositions, Set<PositionKey> nextCellPositions,
+                                 java.util.Map<PositionKey, Integer> placementOrderMap) {
+        this(board, piecesById, unusedIds, validator, validPieceCounter, fixedPositions,
+             highlightedPositions, nextCellPositions, null, placementOrderMap);
+    }
+
+    /**
+     * Creates labeled board renderer with highlighted, next cell, removed cell, and placement order.
+     *
+     * @param board Board to render
+     * @param piecesById Map of all pieces by ID
+     * @param unusedIds List of unused piece IDs
+     * @param validator Placement validator for edge checking
+     * @param validPieceCounter Counter for valid pieces
+     * @param fixedPositions Set of fixed position keys (PositionKey)
+     * @param highlightedPositions Set of positions to highlight (PositionKey) - shown in magenta
+     * @param nextCellPositions Set of next cells to process (PositionKey) - shown in blue
+     * @param removedCellPositions Set of removed cells during backtrack (PositionKey) - shown in red with ⬅
+     * @param placementOrderMap Map of position to placement order number (null = no order)
+     */
+    public LabeledBoardRenderer(Board board, Map<Integer, Piece> piecesById,
+                                 List<Integer> unusedIds, PlacementValidator validator,
+                                 ValidPieceCounter validPieceCounter, Set<PositionKey> fixedPositions,
+                                 Set<PositionKey> highlightedPositions, Set<PositionKey> nextCellPositions,
+                                 Set<PositionKey> removedCellPositions,
+                                 java.util.Map<PositionKey, Integer> placementOrderMap) {
         super(board, piecesById, unusedIds, validPieceCounter);
 
-        // Color strategy for occupied cells (edge matching + fixed highlighting + highlights)
+        // Color strategy for occupied cells (edge matching + fixed highlighting + highlights + next cell)
         EdgeMatchingColorStrategy occupiedColorStrategy =
-            new EdgeMatchingColorStrategy(board, fixedPositions, highlightedPositions);
+            new EdgeMatchingColorStrategy(board, fixedPositions, highlightedPositions, nextCellPositions, removedCellPositions);
         this.occupiedCellFormatter = new CellFormatter(occupiedColorStrategy, placementOrderMap);
 
-        // Color strategy for empty cells (valid count warnings + highlights)
+        // Color strategy for empty cells (valid count warnings + highlights + next cell + removed cells)
         ValidCountColorStrategy emptyColorStrategy =
-            new ValidCountColorStrategy(validPieceCounter, piecesById, unusedIds, highlightedPositions);
+            new ValidCountColorStrategy(validPieceCounter, piecesById, unusedIds, highlightedPositions, nextCellPositions, removedCellPositions);
         this.emptyCellFormatter = new CellFormatter(emptyColorStrategy, null); // No order for empty cells
     }
 

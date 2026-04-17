@@ -195,8 +195,10 @@ public class BacktrackingSolver {
                     SaveStateManager.PlacementInfo lastPlacement =
                         (solver.placementOrderTracker != null) ? solver.placementOrderTracker.getLastPlacement() : null;
 
-                    // Find next empty cell to try
+                    // Find next empty cell to try (silent mode - no debug logs for save file generation)
+                    solver.setCellSelectorSilentMode(true);
                     int[] nextCell = solver.findNextCellMRV(board, piecesById, pieceUsed, totalPieces);
+                    solver.setCellSelectorSilentMode(false);
 
                     // Display record with board visualization
                     recordManager.displayRecord(recordResult, usedCount, stats,

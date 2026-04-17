@@ -1,5 +1,6 @@
 package solver;
 
+import solver.debug.DebugPlacementLogger;
 import solver.heuristics.LeastConstrainingValueOrderer;
 import solver.output.PlacementOutputStrategy;
 import solver.output.VerbosePlacementOutput;
@@ -10,6 +11,9 @@ import solver.validation.PlacementValidator.RejectionReason;
 import solver.timeout.TimeoutChecker;
 import model.Board;
 import model.Piece;
+import util.CellLabelFormatter;
+import util.DebugHelper;
+import util.SolverLogger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +39,9 @@ public class MRVPlacementStrategy implements PlacementStrategy {
     private final TimeoutChecker timeoutChecker;
     private final LeastConstrainingValueOrderer valueOrderer;
     private String sortOrder = "ascending"; // Default sort order
+    private boolean debugBacktracking = false;
+    private boolean debugShowBoard = false;
+    private DebugPlacementLogger debugLogger;
 
     /**
      * Creates an MRV placement strategy.
@@ -62,6 +69,28 @@ public class MRVPlacementStrategy implements PlacementStrategy {
         this.sortOrder = sortOrder != null ? sortOrder : "ascending";
     }
 
+    /**
+     * Set debug backtracking mode.
+     *
+     * @param enabled true to enable debug logs
+     */
+    public void setDebugBacktracking(boolean enabled) {
+        this.debugBacktracking = enabled;
+    }
+
+    /**
+     * Set debug show board mode.
+     *
+     * @param enabled true to show board after each placement
+     */
+    public void setDebugShowBoard(boolean enabled) {
+        this.debugShowBoard = enabled;
+        // Create debug logger when debug is enabled
+        if (enabled) {
+            this.debugLogger = new DebugPlacementLogger(true);
+        }
+    }
+
     @Override
     public boolean tryPlacement(BacktrackingContext context, EternitySolver solver) {
         // Find next cell using MRV heuristic
@@ -83,12 +112,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
         outputStrategy.logCellSelection(context, solver, r, c, uniquePieces, availableCount);
 
         // Build list of available pieces
-        List<Integer> snapshot = new ArrayList<>();
-        for (int i = 1; i <= context.totalPieces; i++) {
-            if (!context.pieceUsed.get(i)) {
-                snapshot.add(i);
-            }
-        }
+        List<Integer> snapshot = context.getUnusedPieces();
 
         // Sort pieces according to sortOrder configuration
         // Note: We use piece ID order (not difficulty) to ensure ascending/descending works correctly
@@ -104,8 +128,14 @@ public class MRVPlacementStrategy implements PlacementStrategy {
             context.stats.registerDepthOptions(currentDepth, snapshot.size());
         }
 
+        // Debug: Log start of placement attempts
+        if (debugBacktracking && debugLogger != null) {
+            debugLogger.logCellSelection(r, c, currentDepth, snapshot.size(), solver, context);
+        }
+
         // Try each piece
         int optionIndex = 0;
+        int attemptCount = 0;
         for (int pid : snapshot) {
             // Increment progress for this depth
             if (currentDepth < 5) {
@@ -116,6 +146,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
 
             // Try each rotation
             for (int rot = 0; rot < 4; rot++) {
+                attemptCount++;
                 int[] candidate = piece.edgesRotated(rot);
 
                 // Log placement attempt
@@ -145,18 +176,40 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 // AC-3 constraint propagation (after placement)
                 if (!validator.propagateConstraints(context, r, c, pid, rot)) {
                     // Dead end detected by AC-3
+                    if (debugBacktracking) {
+                        String cellLabel = String.valueOf((char) ('A' + r)) + (c + 1);
+                        SolverLogger.info("       ✗ Failed: AC-3 dead-end detected after placing piece " + pid + " at " + cellLabel);
+
+                        // Show which cells have critical domains
+                        validator.getDomainManager().logCriticalDomains(context.board, 5);
+
+                        // Show board state when dead-end detected (if enabled)
+                        if (debugShowBoard) {
+                            List<Integer> unusedPieces = context.getUnusedPieces();
+
+                            SolverLogger.info("");
+                            SolverLogger.info("       📊 Board state when dead-end detected:");
+                            SolverLogger.info("");
+                            solver.printBoardWithLabels(context.board, context.piecesById, unusedPieces);
+                            SolverLogger.info("");
+                        }
+                    }
                     outputStrategy.logAC3DeadEnd(pid);
                     context.stats.deadEndsDetected++;
 
                     // Backtrack
                     context.pieceUsed.clear(pid);
                     context.board.remove(r, c);
-                    solver.removeLastPlacement();
+                    solver.removePlacement(r, c);
                     validator.restoreDomains(context, r, c);
                     continue;
                 }
 
                 // Log successful placement
+                if (debugBacktracking && debugLogger != null) {
+                    debugLogger.logPlacementSuccess(r, c, pid, rot, currentDepth - 1, currentDepth,
+                                                   context.stats.backtracks, solver, context);
+                }
                 outputStrategy.logSuccessfulPlacement(context, solver, r, c);
 
                 // Check timeout only AFTER successful placement (not during backtracking)
@@ -177,23 +230,31 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                     return true;
                 }
 
-                // Backtrack
+                // Backtrack (recursion returned false = dead-end deeper in tree)
                 context.stats.backtracks++;
                 outputStrategy.logBacktrack(pid, r, c, (int) context.stats.backtracks);
 
                 context.pieceUsed.clear(pid);
                 context.board.remove(r, c);
-                solver.removeLastPlacement();
+                solver.removePlacement(r, c);
                 validator.restoreDomains(context, r, c);
 
                 // Update last placed tracking
                 solver.findAndSetLastPlaced(context.board);
+
+                // Show board after backtrack if debug mode is enabled
+                if (debugBacktracking && debugLogger != null) {
+                    debugLogger.logBacktrack(r, c, pid, context.getCurrentDepth(), solver, context);
+                }
             }
 
             optionIndex++;
         }
 
-        // No solution found with any piece at this cell
+        // No solution found with any piece at this cell - this is the DEAD-END!
+        if (debugBacktracking && debugLogger != null) {
+            debugLogger.logDeadEnd(r, c, attemptCount, solver, context);
+        }
         outputStrategy.logExhaustedOptions(r, c, snapshot.size());
         return false;
     }

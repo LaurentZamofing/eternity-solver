@@ -49,6 +49,13 @@ public class PuzzleConfig {
     private String sortOrder = "ascending"; // Sort order for pieces: "ascending" or "descending"
     private boolean prioritizeBorders = false; // Prioritize filling borders (default: disabled)
 
+    // Debug backtracking options
+    private boolean debugBacktracking = false; // Enable detailed backtracking logs (default: disabled)
+    private boolean debugShowBoard = false; // Show board after each placement (default: disabled)
+    private boolean debugShowAlternatives = false; // Show alternative cells considered (default: disabled)
+    private int debugMaxCandidates = 5; // Max number of alternative candidates to show (default: 5)
+    private boolean debugStepByStep = false; // Pause and wait for user input after each step (default: disabled)
+
     public PuzzleConfig(String name, String type, int rows, int cols, String difficulty) {
         this.name = name;
         this.type = type;
@@ -82,6 +89,18 @@ public class PuzzleConfig {
     public boolean isPrioritizeBorders() { return prioritizeBorders; }
     public void setPrioritizeBorders(boolean prioritizeBorders) { this.prioritizeBorders = prioritizeBorders; }
 
+    // Debug backtracking getters/setters
+    public boolean isDebugBacktracking() { return debugBacktracking; }
+    public void setDebugBacktracking(boolean debugBacktracking) { this.debugBacktracking = debugBacktracking; }
+    public boolean isDebugShowBoard() { return debugShowBoard; }
+    public void setDebugShowBoard(boolean debugShowBoard) { this.debugShowBoard = debugShowBoard; }
+    public boolean isDebugShowAlternatives() { return debugShowAlternatives; }
+    public void setDebugShowAlternatives(boolean debugShowAlternatives) { this.debugShowAlternatives = debugShowAlternatives; }
+    public int getDebugMaxCandidates() { return debugMaxCandidates; }
+    public void setDebugMaxCandidates(int debugMaxCandidates) { this.debugMaxCandidates = debugMaxCandidates; }
+    public boolean isDebugStepByStep() { return debugStepByStep; }
+    public void setDebugStepByStep(boolean debugStepByStep) { this.debugStepByStep = debugStepByStep; }
+
     /**
      * Load a puzzle from a file with metadata
      */
@@ -100,6 +119,11 @@ public class PuzzleConfig {
             int minDepthToShowRecords = Integer.MAX_VALUE;
             String sortOrder = "ascending";
             boolean prioritizeBorders = false;
+            boolean debugBacktracking = false;
+            boolean debugShowBoard = false;
+            boolean debugShowAlternatives = false;
+            int debugMaxCandidates = 5;
+            boolean debugStepByStep = false;
 
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
@@ -132,6 +156,20 @@ public class PuzzleConfig {
                     } else if (metadata.startsWith("PrioritizeBorders:")) {
                         String val = metadata.substring(18).trim().toLowerCase();
                         prioritizeBorders = val.equals("true") || val.equals("oui") || val.equals("yes");
+                    } else if (metadata.startsWith("DebugBacktracking:")) {
+                        String val = metadata.substring(18).trim().toLowerCase();
+                        debugBacktracking = val.equals("true") || val.equals("oui") || val.equals("yes");
+                    } else if (metadata.startsWith("DebugShowBoard:")) {
+                        String val = metadata.substring(15).trim().toLowerCase();
+                        debugShowBoard = val.equals("true") || val.equals("oui") || val.equals("yes");
+                    } else if (metadata.startsWith("DebugShowAlternatives:")) {
+                        String val = metadata.substring(22).trim().toLowerCase();
+                        debugShowAlternatives = val.equals("true") || val.equals("oui") || val.equals("yes");
+                    } else if (metadata.startsWith("DebugMaxCandidates:")) {
+                        debugMaxCandidates = Integer.parseInt(metadata.substring(19).trim());
+                    } else if (metadata.startsWith("DebugStepByStep:")) {
+                        String val = metadata.substring(16).trim().toLowerCase();
+                        debugStepByStep = val.equals("true") || val.equals("oui") || val.equals("yes");
                     } else if (metadata.startsWith("PieceFixePosition:")) {
                         String pos = metadata.substring(18).trim();
                         String[] coords = pos.split("[,\\s]+");
@@ -186,6 +224,19 @@ public class PuzzleConfig {
                 config.minDepthToShowRecords = minDepthToShowRecords;
                 config.sortOrder = sortOrder;
                 config.prioritizeBorders = prioritizeBorders;
+                config.debugBacktracking = debugBacktracking;
+                config.debugShowBoard = debugShowBoard;
+                config.debugShowAlternatives = debugShowAlternatives;
+                config.debugMaxCandidates = debugMaxCandidates;
+                config.debugStepByStep = debugStepByStep;
+
+                // Log debug config if enabled
+                if (debugBacktracking) {
+                    SolverLogger.info("🐛 DEBUG MODE ENABLED for puzzle: " + name);
+                    SolverLogger.info("   - Show board: " + debugShowBoard);
+                    SolverLogger.info("   - Show alternatives: " + debugShowAlternatives);
+                    SolverLogger.info("   - Step by step: " + debugStepByStep);
+                }
             }
         }
 

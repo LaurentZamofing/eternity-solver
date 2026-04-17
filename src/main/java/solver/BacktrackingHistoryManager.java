@@ -4,6 +4,7 @@ import util.SolverLogger;
 
 import model.Board;
 import model.Piece;
+import util.PositionKey;
 import util.SaveStateManager;
 
 import java.util.ArrayList;
@@ -215,13 +216,13 @@ public class BacktrackingHistoryManager {
     }
 
     /** Returns fixed positions that should not be backtracked (currently empty set). */
-    public Set<String> getFixedPositions() {
+    public Set<PositionKey> getFixedPositions() {
         return new HashSet<>(); // No fixed positions for now
     }
 
     /** Returns true if position is fixed and should not be backtracked. */
-    public boolean isFixedPosition(int row, int col, Set<String> fixedPositions) {
-        return fixedPositions.contains(row + "," + col);
+    public boolean isFixedPosition(int row, int col, Set<PositionKey> fixedPositions) {
+        return fixedPositions.contains(new PositionKey(row, col));
     }
 
     /** Logs backtrack progress showing count and current depth. */

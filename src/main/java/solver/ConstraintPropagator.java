@@ -4,6 +4,7 @@ import model.Board;
 import model.Piece;
 import model.Placement;
 import solver.DomainManager.ValidPlacement;
+import util.PositionKey;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -54,7 +55,7 @@ public class ConstraintPropagator {
         // AC-3 with cascading propagation
         // Queue of cells whose domains need to be updated
         Queue<int[]> queue = new java.util.LinkedList<>();
-        Set<String> inQueue = new java.util.HashSet<>();
+        Set<PositionKey> inQueue = new java.util.HashSet<>();
 
         // Format: {rowOffset, colOffset, placedSide, neighborSide}
         int[][] neighborOffsets = {{-1, 0, 0, 2}, {1, 0, 2, 0}, {0, -1, 3, 1}, {0, 1, 1, 3}};
@@ -65,7 +66,7 @@ public class ConstraintPropagator {
         for (int row = 0; row < board.getRows(); row++) {
             for (int col = 0; col < board.getCols(); col++) {
                 if (board.isEmpty(row, col)) {
-                    String key = row + "," + col;
+                    PositionKey key = new PositionKey(row, col);
                     if (!inQueue.contains(key)) {
                         queue.offer(new int[]{row, col});
                         inQueue.add(key);
@@ -79,12 +80,18 @@ public class ConstraintPropagator {
             int[] cell = queue.poll();
             int cellRow = cell[0];
             int cellCol = cell[1];
-            inQueue.remove(cellRow + "," + cellCol);
+            inQueue.remove(new PositionKey(cellRow, cellCol));
 
             // Get current domain
             Map<Integer, List<ValidPlacement>> currentDomain = domainManager.getDomain(cellRow, cellCol);
             if (currentDomain == null || currentDomain.isEmpty()) {
                 stats.incrementDeadEnds();
+
+                // Debug: Log which cell caused the dead-end
+                String cellLabel = String.valueOf((char) ('A' + cellRow)) + (cellCol + 1);
+                util.SolverLogger.error("       ❌ AC-3 DEAD-END: Cell " + cellLabel + " (" + cellRow + "," + cellCol + ") has EMPTY domain!");
+                util.SolverLogger.error("          This cell has NO valid pieces after constraint propagation");
+
                 return false;
             }
 
@@ -131,6 +138,12 @@ public class ConstraintPropagator {
 
                 if (newDomain.isEmpty()) {
                     stats.incrementDeadEnds();
+
+                    // Debug: Log which cell became empty after neighbor filtering
+                    String cellLabel = String.valueOf((char) ('A' + cellRow)) + (cellCol + 1);
+                    util.SolverLogger.error("       ❌ AC-3 DEAD-END: Cell " + cellLabel + " domain became EMPTY after filtering neighbors!");
+                    util.SolverLogger.error("          Domain had " + currentDomain.size() + " pieces before filtering");
+
                     return false;
                 }
             }
@@ -145,11 +158,28 @@ public class ConstraintPropagator {
 
             if (availableDomain.isEmpty()) {
                 stats.incrementDeadEnds();
+
+                // Debug: Log which cell has no available pieces
+                String cellLabel = String.valueOf((char) ('A' + cellRow)) + (cellCol + 1);
+                util.SolverLogger.error("       ❌ AC-3 DEAD-END: Cell " + cellLabel + " has NO AVAILABLE pieces!");
+                util.SolverLogger.error("          Domain had " + newDomain.size() + " pieces, but all are already used");
+
                 return false;
             }
 
             // If domain changed, update and add neighbors to queue for propagation
             if (domainChanged || availableDomain.size() < newDomain.size()) {
+                int oldSize = currentDomain.size();
+                int newSize = availableDomain.size();
+
+                // Debug: Log significant domain reductions
+                if (newSize < oldSize && newSize <= 5) {
+                    String cellLabel = String.valueOf((char) ('A' + cellRow)) + (cellCol + 1);
+                    util.SolverLogger.warn("       ⚠️  AC-3: Cell " + cellLabel + " domain reduced: " +
+                                         oldSize + " → " + newSize + " pieces " +
+                                         (newSize == 1 ? "(SINGLETON!)" : newSize <= 3 ? "(CRITICAL)" : "(WARNING)"));
+                }
+
                 domainManager.setDomain(cellRow, cellCol, availableDomain);
 
                 // Add all empty neighbors to queue to propagate changes
@@ -160,7 +190,7 @@ public class ConstraintPropagator {
                     if (nbrRow >= 0 && nbrRow < board.getRows() &&
                         nbrCol >= 0 && nbrCol < board.getCols() &&
                         board.isEmpty(nbrRow, nbrCol)) {
-                        String key = nbrRow + "," + nbrCol;
+                        PositionKey key = new PositionKey(nbrRow, nbrCol);
                         if (!inQueue.contains(key)) {
                             queue.offer(new int[]{nbrRow, nbrCol});
                             inQueue.add(key);

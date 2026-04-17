@@ -5,6 +5,7 @@ import model.Piece;
 import solver.display.ComparisonBoardRenderer;
 import solver.display.LabeledBoardRenderer;
 import solver.display.ValidPieceCounter;
+import util.PositionKey;
 import util.SaveStateManager;
 
 import java.util.HashSet;
@@ -49,16 +50,16 @@ import java.util.Set;
  */
 public class BoardDisplayManager {
 
-    private final Set<String> fixedPositions;
+    private final Set<PositionKey> fixedPositions;
     private final PlacementValidator validator;
 
     /**
      * Creates display manager with fixed positions and placement validator.
      *
-     * @param fixedPositions Set of fixed position keys ("row,col") for hint pieces
+     * @param fixedPositions Set of fixed position keys (PositionKey) for hint pieces
      * @param validator Placement validator for edge checking
      */
-    public BoardDisplayManager(Set<String> fixedPositions, PlacementValidator validator) {
+    public BoardDisplayManager(Set<PositionKey> fixedPositions, PlacementValidator validator) {
         this.fixedPositions = fixedPositions;
         this.validator = validator;
     }
@@ -81,7 +82,7 @@ public class BoardDisplayManager {
      * @param unusedIds List of unused piece IDs
      */
     public void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds) {
-        printBoardWithLabels(board, piecesById, unusedIds, null, null, null);
+        printBoardWithLabels(board, piecesById, unusedIds, null, null, null, null);
     }
 
     /**
@@ -108,23 +109,62 @@ public class BoardDisplayManager {
      */
     public void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
                                      SaveStateManager.PlacementInfo lastPlacement, int[] nextCell,
-                                     java.util.Map<String, Integer> placementOrderMap) {
+                                     java.util.Map<PositionKey, Integer> placementOrderMap) {
+        printBoardWithLabels(board, piecesById, unusedIds, lastPlacement, nextCell, placementOrderMap, null);
+    }
+
+    /**
+     * Displays board with labels, highlighting last placed piece, next target cell, and removed cell.
+     *
+     * <h3>Color Scheme</h3>
+     * <ul>
+     *   <li>Bright Magenta: Last placed piece (highlighted borders)</li>
+     *   <li>Bold Blue: Next target cell (highlighted)</li>
+     *   <li>Bold Red with ⬅: Removed cell during backtrack</li>
+     *   <li>Bright Cyan: Fixed positions (hints)</li>
+     *   <li>Green: Matching edges</li>
+     *   <li>Red: Mismatched edges</li>
+     *   <li>Bright Red: Deadends (0 valid pieces)</li>
+     *   <li>Bright Yellow: Critical (1-5 valid pieces)</li>
+     *   <li>Yellow: Warning (6-20 valid pieces)</li>
+     * </ul>
+     *
+     * @param board Board to display
+     * @param piecesById Map of all pieces by ID
+     * @param unusedIds List of unused piece IDs
+     * @param lastPlacement Last placed piece info (can be null)
+     * @param nextCell Next target cell [row, col] (can be null)
+     * @param placementOrderMap Map of position to placement order (can be null)
+     * @param removedCell Cell just removed during backtrack [row, col] (can be null)
+     */
+    public void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
+                                     SaveStateManager.PlacementInfo lastPlacement, int[] nextCell,
+                                     java.util.Map<PositionKey, Integer> placementOrderMap, int[] removedCell) {
         // Create valid piece counter
         ValidPieceCounter validPieceCounter = new ValidPieceCounter(validator);
 
-        // Build set of highlighted positions
-        Set<String> highlightedPositions = new HashSet<>();
+        // Build set of highlighted positions (last placed piece - shown in magenta)
+        Set<PositionKey> highlightedPositions = new HashSet<>();
         if (lastPlacement != null) {
-            highlightedPositions.add(lastPlacement.row + "," + lastPlacement.col);
+            highlightedPositions.add(new PositionKey(lastPlacement.row, lastPlacement.col));
         }
+
+        // Build set of next cell positions (next cell to process - shown in blue)
+        Set<PositionKey> nextCellPositions = new HashSet<>();
         if (nextCell != null) {
-            highlightedPositions.add(nextCell[0] + "," + nextCell[1]);
+            nextCellPositions.add(new PositionKey(nextCell[0], nextCell[1]));
+        }
+
+        // Build set of removed cell positions (backtracked cell - shown in red with ⬅)
+        Set<PositionKey> removedCellPositions = new HashSet<>();
+        if (removedCell != null) {
+            removedCellPositions.add(new PositionKey(removedCell[0], removedCell[1]));
         }
 
         // Create renderer with edge matching and valid count colors
         LabeledBoardRenderer renderer = new LabeledBoardRenderer(
             board, piecesById, unusedIds, validator, validPieceCounter, fixedPositions,
-            highlightedPositions, placementOrderMap
+            highlightedPositions, nextCellPositions, removedCellPositions, placementOrderMap
         );
 
         // Render board

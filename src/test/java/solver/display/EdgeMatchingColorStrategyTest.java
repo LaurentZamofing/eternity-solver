@@ -3,6 +3,7 @@ package solver.display;
 import model.Board;
 import model.Piece;
 import org.junit.jupiter.api.*;
+import util.PositionKey;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -18,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class EdgeMatchingColorStrategyTest {
 
     private Board board;
-    private Set<String> fixedPositions;
-    private Set<String> highlightedPositions;
+    private Set<PositionKey> fixedPositions;
+    private Set<PositionKey> highlightedPositions;
     private EdgeMatchingColorStrategy strategy;
 
     @BeforeEach
@@ -35,7 +36,7 @@ class EdgeMatchingColorStrategyTest {
     @Order(1)
     @DisplayName("getCellColor - fixed position returns bright cyan")
     void testFixedPositionColor() {
-        fixedPositions.add("1,1");
+        fixedPositions.add(new PositionKey(1, 1));
         strategy = new EdgeMatchingColorStrategy(board, fixedPositions);
 
         String color = strategy.getCellColor(board, 1, 1);
@@ -61,7 +62,7 @@ class EdgeMatchingColorStrategyTest {
     @Order(3)
     @DisplayName("getCellColor - highlighted position returns bright magenta")
     void testHighlightedPositionColor() {
-        highlightedPositions.add("1,1");
+        highlightedPositions.add(new PositionKey(1, 1));
         strategy = new EdgeMatchingColorStrategy(board, fixedPositions, highlightedPositions);
 
         String color = strategy.getCellColor(board, 1, 1);
@@ -74,8 +75,8 @@ class EdgeMatchingColorStrategyTest {
     @Order(4)
     @DisplayName("getCellColor - highlighted takes precedence over fixed")
     void testHighlightedOverridesFixed() {
-        fixedPositions.add("1,1");
-        highlightedPositions.add("1,1");
+        fixedPositions.add(new PositionKey(1, 1));
+        highlightedPositions.add(new PositionKey(1, 1));
         strategy = new EdgeMatchingColorStrategy(board, fixedPositions, highlightedPositions);
 
         String color = strategy.getCellColor(board, 1, 1);
@@ -89,7 +90,7 @@ class EdgeMatchingColorStrategyTest {
     @DisplayName("getEdgeColor - highlighted cell has magenta edges")
     void testHighlightedEdgeColor() {
         board.place(1, 1, new Piece(1, new int[]{1, 2, 3, 4}), 0);
-        highlightedPositions.add("1,1");
+        highlightedPositions.add(new PositionKey(1, 1));
         strategy = new EdgeMatchingColorStrategy(board, fixedPositions, highlightedPositions);
 
         String northColor = strategy.getEdgeColor(board, 1, 1, 0);
@@ -196,7 +197,7 @@ class EdgeMatchingColorStrategyTest {
     @DisplayName("getEdgeColor - fixed position edges return empty (cell color used)")
     void testFixedPositionEdges() {
         board.place(1, 1, new Piece(1, new int[]{1, 2, 3, 4}), 0);
-        fixedPositions.add("1,1");
+        fixedPositions.add(new PositionKey(1, 1));
         strategy = new EdgeMatchingColorStrategy(board, fixedPositions);
 
         // Fixed positions use cell color (bright cyan), not edge colors

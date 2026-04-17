@@ -3,6 +3,7 @@ package solver.visualization;
 import model.Board;
 import model.Piece;
 import solver.BoardVisualizer.FitsChecker;
+import util.PositionKey;
 
 import java.util.BitSet;
 import java.util.List;
@@ -57,8 +58,8 @@ public class FormatterContext {
     /** List of unused piece IDs (for LabeledFormatter and ComparisonFormatter). */
     private final List<Integer> unusedIds;
 
-    /** Set of fixed positions in format "row,col" (for LabeledFormatter). */
-    private final Set<String> fixedPositions;
+    /** Set of fixed positions (for LabeledFormatter). */
+    private final Set<PositionKey> fixedPositions;
 
     /** Reference board for comparison (for ComparisonFormatter). */
     private final Board referenceBoard;
@@ -112,7 +113,7 @@ public class FormatterContext {
         return unusedIds;
     }
 
-    public Set<String> getFixedPositions() {
+    public Set<PositionKey> getFixedPositions() {
         return fixedPositions;
     }
 
@@ -147,7 +148,7 @@ public class FormatterContext {
         private int lastPlacedRow = -1;
         private int lastPlacedCol = -1;
         private List<Integer> unusedIds;
-        private Set<String> fixedPositions;
+        private Set<PositionKey> fixedPositions;
         private Board referenceBoard;
 
         private Builder() {
@@ -235,10 +236,10 @@ public class FormatterContext {
         /**
          * Sets the fixed positions set (optional).
          *
-         * @param fixedPositions Set of fixed positions ("row,col" format)
+         * @param fixedPositions Set of fixed positions (PositionKey)
          * @return This builder
          */
-        public Builder fixedPositions(Set<String> fixedPositions) {
+        public Builder fixedPositions(Set<PositionKey> fixedPositions) {
             this.fixedPositions = fixedPositions;
             return this;
         }

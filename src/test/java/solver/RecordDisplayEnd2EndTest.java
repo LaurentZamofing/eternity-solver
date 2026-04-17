@@ -1,5 +1,7 @@
 package solver;
 
+
+import util.PositionKey;
 import model.Board;
 import model.Piece;
 import util.SaveStateManager;
@@ -23,7 +25,7 @@ class RecordDisplayEnd2EndTest {
     private Board board;
     private Map<Integer, Piece> pieces;
     private PlacementValidator validator;
-    private Set<String> fixedPositions;
+    private Set<PositionKey> fixedPositions;
     private AtomicInteger globalMaxDepth;
     private AtomicInteger globalBestScore;
     private AtomicInteger globalBestThreadId;
@@ -74,8 +76,10 @@ class RecordDisplayEnd2EndTest {
         int[] next = new int[]{0, 1};
 
         assertDoesNotThrow(() -> {
-            recordManager.displayRecord(result, 1, stats, board, pieces, unused,
-                fixedPositions, validator, last, next);
+            PlacementOrderTracker tracker = new PlacementOrderTracker();
+            StatisticsManager statsManager = new StatisticsManager();
+            recordManager.displayRecord(result, 1, statsManager, board, pieces, unused,
+                fixedPositions, validator, last, next, tracker);
         }, "Should display record at depth 1");
     }
 
@@ -133,8 +137,10 @@ class RecordDisplayEnd2EndTest {
 
             int finalDepth = depth;
             assertDoesNotThrow(() -> {
-                recordManager.displayRecord(result, finalDepth, stats, board, pieces, unused,
-                    fixedPositions, validator, last, next);
+                PlacementOrderTracker tracker = new PlacementOrderTracker();
+                StatisticsManager statsManager = new StatisticsManager();
+                recordManager.displayRecord(result, finalDepth, statsManager, board, pieces, unused,
+                    fixedPositions, validator, last, next, tracker);
             }, "Should display record at depth " + depth);
         }
     }
@@ -159,8 +165,10 @@ class RecordDisplayEnd2EndTest {
         int[] next = new int[]{1, 1};
 
         assertDoesNotThrow(() -> {
-            recordManager.displayRecord(result, 4, stats, board, pieces, unused,
-                fixedPositions, validator, last, next);
+            PlacementOrderTracker tracker = new PlacementOrderTracker();
+            StatisticsManager statsManager = new StatisticsManager();
+            recordManager.displayRecord(result, 4, statsManager, board, pieces, unused,
+                fixedPositions, validator, last, next, tracker);
         }, "Should display record with varied rotations");
     }
 
@@ -186,8 +194,10 @@ class RecordDisplayEnd2EndTest {
 
         // When displayed, empty cells should show (pieces/rotations) format
         assertDoesNotThrow(() -> {
-            recordManager.displayRecord(result, 4, stats, board, pieces, unused,
-                fixedPositions, validator, last, next);
+            PlacementOrderTracker tracker = new PlacementOrderTracker();
+            StatisticsManager statsManager = new StatisticsManager();
+            recordManager.displayRecord(result, 4, statsManager, board, pieces, unused,
+                fixedPositions, validator, last, next, tracker);
         }, "Should display with rotation counts in format (P/R)");
     }
 
@@ -216,8 +226,10 @@ class RecordDisplayEnd2EndTest {
         SaveStateManager.PlacementInfo last = new SaveStateManager.PlacementInfo(2, 2, 4, 0);
 
         assertDoesNotThrow(() -> {
-            recordManager.displayRecord(result, 9, stats, board, pieces, unused,
-                fixedPositions, validator, last, null);
+            PlacementOrderTracker tracker = new PlacementOrderTracker();
+            StatisticsManager statsManager = new StatisticsManager();
+            recordManager.displayRecord(result, 9, statsManager, board, pieces, unused,
+                fixedPositions, validator, last, null, tracker);
         }, "Should display complete solution");
 
         // Verify all edges match (solution is valid)

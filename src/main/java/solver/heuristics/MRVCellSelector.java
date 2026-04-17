@@ -4,6 +4,7 @@ import model.Board;
 import model.Piece;
 import solver.DomainManager;
 import solver.DomainManager.ValidPlacement;
+import util.CellLabelFormatter;
 import util.DebugHelper;
 import util.SolverLogger;
 
@@ -70,7 +71,7 @@ public class MRVCellSelector implements HeuristicStrategy {
         }
 
         String getCellLabel() {
-            return String.valueOf((char) ('A' + row)) + (col + 1);
+            return CellLabelFormatter.format(row, col);
         }
     }
 
@@ -283,7 +284,7 @@ public class MRVCellSelector implements HeuristicStrategy {
 
                         // Extra debug: log selection decision for cells with few possibilities
                         if (debugBacktracking && totalValidRotations <= 10) {
-                            String cellLabel = String.valueOf((char) ('A' + r)) + (c + 1);
+                            String cellLabel = CellLabelFormatter.format(r, c);
                             SolverLogger.info("      Eval " + cellLabel + ": " + totalValidRotations + " poss, " +
                                             "border=" + isBorder + ", neighbors=" + borderNeighbors + ", trap=" + wouldTrap +
                                             " → " + (shouldUpdate ? "UPDATE" : "skip"));
@@ -307,6 +308,12 @@ public class MRVCellSelector implements HeuristicStrategy {
 
                         // Choose cell with most occupied neighbors (most constraining)
                         if (currentConstraints > bestConstraints) {
+                            if (debugBacktracking && !silentMode) {
+                                String cellLabel = CellLabelFormatter.format(r, c);
+                                String bestLabel = CellLabelFormatter.format(bestCell[0], bestCell[1]);
+                                SolverLogger.info("      🎯 TIE-BREAK: " + cellLabel + " (" + currentConstraints + " neighbors) > " +
+                                                 bestLabel + " (" + bestConstraints + " neighbors) → choosing " + cellLabel);
+                            }
                             bestCell = new int[]{r, c};
                             // BUGFIX: Update bestBorderNeighbors when bestCell changes in tie-breaking
                             if (isBorder) {
@@ -320,6 +327,12 @@ public class MRVCellSelector implements HeuristicStrategy {
                             int bestDistToCenter = Math.abs(bestCell[0] - centerR) + Math.abs(bestCell[1] - centerC);
 
                             if (currentDistToCenter < bestDistToCenter) {
+                                if (debugBacktracking && !silentMode) {
+                                    String cellLabel = CellLabelFormatter.format(r, c);
+                                    String bestLabel = CellLabelFormatter.format(bestCell[0], bestCell[1]);
+                                    SolverLogger.info("      🎯 TIE-BREAK: " + cellLabel + " (dist=" + currentDistToCenter + ") closer to center than " +
+                                                     bestLabel + " (dist=" + bestDistToCenter + ") → choosing " + cellLabel);
+                                }
                                 bestCell = new int[]{r, c};
                                 // BUGFIX: Update bestBorderNeighbors when bestCell changes in tie-breaking
                                 if (isBorder) {
@@ -335,7 +348,7 @@ public class MRVCellSelector implements HeuristicStrategy {
         // Debug logging: Show selection result and alternatives
         if (debugBacktracking && !silentMode) {
             if (bestCell != null) {
-                String cellLabel = String.valueOf((char) ('A' + bestCell[0])) + (bestCell[1] + 1);
+                String cellLabel = CellLabelFormatter.format(bestCell[0], bestCell[1]);
                 SolverLogger.info("   Evaluated " + cellsEvaluated + " empty cells");
                 SolverLogger.info("   ⭐ SELECTED: " + cellLabel + " (" + bestCell[0] + "," + bestCell[1] + ") with " +
                                  minUniquePieces + " possibilities" +
@@ -343,8 +356,6 @@ public class MRVCellSelector implements HeuristicStrategy {
 
                 // Show top alternatives if enabled
                 if (debugShowAlternatives && allCandidates != null && allCandidates.size() > 1) {
-                    SolverLogger.info("   Top " + Math.min(debugMaxCandidates, allCandidates.size()) + " candidates:");
-
                     // Sort by possibilities (ascending) to show most constrained first
                     allCandidates.sort((a, b) -> {
                         if (a.possibilities != b.possibilities) return Integer.compare(a.possibilities, b.possibilities);
@@ -352,23 +363,39 @@ public class MRVCellSelector implements HeuristicStrategy {
                         return 0;
                     });
 
+                    SolverLogger.info("");
+                    SolverLogger.info("   📊 TOP " + Math.min(debugMaxCandidates, allCandidates.size()) + " CANDIDATES:");
+                    SolverLogger.info("   ┌──────┬────────┬──────────┬─────────┬─────────┐");
+                    SolverLogger.info("   │ Cell │  P/R   │ Neighbor │ DistCtr │ Status  │");
+                    SolverLogger.info("   ├──────┼────────┼──────────┼─────────┼─────────┤");
+
+                    int centerR = board.getRows() / 2;
+                    int centerC = board.getCols() / 2;
+
                     for (int i = 0; i < Math.min(debugMaxCandidates, allCandidates.size()); i++) {
                         CellCandidate cand = allCandidates.get(i);
                         boolean isSelected = (cand.row == bestCell[0] && cand.col == bestCell[1]);
-                        String marker = isSelected ? " ⭐" : "   ";
-                        String borderInfo = cand.isBorder ? " border" : " interior";
-                        String neighborInfo = cand.isBorder ? ", " + cand.borderNeighbors + " neighbors" : "";
-                        String trapInfo = cand.wouldTrap ? ", TRAPS GAP" : "";
 
-                        SolverLogger.info(marker + " " + (i + 1) + ". " + cand.getCellLabel() +
-                                         ": " + cand.possibilities + " poss [" + borderInfo + neighborInfo + trapInfo + "]");
+                        // Calculate occupied neighbors for display
+                        int occupiedNeighbors = neighborAnalyzer.countOccupiedNeighbors(board, cand.row, cand.col);
+                        int distToCenter = Math.abs(cand.row - centerR) + Math.abs(cand.col - centerC);
+
+                        // Format each column to exact width: Cell=6, P/R=8, Neighbor=10, DistCtr=9, Status=9
+                        String candLabel = String.format("%-4s  ", cand.getCellLabel());  // "H9  " + 2 spaces = 6 chars
+                        String piecesRot = String.format("%3d/%-3d ", cand.possibilities, cand.possibilities);  // "  1/1   " = 8 chars
+                        String neighbors = String.format("   %2d     ", occupiedNeighbors);  // "    2     " = 10 chars
+                        String distance = String.format("   %2d    ", distToCenter);  // "    1    " = 9 chars
+                        String status = isSelected ? " <* SEL> " : "         ";  // 9 chars (ASCII only)
+
+                        SolverLogger.info("   │" + candLabel + "│" + piecesRot + "│" + neighbors + "│" + distance + "│" + status + "│");
                     }
+                    SolverLogger.info("   └──────┴────────┴──────────┴─────────┴─────────┘");
                 }
 
-                DebugHelper.waitForUserInput();
+                // No pause here - let the caller decide when to pause
             } else {
                 SolverLogger.info("   ⚠ No valid cell found (board complete or dead-end)");
-                DebugHelper.waitForUserInput();
+                // No pause here - let the caller decide when to pause
             }
         }
 

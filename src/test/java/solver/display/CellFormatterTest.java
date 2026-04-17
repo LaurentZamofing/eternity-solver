@@ -91,7 +91,8 @@ class CellFormatterTest {
     @Order(6)
     @DisplayName("formatEmptyCellWithRotations - 1 piece with 4 rotations")
     void testFormatWithRotations_1p4r() {
-        String result = formatter.formatEmptyCellWithRotations(board, 1, 1, 1, 4);
+        // Use border cell (0,1) so hasConstraints() returns true
+        String result = formatter.formatEmptyCellWithRotations(board, 0, 1, 1, 4);
 
         assertEquals("(  1/  4)", result, "Should display 1/4 with fixed width");
     }

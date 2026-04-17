@@ -221,6 +221,110 @@ public class Board {
     }
 
     /**
+     * Checks if a cell is on any border of the board.
+     *
+     * @param r row
+     * @param c column
+     * @return true if cell is on top, bottom, left, or right border
+     */
+    public boolean isBorderCell(int r, int c) {
+        validateCoordinates(r, c);
+        return r == 0 || r == rows - 1 || c == 0 || c == cols - 1;
+    }
+
+    /**
+     * Checks if a row is the top border (row 0).
+     *
+     * @param r row
+     * @return true if this is the top border
+     */
+    public boolean isTopBorder(int r) {
+        return r == 0;
+    }
+
+    /**
+     * Checks if a row is the bottom border (last row).
+     *
+     * @param r row
+     * @return true if this is the bottom border
+     */
+    public boolean isBottomBorder(int r) {
+        return r == rows - 1;
+    }
+
+    /**
+     * Checks if a column is the left border (col 0).
+     *
+     * @param c column
+     * @return true if this is the left border
+     */
+    public boolean isLeftBorder(int c) {
+        return c == 0;
+    }
+
+    /**
+     * Checks if a column is the right border (last column).
+     *
+     * @param c column
+     * @return true if this is the right border
+     */
+    public boolean isRightBorder(int c) {
+        return c == cols - 1;
+    }
+
+    /**
+     * Checks if a cell is a corner (both row and column are borders).
+     *
+     * @param r row
+     * @param c column
+     * @return true if cell is in a corner
+     */
+    public boolean isCorner(int r, int c) {
+        validateCoordinates(r, c);
+        return (r == 0 || r == rows - 1) && (c == 0 || c == cols - 1);
+    }
+
+    /**
+     * Checks if a cell has any constraints (border or occupied neighbor).
+     * A cell has constraints if:
+     * - It is on a border (row 0, row max, col 0, or col max)
+     * - OR it has at least one occupied neighbor (north, east, south, west)
+     *
+     * @param r row
+     * @param c column
+     * @return true if the cell has constraints, false if completely unconstrained
+     */
+    public boolean hasConstraints(int r, int c) {
+        validateCoordinates(r, c);
+
+        // Check if on border (uses utility method)
+        if (isBorderCell(r, c)) {
+            return true;
+        }
+
+        // Check if any neighbor is occupied
+        // North
+        if (r > 0 && !isEmpty(r - 1, c)) {
+            return true;
+        }
+        // East
+        if (c < cols - 1 && !isEmpty(r, c + 1)) {
+            return true;
+        }
+        // South
+        if (r < rows - 1 && !isEmpty(r + 1, c)) {
+            return true;
+        }
+        // West
+        if (c > 0 && !isEmpty(r, c - 1)) {
+            return true;
+        }
+
+        // No constraints
+        return false;
+    }
+
+    /**
      * Validates that coordinates are within board bounds.
      */
     private void validateCoordinates(int r, int c) {

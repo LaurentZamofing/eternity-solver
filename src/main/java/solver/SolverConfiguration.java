@@ -1,5 +1,6 @@
 package solver;
 
+import util.PositionKey;
 import util.SaveStateManager;
 import util.SolverLogger;
 
@@ -33,6 +34,13 @@ public class SolverConfiguration {
     // Display and logging configuration
     private final int minDepthToShowRecords;
 
+    // Debug configuration
+    private final boolean debugBacktracking;
+    private final boolean debugShowBoard;
+    private final boolean debugShowAlternatives;
+    private final int debugMaxCandidates;
+    private final boolean debugStepByStep;
+
     // Timeout configuration
     private final long maxExecutionTimeMs;
 
@@ -44,7 +52,7 @@ public class SolverConfiguration {
 
     // Fixed pieces state
     private final int numFixedPieces;
-    private final Set<String> fixedPositions;
+    private final Set<PositionKey> fixedPositions;
     private final List<SaveStateManager.PlacementInfo> initialFixedPieces;
 
     // Thread management and saving
@@ -58,6 +66,11 @@ public class SolverConfiguration {
         this.useDomainCache = builder.useDomainCache;
         this.prioritizeBorders = builder.prioritizeBorders;
         this.minDepthToShowRecords = builder.minDepthToShowRecords;
+        this.debugBacktracking = builder.debugBacktracking;
+        this.debugShowBoard = builder.debugShowBoard;
+        this.debugShowAlternatives = builder.debugShowAlternatives;
+        this.debugMaxCandidates = builder.debugMaxCandidates;
+        this.debugStepByStep = builder.debugStepByStep;
         this.maxExecutionTimeMs = builder.maxExecutionTimeMs;
         this.puzzleName = builder.puzzleName;
         this.threadLabel = builder.threadLabel;
@@ -119,7 +132,7 @@ public class SolverConfiguration {
         return numFixedPieces;
     }
 
-    public Set<String> getFixedPositions() {
+    public Set<PositionKey> getFixedPositions() {
         return new HashSet<>(fixedPositions);
     }
 
@@ -133,6 +146,26 @@ public class SolverConfiguration {
 
     public static long getThreadSaveInterval() {
         return THREAD_SAVE_INTERVAL;
+    }
+
+    public boolean isDebugBacktracking() {
+        return debugBacktracking;
+    }
+
+    public boolean isDebugShowBoard() {
+        return debugShowBoard;
+    }
+
+    public boolean isDebugShowAlternatives() {
+        return debugShowAlternatives;
+    }
+
+    public int getDebugMaxCandidates() {
+        return debugMaxCandidates;
+    }
+
+    public boolean isDebugStepByStep() {
+        return debugStepByStep;
     }
 
     /** Logs current configuration parameters if verbose enabled. */
@@ -172,13 +205,18 @@ public class SolverConfiguration {
         private boolean useDomainCache = true;
         private boolean prioritizeBorders = false;
         private int minDepthToShowRecords = 0;
+        private boolean debugBacktracking = false;
+        private boolean debugShowBoard = false;
+        private boolean debugShowAlternatives = false;
+        private int debugMaxCandidates = 5;
+        private boolean debugStepByStep = false;
         private long maxExecutionTimeMs = Long.MAX_VALUE;
         private String puzzleName = "eternity2";
         private String threadLabel = "";
         private String sortOrder = "ascending";
         private int threadId = -1;
         private int numFixedPieces = 0;
-        private Set<String> fixedPositions = new HashSet<>();
+        private Set<PositionKey> fixedPositions = new HashSet<>();
         private List<SaveStateManager.PlacementInfo> initialFixedPieces = new ArrayList<>();
         private long randomSeed = 0;
 
@@ -192,6 +230,11 @@ public class SolverConfiguration {
             this.useDomainCache = config.useDomainCache;
             this.prioritizeBorders = config.prioritizeBorders;
             this.minDepthToShowRecords = config.minDepthToShowRecords;
+            this.debugBacktracking = config.debugBacktracking;
+            this.debugShowBoard = config.debugShowBoard;
+            this.debugShowAlternatives = config.debugShowAlternatives;
+            this.debugMaxCandidates = config.debugMaxCandidates;
+            this.debugStepByStep = config.debugStepByStep;
             this.maxExecutionTimeMs = config.maxExecutionTimeMs;
             this.puzzleName = config.puzzleName;
             this.threadLabel = config.threadLabel;
@@ -266,7 +309,7 @@ public class SolverConfiguration {
             return this;
         }
 
-        public Builder fixedPositions(Set<String> positions) {
+        public Builder fixedPositions(Set<PositionKey> positions) {
             this.fixedPositions = new HashSet<>(positions);
             return this;
         }
@@ -278,6 +321,31 @@ public class SolverConfiguration {
 
         public Builder randomSeed(long seed) {
             this.randomSeed = seed;
+            return this;
+        }
+
+        public Builder debugBacktracking(boolean debug) {
+            this.debugBacktracking = debug;
+            return this;
+        }
+
+        public Builder debugShowBoard(boolean debug) {
+            this.debugShowBoard = debug;
+            return this;
+        }
+
+        public Builder debugShowAlternatives(boolean debug) {
+            this.debugShowAlternatives = debug;
+            return this;
+        }
+
+        public Builder debugMaxCandidates(int max) {
+            this.debugMaxCandidates = max;
+            return this;
+        }
+
+        public Builder debugStepByStep(boolean debug) {
+            this.debugStepByStep = debug;
             return this;
         }
 

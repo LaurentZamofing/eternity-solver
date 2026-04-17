@@ -223,7 +223,7 @@ public class RecordManager {
      * @param board current board state
      * @param piecesById map of pieces by ID
      * @param unusedIds list of unused piece IDs
-     * @param fixedPositions set of fixed position keys ("row,col")
+     * @param fixedPositions set of fixed position keys (PositionKey)
      * @param validator placement validator for edge checking
      * @param lastPlacement last placed piece info (can be null)
      * @param nextCell next empty cell coordinates [row, col] (can be null if board is full)
@@ -231,7 +231,7 @@ public class RecordManager {
      */
     public void displayRecord(RecordCheckResult result, int usedCount, StatisticsManager stats,
                              Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
-                             Set<String> fixedPositions, PlacementValidator validator,
+                             java.util.Set<util.PositionKey> fixedPositions, PlacementValidator validator,
                              SaveStateManager.PlacementInfo lastPlacement, int[] nextCell,
                              PlacementOrderTracker placementOrderTracker) {
         // Note: Using synchronized block to ensure atomic multi-line output
@@ -282,13 +282,13 @@ public class RecordManager {
             SolverLogger.info("=".repeat(80));
 
             // Build placement order map
-            java.util.Map<String, Integer> placementOrderMap = null;
+            java.util.Map<util.PositionKey, Integer> placementOrderMap = null;
             if (placementOrderTracker != null) {
                 placementOrderMap = new java.util.HashMap<>();
                 java.util.List<SaveStateManager.PlacementInfo> allPlacements = placementOrderTracker.getPlacementHistory();
                 int step = 1;
                 for (SaveStateManager.PlacementInfo info : allPlacements) {
-                    String key = info.row + "," + info.col;
+                    util.PositionKey key = new util.PositionKey(info.row, info.col);
                     placementOrderMap.put(key, step++);
                 }
             }

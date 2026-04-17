@@ -105,11 +105,11 @@ public class BoardVisualizer {
      * @param board The board to visualize
      * @param piecesById Map of piece ID to Piece object
      * @param unusedIds List of unused piece IDs
-     * @param fixedPositions Set of fixed positions in "row,col" format
+     * @param fixedPositions Set of fixed positions (PositionKey)
      * @param fitsChecker Functional interface for checking if a piece fits
      */
     public static void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById,
-                                           List<Integer> unusedIds, Set<String> fixedPositions,
+                                           List<Integer> unusedIds, java.util.Set<util.PositionKey> fixedPositions,
                                            FitsChecker fitsChecker) {
         FormatterContext context = FormatterContext.builder()
                 .board(board)

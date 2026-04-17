@@ -49,7 +49,7 @@ class HighlightFeatureTest {
         SaveStateManager.PlacementInfo last = new SaveStateManager.PlacementInfo(0, 0, 1, 0);
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, last, null);
+            displayManager.printBoardWithLabels(board, pieces, unused, last, null, null);
         }, "Should highlight corner piece");
     }
 
@@ -62,7 +62,7 @@ class HighlightFeatureTest {
         SaveStateManager.PlacementInfo last = new SaveStateManager.PlacementInfo(0, 1, 2, 0);
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, last, null);
+            displayManager.printBoardWithLabels(board, pieces, unused, last, null, null);
         }, "Should highlight edge piece");
     }
 
@@ -75,7 +75,7 @@ class HighlightFeatureTest {
         SaveStateManager.PlacementInfo last = new SaveStateManager.PlacementInfo(1, 1, 5, 0);
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, last, null);
+            displayManager.printBoardWithLabels(board, pieces, unused, last, null, null);
         }, "Should highlight center piece");
     }
 
@@ -88,7 +88,7 @@ class HighlightFeatureTest {
         SaveStateManager.PlacementInfo last = new SaveStateManager.PlacementInfo(0, 0, 1, 1);
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, last, null);
+            displayManager.printBoardWithLabels(board, pieces, unused, last, null, null);
         }, "Should highlight rotated piece");
     }
 
@@ -101,7 +101,7 @@ class HighlightFeatureTest {
         SaveStateManager.PlacementInfo last = new SaveStateManager.PlacementInfo(0, 0, 1, 2);
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, last, null);
+            displayManager.printBoardWithLabels(board, pieces, unused, last, null, null);
         }, "Should highlight piece with 180° rotation");
     }
 
@@ -114,7 +114,7 @@ class HighlightFeatureTest {
         SaveStateManager.PlacementInfo last = new SaveStateManager.PlacementInfo(0, 0, 1, 3);
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, last, null);
+            displayManager.printBoardWithLabels(board, pieces, unused, last, null, null);
         }, "Should highlight piece with 270° rotation");
     }
 
@@ -131,7 +131,7 @@ class HighlightFeatureTest {
                 int[] nextTarget = new int[]{row, col};
 
                 assertDoesNotThrow(() -> {
-                    displayManager.printBoardWithLabels(board, pieces, unused, null, nextTarget);
+                    displayManager.printBoardWithLabels(board, pieces, unused, null, nextTarget, null);
                 }, "Should highlight next target at [" + row + "," + col + "]");
             }
         }
@@ -148,7 +148,7 @@ class HighlightFeatureTest {
         int[] next = new int[]{0, 1}; // Adjacent to last
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, last, next);
+            displayManager.printBoardWithLabels(board, pieces, unused, last, next, null);
         }, "Should highlight adjacent last (magenta) and next (blue)");
     }
 
@@ -163,7 +163,7 @@ class HighlightFeatureTest {
         int[] next = new int[]{2, 2}; // Opposite corner
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, last, next);
+            displayManager.printBoardWithLabels(board, pieces, unused, last, next, null);
         }, "Should highlight opposite corners");
     }
 
@@ -175,7 +175,7 @@ class HighlightFeatureTest {
         int[] next = new int[]{1, 1};
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, null, next);
+            displayManager.printBoardWithLabels(board, pieces, unused, null, next, null);
         }, "Should handle null last placement");
     }
 
@@ -188,7 +188,7 @@ class HighlightFeatureTest {
         SaveStateManager.PlacementInfo last = new SaveStateManager.PlacementInfo(0, 0, 1, 0);
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, last, null);
+            displayManager.printBoardWithLabels(board, pieces, unused, last, null, null);
         }, "Should handle null next target");
     }
 
@@ -200,7 +200,7 @@ class HighlightFeatureTest {
         List<Integer> unused = Arrays.asList(2, 3, 4, 5);
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, null, null);
+            displayManager.printBoardWithLabels(board, pieces, unused, null, null, null);
         }, "Should fallback to regular display when both null");
     }
 

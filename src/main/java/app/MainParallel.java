@@ -163,6 +163,14 @@ public class MainParallel {
             solver.setNumFixedPieces(config.getFixedPieces().size());
             solver.setThreadLabel(ConfigurationUtils.createThreadLabel(threadId, configId));
             solver.setMaxExecutionTime(timeoutMs);
+
+            // Pass debug configuration
+            solver.setDebugBacktracking(config.isDebugBacktracking());
+            solver.setDebugShowBoard(config.isDebugShowBoard());
+            solver.setDebugShowAlternatives(config.isDebugShowAlternatives());
+            solver.setDebugMaxCandidates(config.getDebugMaxCandidates());
+            solver.setDebugStepByStep(config.isDebugStepByStep());
+
             return solver;
         }
     }

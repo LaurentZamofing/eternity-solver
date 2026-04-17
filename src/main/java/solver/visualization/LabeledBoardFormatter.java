@@ -6,6 +6,7 @@ import model.Board;
 import model.Piece;
 import model.Placement;
 import solver.BoardVisualizer.FitsChecker;
+import util.PositionKey;
 
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
         Board board = context.getBoard();
         Map<Integer, Piece> piecesById = context.getPieces();
         List<Integer> unusedIds = context.getUnusedIds();
-        Set<String> fixedPositions = context.getFixedPositions();
+        Set<PositionKey> fixedPositions = context.getFixedPositions();
         FitsChecker fitsChecker = context.getFitsChecker();
 
         int rows = board.getRows();
@@ -97,7 +98,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
         SolverLogger.info("");
     }
 
-    private void printNorthEdgeLine(Board board, int row, int cols, Set<String> fixedPositions) {
+    private void printNorthEdgeLine(Board board, int row, int cols, Set<PositionKey> fixedPositions) {
         System.out.print("   " + VERTICAL);
         for (int c = 0; c < cols; c++) {
             printNorthEdge(board, row, c, fixedPositions);
@@ -106,8 +107,8 @@ public class LabeledBoardFormatter implements BoardFormatter {
         SolverLogger.info("");
     }
 
-    private void printNorthEdge(Board board, int row, int col, Set<String> fixedPositions) {
-        boolean isFixed = fixedPositions != null && fixedPositions.contains(row + "," + col);
+    private void printNorthEdge(Board board, int row, int col, Set<PositionKey> fixedPositions) {
+        boolean isFixed = fixedPositions != null && fixedPositions.contains(new PositionKey(row, col));
 
         if (board.isEmpty(row, col)) {
             System.out.print(spaces(CELL_WIDTH));
@@ -130,7 +131,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
     }
 
     private void printMiddleLine(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
-                                  FitsChecker fitsChecker, int row, int cols, Set<String> fixedPositions) {
+                                  FitsChecker fitsChecker, int row, int cols, Set<PositionKey> fixedPositions) {
         char rowLabel = rowLabel(row);
         System.out.print(" " + rowLabel + " " + VERTICAL);
 
@@ -142,8 +143,8 @@ public class LabeledBoardFormatter implements BoardFormatter {
     }
 
     private void printCellContent(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
-                                   FitsChecker fitsChecker, int row, int col, int cols, Set<String> fixedPositions) {
-        boolean isFixed = fixedPositions != null && fixedPositions.contains(row + "," + col);
+                                   FitsChecker fitsChecker, int row, int col, int cols, Set<PositionKey> fixedPositions) {
+        boolean isFixed = fixedPositions != null && fixedPositions.contains(new PositionKey(row, col));
 
         if (board.isEmpty(row, col)) {
             // Count valid pieces
@@ -191,7 +192,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
         }
     }
 
-    private void printSouthEdgeLine(Board board, int row, int cols, Set<String> fixedPositions) {
+    private void printSouthEdgeLine(Board board, int row, int cols, Set<PositionKey> fixedPositions) {
         System.out.print("   " + VERTICAL);
         for (int c = 0; c < cols; c++) {
             printSouthEdge(board, row, c, fixedPositions);
@@ -200,8 +201,8 @@ public class LabeledBoardFormatter implements BoardFormatter {
         SolverLogger.info("");
     }
 
-    private void printSouthEdge(Board board, int row, int col, Set<String> fixedPositions) {
-        boolean isFixed = fixedPositions != null && fixedPositions.contains(row + "," + col);
+    private void printSouthEdge(Board board, int row, int col, Set<PositionKey> fixedPositions) {
+        boolean isFixed = fixedPositions != null && fixedPositions.contains(new PositionKey(row, col));
 
         if (board.isEmpty(row, col)) {
             System.out.print(spaces(CELL_WIDTH));

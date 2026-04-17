@@ -114,7 +114,7 @@ public abstract class AbstractBoardRenderer {
             System.out.print(cellContent);
             gridRenderer.renderCellBorder();
         }
-        SolverLogger.info("");
+        System.out.println();
     }
 
     /**
@@ -132,7 +132,7 @@ public abstract class AbstractBoardRenderer {
             System.out.print(cellContent);
             gridRenderer.renderCellBorder();
         }
-        SolverLogger.info("");
+        System.out.println();
     }
 
     /**
@@ -149,7 +149,7 @@ public abstract class AbstractBoardRenderer {
             System.out.print(cellContent);
             gridRenderer.renderCellBorder();
         }
-        SolverLogger.info("");
+        System.out.println();
     }
 
     /**

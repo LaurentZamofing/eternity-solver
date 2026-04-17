@@ -1,5 +1,6 @@
 package solver.display;
 
+import util.PositionKey;
 import util.SolverLogger;
 import model.Board;
 import model.Piece;
@@ -194,15 +195,15 @@ public class BoardDisplayService {
      * @param board Board to render
      * @param allPieces Map of all pieces for displaying edge details
      * @param domainManager Optional DomainManager for AC-3 domains (null = use estimation)
-     * @param placementOrderMap Map of position ("row,col") to placement step number (null = no order display)
+     * @param placementOrderMap Map of position (PositionKey) to placement step number (null = no order display)
      */
     public static void writeToSaveFileDetailed(PrintWriter writer, Board board, Map<Integer, Piece> allPieces,
-                                               solver.DomainManager domainManager, java.util.Map<String, Integer> placementOrderMap) {
+                                               solver.DomainManager domainManager, java.util.Map<PositionKey, Integer> placementOrderMap) {
         int rows = board.getRows();
         int cols = board.getCols();
 
-        util.SolverLogger.debug("Generating detailed save file visualization:");
-        util.SolverLogger.debug("  Board size: {}x{}", rows, cols);
+        util.SolverLogger.info("Generating detailed save file visualization:");
+        util.SolverLogger.info("  Board size: {}x{}", rows, cols);
 
         // Count placed pieces
         int placedCount = 0;
@@ -211,9 +212,9 @@ public class BoardDisplayService {
                 if (!board.isEmpty(r, c)) placedCount++;
             }
         }
-        util.SolverLogger.debug("  Placed pieces: {}/{}", placedCount, rows * cols);
-        util.SolverLogger.debug("  Pieces map size: {}", allPieces != null ? allPieces.size() : 0);
-        util.SolverLogger.debug("  Using AC-3 domains: {}", domainManager != null && domainManager.isAC3Initialized());
+        util.SolverLogger.info("  Placed pieces: {}/{}", placedCount, rows * cols);
+        util.SolverLogger.info("  Pieces map size: {}", allPieces != null ? allPieces.size() : 0);
+        util.SolverLogger.info("  Using AC-3 domains: {}", domainManager != null && domainManager.isAC3Initialized());
 
         // Generate top horizontal separator
         StringBuilder separator = new StringBuilder("# ├");
@@ -251,7 +252,7 @@ public class BoardDisplayService {
                     int northEdge = p.edges[0];
 
                     // Get placement order if available
-                    String posKey = r + "," + c;
+                    PositionKey posKey = new PositionKey(r, c);
                     String orderSuffix = "";
                     if (placementOrderMap != null && placementOrderMap.containsKey(posKey)) {
                         int order = placementOrderMap.get(posKey);
@@ -278,12 +279,17 @@ public class BoardDisplayService {
             StringBuilder line2 = new StringBuilder("# │");
             for (int c = 0; c < cols; c++) {
                 if (board.isEmpty(r, c)) {
-                    CandidateCount count = rowCandidates[c];
-                    if (count.numPieces > 0 || count.numRotations > 0) {
-                        // Format: (PPP/RRR) = 9 chars exactly
-                        line2.append(String.format("(%3d/%3d)", count.numPieces, count.numRotations));
+                    // Don't display counts for cells with no constraints (not on border and no neighbors)
+                    if (!board.hasConstraints(r, c)) {
+                        line2.append("         ");  // 9 spaces (same as occupied cells)
                     } else {
-                        line2.append("   ∅     ");  // Empty set symbol if no candidates
+                        CandidateCount count = rowCandidates[c];
+                        if (count.numPieces > 0 || count.numRotations > 0) {
+                            // Format: (PPP/RRR) = 9 chars exactly
+                            line2.append(String.format("(%3d/%3d)", count.numPieces, count.numRotations));
+                        } else {
+                            line2.append("   ∅     ");  // Empty set symbol if no candidates
+                        }
                     }
                 } else {
                     Placement p = board.getPlacement(r, c);
@@ -332,8 +338,8 @@ public class BoardDisplayService {
         bottomSep.append("┘");
         writer.println(bottomSep.toString());
 
-        util.SolverLogger.debug("Save file visualization generated successfully");
-        util.SolverLogger.debug("  Total rows rendered: {}", rows);
+        util.SolverLogger.info("Save file visualization generated successfully");
+        util.SolverLogger.info("  Total rows rendered: {}", rows);
     }
 
     /**

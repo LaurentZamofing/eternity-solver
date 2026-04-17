@@ -104,7 +104,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
             SolverLogger.info("║  Available pieces: " + availableCount);
             SolverLogger.info("╚════════════════════════════════════════╝");
             context.stats.printCompact();
-            waitForEnter();
+            // No pause here - will pause after placement
         }
 
         // Symmetry breaking check
@@ -135,7 +135,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
             // Backtrack immediately
             context.pieceUsed.clear(pid);
             context.board.remove(r, c);
-            solver.removeLastPlacement();
+            solver.removePlacement(r, c);
             domainManager.restoreAC3Domains(context.board, r, c, context.piecesById,
                                            context.pieceUsed, context.totalPieces);
             return false;
@@ -147,7 +147,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
                                        context.totalPieces, r, c);
             System.out.println("✓ Singleton placed: ID=" + pid + ", Rotation=" + (rot * 90) +
                              "°, Edges=" + java.util.Arrays.toString(candidate));
-            waitForEnter();
+            // No pause here - will pause after placement
         }
 
         // Recursive call
@@ -161,12 +161,12 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
         context.stats.backtracks++;
         if (verbose) {
             SolverLogger.info("✗ Singleton BACKTRACK: Removing piece ID=" + pid + " at (" + r + ", " + c + ")");
-            waitForEnter();
+            // No pause here - will pause after backtrack
         }
 
         context.pieceUsed.clear(pid);
         context.board.remove(r, c);
-        solver.removeLastPlacement();
+        solver.removePlacement(r, c);
         domainManager.restoreAC3Domains(context.board, r, c, context.piecesById,
                                        context.pieceUsed, context.totalPieces);
 

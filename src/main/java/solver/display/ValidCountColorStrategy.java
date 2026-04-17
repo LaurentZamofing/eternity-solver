@@ -2,6 +2,7 @@ package solver.display;
 
 import model.Board;
 import model.Piece;
+import util.PositionKey;
 
 import java.util.List;
 import java.util.Map;
@@ -37,7 +38,9 @@ public class ValidCountColorStrategy implements ColorStrategy {
     private final ValidPieceCounter counter;
     private final Map<Integer, Piece> piecesById;
     private final List<Integer> unusedIds;
-    private final Set<String> highlightedPositions;
+    private final Set<PositionKey> highlightedPositions;
+    private final Set<PositionKey> nextCellPositions;
+    private final Set<PositionKey> removedCellPositions;
 
     /**
      * Creates valid count color strategy.
@@ -49,7 +52,7 @@ public class ValidCountColorStrategy implements ColorStrategy {
     public ValidCountColorStrategy(ValidPieceCounter counter,
                                    Map<Integer, Piece> piecesById,
                                    List<Integer> unusedIds) {
-        this(counter, piecesById, unusedIds, null);
+        this(counter, piecesById, unusedIds, null, null);
     }
 
     /**
@@ -58,21 +61,59 @@ public class ValidCountColorStrategy implements ColorStrategy {
      * @param counter Valid piece counter
      * @param piecesById Map of all pieces by ID
      * @param unusedIds List of unused piece IDs
-     * @param highlightedPositions Set of positions to highlight ("row,col")
+     * @param highlightedPositions Set of positions to highlight (PositionKey) - shown in magenta
      */
     public ValidCountColorStrategy(ValidPieceCounter counter,
                                    Map<Integer, Piece> piecesById,
                                    List<Integer> unusedIds,
-                                   Set<String> highlightedPositions) {
+                                   Set<PositionKey> highlightedPositions) {
+        this(counter, piecesById, unusedIds, highlightedPositions, null);
+    }
+
+    /**
+     * Creates valid count color strategy with highlighted and next cell positions.
+     *
+     * @param counter Valid piece counter
+     * @param piecesById Map of all pieces by ID
+     * @param unusedIds List of unused piece IDs
+     * @param highlightedPositions Set of positions to highlight (PositionKey) - shown in magenta
+     * @param nextCellPositions Set of next cells to process (PositionKey) - shown in blue
+     */
+    public ValidCountColorStrategy(ValidPieceCounter counter,
+                                   Map<Integer, Piece> piecesById,
+                                   List<Integer> unusedIds,
+                                   Set<PositionKey> highlightedPositions,
+                                   Set<PositionKey> nextCellPositions) {
+        this(counter, piecesById, unusedIds, highlightedPositions, nextCellPositions, null);
+    }
+
+    /**
+     * Creates valid count color strategy with highlighted, next cell, and removed cell positions.
+     *
+     * @param counter Valid piece counter
+     * @param piecesById Map of all pieces by ID
+     * @param unusedIds List of unused piece IDs
+     * @param highlightedPositions Set of positions to highlight (PositionKey) - shown in magenta
+     * @param nextCellPositions Set of next cells to process (PositionKey) - shown in blue
+     * @param removedCellPositions Set of removed cells during backtrack (PositionKey) - shown in red with ⬅
+     */
+    public ValidCountColorStrategy(ValidPieceCounter counter,
+                                   Map<Integer, Piece> piecesById,
+                                   List<Integer> unusedIds,
+                                   Set<PositionKey> highlightedPositions,
+                                   Set<PositionKey> nextCellPositions,
+                                   Set<PositionKey> removedCellPositions) {
         this.counter = counter;
         this.piecesById = piecesById;
         this.unusedIds = unusedIds;
         this.highlightedPositions = highlightedPositions;
+        this.nextCellPositions = nextCellPositions;
+        this.removedCellPositions = removedCellPositions;
     }
 
     /**
      * Returns color based on number of valid rotations for empty position.
-     * Highlighted empty cells (next target) get bold blue.
+     * Priority: Removed (red) > Next (blue) > Highlighted (magenta) > Valid count (red/yellow).
      * Only colors empty cells - occupied cells return empty string.
      *
      * Uses rotation count (not piece count) for better accuracy:
@@ -91,11 +132,21 @@ public class ValidCountColorStrategy implements ColorStrategy {
             return "";
         }
 
-        String positionKey = row + "," + col;
+        PositionKey positionKey = new PositionKey(row, col);
 
-        // Highlighted empty positions (next target) get bold blue
+        // Removed cell during backtrack gets bright red (highest priority)
+        if (removedCellPositions != null && removedCellPositions.contains(positionKey)) {
+            return BRIGHT_RED;
+        }
+
+        // Next cell to process gets bright blue
+        if (nextCellPositions != null && nextCellPositions.contains(positionKey)) {
+            return BRIGHT_BLUE;
+        }
+
+        // Highlighted empty positions get bright magenta
         if (highlightedPositions != null && highlightedPositions.contains(positionKey)) {
-            return BOLD + BLUE;
+            return BRIGHT_MAGENTA;
         }
 
         // Count valid rotations for this position (more accurate than piece count)

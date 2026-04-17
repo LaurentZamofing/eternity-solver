@@ -1,5 +1,7 @@
 package solver.display;
 
+
+import util.PositionKey;
 import model.Board;
 import model.Piece;
 import solver.PlacementValidator;
@@ -21,14 +23,14 @@ class ValidCountColorStrategyTest {
     private Map<Integer, Piece> piecesById;
     private List<Integer> unusedIds;
     private ValidPieceCounter counter;
-    private Set<String> highlightedPositions;
+    private Set<PositionKey> highlightedPositions;
     private ValidCountColorStrategy strategy;
 
     @BeforeEach
     void setUp() {
         board = new Board(3, 3);
         piecesById = createTestPieces();
-        unusedIds = Arrays.asList(1, 2, 3, 4, 5);
+        unusedIds = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8);
         counter = new ValidPieceCounter(createMockValidator());
         highlightedPositions = new HashSet<>();
     }
@@ -94,28 +96,28 @@ class ValidCountColorStrategyTest {
 
     @Test
     @Order(5)
-    @DisplayName("getCellColor - highlighted empty cell (next target) returns bold blue")
+    @DisplayName("getCellColor - highlighted empty cell returns bright magenta")
     void testHighlightedEmptyCellColor() {
-        highlightedPositions.add("0,0");
+        highlightedPositions.add(new PositionKey(0, 0));
         strategy = new ValidCountColorStrategy(counter, piecesById, unusedIds, highlightedPositions);
 
         String color = strategy.getCellColor(board, 0, 0);
 
-        assertEquals(ColorStrategy.BOLD + ColorStrategy.BLUE, color,
-            "Highlighted empty cell (next target) should return bold blue");
+        assertEquals(ColorStrategy.BRIGHT_MAGENTA, color,
+            "Highlighted empty cell should return bright magenta");
     }
 
     @Test
     @Order(6)
     @DisplayName("getCellColor - highlighted overrides deadend color")
     void testHighlightedOverridesDeadend() {
-        highlightedPositions.add("0,0");
+        highlightedPositions.add(new PositionKey(0, 0));
         ValidPieceCounter deadendCounter = new ValidPieceCounter(createDeadendValidator());
         strategy = new ValidCountColorStrategy(deadendCounter, piecesById, unusedIds, highlightedPositions);
 
         String color = strategy.getCellColor(board, 0, 0);
 
-        assertEquals(ColorStrategy.BOLD + ColorStrategy.BLUE, color,
+        assertEquals(ColorStrategy.BRIGHT_MAGENTA, color,
             "Highlighted should override deadend red");
     }
 
@@ -123,13 +125,13 @@ class ValidCountColorStrategyTest {
     @Order(7)
     @DisplayName("getCellColor - highlighted overrides critical color")
     void testHighlightedOverridesCritical() {
-        highlightedPositions.add("0,0");
+        highlightedPositions.add(new PositionKey(0, 0));
         ValidPieceCounter criticalCounter = new ValidPieceCounter(createLimitedValidator(3));
         strategy = new ValidCountColorStrategy(criticalCounter, piecesById, unusedIds, highlightedPositions);
 
         String color = strategy.getCellColor(board, 0, 0);
 
-        assertEquals(ColorStrategy.BOLD + ColorStrategy.BLUE, color,
+        assertEquals(ColorStrategy.BRIGHT_MAGENTA, color,
             "Highlighted should override critical yellow");
     }
 
@@ -226,6 +228,9 @@ class ValidCountColorStrategyTest {
         pieces.put(3, new Piece(3, new int[]{5, 7, 9, 10}));
         pieces.put(4, new Piece(4, new int[]{2, 4, 5, 0}));
         pieces.put(5, new Piece(5, new int[]{3, 5, 6, 4}));
+        pieces.put(6, new Piece(6, new int[]{1, 2, 3, 4}));
+        pieces.put(7, new Piece(7, new int[]{4, 5, 6, 7}));
+        pieces.put(8, new Piece(8, new int[]{7, 8, 9, 10}));
         return pieces;
     }
 

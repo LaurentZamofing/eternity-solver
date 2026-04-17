@@ -2,6 +2,7 @@ package solver;
 
 import model.Board;
 import model.Placement;
+import util.PositionKey;
 import util.SaveStateManager;
 
 import java.io.IOException;
@@ -50,11 +51,11 @@ public class FixedPieceDetector {
      */
     public static class FixedPieceInfo {
         public final int numFixedPieces;
-        public final Set<String> fixedPositions;
+        public final Set<PositionKey> fixedPositions;
         public final List<SaveStateManager.PlacementInfo> fixedPiecesList;
 
         public FixedPieceInfo(int numFixedPieces,
-                             Set<String> fixedPositions,
+                             Set<PositionKey> fixedPositions,
                              List<SaveStateManager.PlacementInfo> fixedPiecesList) {
             this.numFixedPieces = numFixedPieces;
             this.fixedPositions = new HashSet<>(fixedPositions);
@@ -71,13 +72,13 @@ public class FixedPieceDetector {
      * @return FixedPieceInfo containing all detected fixed pieces
      */
     public FixedPieceInfo detectFromBoard(Board board, BitSet pieceUsed) {
-        Set<String> fixedPositions = new HashSet<>();
+        Set<PositionKey> fixedPositions = new HashSet<>();
         List<SaveStateManager.PlacementInfo> fixedPiecesList = new ArrayList<>();
 
         for (int r = 0; r < board.getRows(); r++) {
             for (int c = 0; c < board.getCols(); c++) {
                 if (!board.isEmpty(r, c)) {
-                    fixedPositions.add(r + "," + c);
+                    fixedPositions.add(new PositionKey(r, c));
 
                     Placement placement = board.getPlacement(r, c);
                     int placedPieceId = placement.getPieceId();
@@ -146,13 +147,13 @@ public class FixedPieceDetector {
             List<SaveStateManager.PlacementInfo> preloadedOrder,
             int numFixedPieces) {
 
-        Set<String> fixedPositions = new HashSet<>();
+        Set<PositionKey> fixedPositions = new HashSet<>();
         List<SaveStateManager.PlacementInfo> initialFixedPieces = new ArrayList<>();
 
         for (int i = 0; i < Math.min(numFixedPieces, preloadedOrder.size()); i++) {
             SaveStateManager.PlacementInfo piece = preloadedOrder.get(i);
             initialFixedPieces.add(piece);
-            fixedPositions.add(piece.row + "," + piece.col);
+            fixedPositions.add(new PositionKey(piece.row, piece.col));
         }
 
         return new FixedPieceInfo(numFixedPieces, fixedPositions, initialFixedPieces);

@@ -198,7 +198,7 @@ class PlacementOrderTrackerTest {
         tracker.recordPlacement(0, 0, 1, 0);
         tracker.recordPlacement(0, 1, 2, 1);
 
-        PlacementInfo removed = tracker.removeLastPlacement();
+        PlacementInfo removed = tracker.removePlacement(0, 1);
 
         assertNotNull(removed, "Removed placement should not be null");
         assertEquals(2, removed.pieceId, "Should remove piece 2");
@@ -227,15 +227,15 @@ class PlacementOrderTrackerTest {
         tracker.recordPlacement(0, 1, 2, 1);
         tracker.recordPlacement(1, 0, 3, 2);
 
-        PlacementInfo removed1 = tracker.removeLastPlacement();
-        PlacementInfo removed2 = tracker.removeLastPlacement();
-        PlacementInfo removed3 = tracker.removeLastPlacement();
-        PlacementInfo removed4 = tracker.removeLastPlacement();
+        PlacementInfo removed1 = tracker.removePlacement(1, 0);
+        PlacementInfo removed2 = tracker.removePlacement(0, 1);
+        PlacementInfo removed3 = tracker.removePlacement(0, 0);
+        PlacementInfo removed4 = tracker.removePlacement(2, 2);
 
         assertEquals(3, removed1.pieceId, "First removal should be piece 3");
         assertEquals(2, removed2.pieceId, "Second removal should be piece 2");
         assertEquals(1, removed3.pieceId, "Third removal should be piece 1");
-        assertNull(removed4, "Fourth removal should be null");
+        assertNull(removed4, "Removing absent position should be null");
         assertEquals(0, tracker.getCurrentDepth(), "Depth should be 0");
     }
 
@@ -292,7 +292,7 @@ class PlacementOrderTrackerTest {
         tracker.recordPlacement(0, 1, 2, 1);
         assertEquals(2, tracker.getCurrentDepth(), "Depth should be 2");
 
-        tracker.removeLastPlacement();
+        tracker.removePlacement(0, 1);
         assertEquals(1, tracker.getCurrentDepth(), "Depth should be 1 after removal");
     }
 
@@ -460,9 +460,11 @@ class PlacementOrderTrackerTest {
         tracker = new PlacementOrderTracker();
         tracker.initialize();
 
-        // Add 1000 placements
+        // Add 1000 placements at distinct positions (32x32 grid, 1024 cells)
         for (int i = 0; i < 1000; i++) {
-            tracker.recordPlacement(i % 10, i % 10, i, i % 4);
+            int row = i / 32;
+            int col = i % 32;
+            tracker.recordPlacement(row, col, i, i % 4);
         }
 
         assertEquals(1000, tracker.getCurrentDepth(), "Should have 1000 placements");
@@ -550,20 +552,20 @@ class PlacementOrderTrackerTest {
         tracker.recordPlacement(0, 1, 2, 1);
         tracker.recordPlacement(0, 2, 3, 2);
 
-        // Remove last (piece 3)
-        tracker.removeLastPlacement();
+        // Remove last (piece 3 at 0,2)
+        tracker.removePlacement(0, 2);
 
         PlacementInfo last = tracker.getLastPlacement();
         assertEquals(2, last.pieceId, "After removing piece 3, last should be piece 2");
 
-        // Remove another (piece 2)
-        tracker.removeLastPlacement();
+        // Remove another (piece 2 at 0,1)
+        tracker.removePlacement(0, 1);
 
         PlacementInfo newLast = tracker.getLastPlacement();
         assertEquals(1, newLast.pieceId, "After removing piece 2, last should be piece 1");
 
-        // Remove last one (piece 1)
-        tracker.removeLastPlacement();
+        // Remove last one (piece 1 at 0,0)
+        tracker.removePlacement(0, 0);
 
         PlacementInfo empty = tracker.getLastPlacement();
         assertNull(empty, "After removing all, should return null");

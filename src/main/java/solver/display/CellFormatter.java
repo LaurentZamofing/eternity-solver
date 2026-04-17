@@ -1,6 +1,7 @@
 package solver.display;
 
 import model.Board;
+import util.PositionKey;
 
 /**
  * Formats cell content for board display with colors.
@@ -38,7 +39,7 @@ import model.Board;
 public class CellFormatter {
 
     private final ColorStrategy colorStrategy;
-    private final java.util.Map<String, Integer> placementOrderMap;
+    private final java.util.Map<PositionKey, Integer> placementOrderMap;
 
     /**
      * Creates cell formatter with color strategy.
@@ -53,9 +54,9 @@ public class CellFormatter {
      * Creates cell formatter with color strategy and placement order map.
      *
      * @param colorStrategy Strategy for determining cell and edge colors
-     * @param placementOrderMap Map of position ("row,col") to placement step number (null = no order)
+     * @param placementOrderMap Map of position (PositionKey) to placement step number (null = no order)
      */
-    public CellFormatter(ColorStrategy colorStrategy, java.util.Map<String, Integer> placementOrderMap) {
+    public CellFormatter(ColorStrategy colorStrategy, java.util.Map<PositionKey, Integer> placementOrderMap) {
         this.colorStrategy = colorStrategy;
         this.placementOrderMap = placementOrderMap;
     }
@@ -80,7 +81,7 @@ public class CellFormatter {
         // Get placement order if available
         String orderSuffix = "";
         if (placementOrderMap != null) {
-            String posKey = row + "," + col;
+            PositionKey posKey = new PositionKey(row, col);
             Integer order = placementOrderMap.get(posKey);
             if (order != null) {
                 orderSuffix = "#" + order;
@@ -93,25 +94,44 @@ public class CellFormatter {
 
         String color = !cellColor.isEmpty() ? cellColor : edgeColor;
 
-        // Format: edge centered + order right-aligned
-        // Keep edge at position 3-4 (centered), order fills from right
-        // Examples: "    0  #1", "    0 #27", "    0#112", "   15#114"
-        // For very long orders (#1000+), edge may shift slightly left but stays readable
-        int totalLength = 2 + orderSuffix.length(); // edge + order
-        int leftPadding = Math.max(3, (9 - totalLength) / 2 + (9 - totalLength) % 2); // At least 3 spaces
+        // Format: edge centered + order right-aligned at position 9
+        // Strategy: left_spaces + edge + middle_spaces + order = 9 chars
+        // Edge stays around position 3-4, order always at right edge
+        // Examples: "    0  #1", "    0 #27", "    0#112", "   15#114", "   22#256"
 
-        if (!color.isEmpty()) {
-            String formatted = String.format("%" + leftPadding + "s%2d%s", "", edgeNorth, orderSuffix);
-            // Ensure exactly 9 chars (without color codes)
-            if (formatted.length() < 9) {
-                formatted = String.format("%-9s", formatted);
-            }
-            return color + formatted + ColorStrategy.RESET;
+        int edgeWidth = 2;
+        int orderWidth = orderSuffix.length();
+        int remainingSpaces = 9 - edgeWidth - orderWidth; // Spaces to distribute
+
+        // Keep edge roughly centered (position 3-4)
+        int leftSpaces = Math.max(3, remainingSpaces / 2 + remainingSpaces % 2);
+        int middleSpaces = remainingSpaces - leftSpaces;
+
+        // Build format string - handle middleSpaces=0 case (can't use %0s)
+        // Split into edge part (colored) and order suffix (neutral gray color)
+        String edgePart;
+        if (middleSpaces > 0) {
+            edgePart = String.format("%" + leftSpaces + "s%2d%" + middleSpaces + "s",
+                                    "", edgeNorth, "");
         } else {
-            String formatted = String.format("%" + leftPadding + "s%2d%s", "", edgeNorth, orderSuffix);
-            // Pad to 9 chars if needed
-            return formatted.length() >= 9 ? formatted : String.format("%-9s", formatted);
+            edgePart = String.format("%" + leftSpaces + "s%2d",
+                                    "", edgeNorth);
         }
+
+        // Apply color to edge, neutral gray to order suffix
+        StringBuilder result = new StringBuilder();
+        if (!color.isEmpty()) {
+            result.append(color).append(edgePart).append(ColorStrategy.RESET);
+        } else {
+            result.append(edgePart);
+        }
+
+        // Add order suffix in dim gray color (if present)
+        if (!orderSuffix.isEmpty()) {
+            result.append("\u001B[90m").append(orderSuffix).append(ColorStrategy.RESET);
+        }
+
+        return result.toString();
     }
 
     /**
@@ -230,6 +250,12 @@ public class CellFormatter {
      * Displays as "P/R" where P=pieces, R=rotations.
      * Example: "(1/4)" means 1 piece with 4 valid rotations.
      *
+     * For cells with no constraints (not on border and no occupied neighbors),
+     * returns empty spaces instead of displaying values.
+     *
+     * For cells that were just removed during backtrack (color = BRIGHT_RED),
+     * displays "⬅ REMOV " to clearly indicate the removal.
+     *
      * @param board Current board
      * @param row Row index
      * @param col Column index
@@ -238,8 +264,19 @@ public class CellFormatter {
      * @return Formatted string with color codes
      */
     public String formatEmptyCellWithRotations(Board board, int row, int col, int numPieces, int numRotations) {
-        // Get color from strategy (usually based on total rotations)
+        // Get color from strategy (usually based on total rotations or removed status)
         String color = colorStrategy.getCellColor(board, row, col);
+
+        // If this is a removed cell (backtracked), display special indicator
+        if (ColorStrategy.BRIGHT_RED.equals(color) && board.isEmpty(row, col)) {
+            return String.format("%s⬅ REMOV %s", color, ColorStrategy.RESET);
+        }
+
+        // If cell has no constraints (not on border and no occupied neighbors),
+        // don't display the values as they are always very large and useless
+        if (!board.hasConstraints(row, col)) {
+            return "         "; // 9 spaces
+        }
 
         // Format: (PPP/RRR) = 9 chars exactly (consistent with save files)
         if (!color.isEmpty()) {

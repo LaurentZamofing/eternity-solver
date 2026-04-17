@@ -1,6 +1,7 @@
 package solver.display;
 
 import model.Board;
+import util.PositionKey;
 
 import java.util.Set;
 
@@ -31,35 +32,67 @@ import java.util.Set;
 public class EdgeMatchingColorStrategy implements ColorStrategy {
 
     private final EdgeMatchingValidator validator;
-    private final Set<String> fixedPositions;
-    private final Set<String> highlightedPositions;
+    private final Set<PositionKey> fixedPositions;
+    private final Set<PositionKey> highlightedPositions;
+    private final Set<PositionKey> nextCellPositions;
+    private final Set<PositionKey> removedCellPositions;
 
     /**
      * Creates edge matching color strategy.
      *
      * @param board Board to validate
-     * @param fixedPositions Set of fixed position keys ("row,col")
+     * @param fixedPositions Set of fixed position keys (PositionKey)
      */
-    public EdgeMatchingColorStrategy(Board board, Set<String> fixedPositions) {
-        this(board, fixedPositions, null);
+    public EdgeMatchingColorStrategy(Board board, Set<PositionKey> fixedPositions) {
+        this(board, fixedPositions, null, null);
     }
 
     /**
      * Creates edge matching color strategy with highlighted positions.
      *
      * @param board Board to validate
-     * @param fixedPositions Set of fixed position keys ("row,col")
-     * @param highlightedPositions Set of positions to highlight ("row,col")
+     * @param fixedPositions Set of fixed position keys (PositionKey)
+     * @param highlightedPositions Set of positions to highlight (PositionKey) - shown in magenta
      */
-    public EdgeMatchingColorStrategy(Board board, Set<String> fixedPositions, Set<String> highlightedPositions) {
+    public EdgeMatchingColorStrategy(Board board, Set<PositionKey> fixedPositions, Set<PositionKey> highlightedPositions) {
+        this(board, fixedPositions, highlightedPositions, null);
+    }
+
+    /**
+     * Creates edge matching color strategy with highlighted and next cell positions.
+     *
+     * @param board Board to validate
+     * @param fixedPositions Set of fixed position keys (PositionKey)
+     * @param highlightedPositions Set of positions to highlight (PositionKey) - shown in magenta
+     * @param nextCellPositions Set of next cells to process (PositionKey) - shown in blue
+     */
+    public EdgeMatchingColorStrategy(Board board, Set<PositionKey> fixedPositions,
+                                     Set<PositionKey> highlightedPositions, Set<PositionKey> nextCellPositions) {
+        this(board, fixedPositions, highlightedPositions, nextCellPositions, null);
+    }
+
+    /**
+     * Creates edge matching color strategy with highlighted, next cell, and removed cell positions.
+     *
+     * @param board Board to validate
+     * @param fixedPositions Set of fixed position keys (PositionKey)
+     * @param highlightedPositions Set of positions to highlight (PositionKey) - shown in magenta
+     * @param nextCellPositions Set of next cells to process (PositionKey) - shown in blue
+     * @param removedCellPositions Set of removed cells during backtrack (PositionKey) - shown in red with ⬅
+     */
+    public EdgeMatchingColorStrategy(Board board, Set<PositionKey> fixedPositions,
+                                     Set<PositionKey> highlightedPositions, Set<PositionKey> nextCellPositions,
+                                     Set<PositionKey> removedCellPositions) {
         this.validator = new EdgeMatchingValidator(board);
         this.fixedPositions = fixedPositions;
         this.highlightedPositions = highlightedPositions;
+        this.nextCellPositions = nextCellPositions;
+        this.removedCellPositions = removedCellPositions;
     }
 
     /**
      * Returns color for a cell.
-     * Highlighted positions get bright magenta, fixed positions get bright cyan.
+     * Priority: Removed (red) > Next cell (blue) > Highlighted (magenta) > Fixed (cyan).
      *
      * @param board Current board
      * @param row Row index
@@ -68,7 +101,17 @@ public class EdgeMatchingColorStrategy implements ColorStrategy {
      */
     @Override
     public String getCellColor(Board board, int row, int col) {
-        String positionKey = row + "," + col;
+        PositionKey positionKey = new PositionKey(row, col);
+
+        // Removed cell during backtrack gets bright red (highest priority)
+        if (removedCellPositions != null && removedCellPositions.contains(positionKey)) {
+            return BRIGHT_RED;
+        }
+
+        // Next cell to process gets bright blue
+        if (nextCellPositions != null && nextCellPositions.contains(positionKey)) {
+            return BRIGHT_BLUE;
+        }
 
         // Highlighted positions (last placed piece) get bright magenta
         if (highlightedPositions != null && highlightedPositions.contains(positionKey)) {
@@ -76,12 +119,12 @@ public class EdgeMatchingColorStrategy implements ColorStrategy {
         }
 
         // Fixed positions get bright cyan
-        return fixedPositions.contains(positionKey) ? BRIGHT_CYAN : "";
+        return (fixedPositions != null && fixedPositions.contains(positionKey)) ? BRIGHT_CYAN : "";
     }
 
     /**
      * Returns color for an edge based on matching with neighbor.
-     * Highlighted cells get bright magenta edges to stand out.
+     * Priority: Removed (red) > Next cell (blue) > Highlighted (magenta) > Edge validation (green/red).
      *
      * @param board Current board
      * @param row Row index
@@ -91,7 +134,17 @@ public class EdgeMatchingColorStrategy implements ColorStrategy {
      */
     @Override
     public String getEdgeColor(Board board, int row, int col, int direction) {
-        String positionKey = row + "," + col;
+        PositionKey positionKey = new PositionKey(row, col);
+
+        // Removed cell during backtrack gets bright red edges (highest priority)
+        if (removedCellPositions != null && removedCellPositions.contains(positionKey)) {
+            return BRIGHT_RED;
+        }
+
+        // Next cell to process gets bright blue edges
+        if (nextCellPositions != null && nextCellPositions.contains(positionKey)) {
+            return BRIGHT_BLUE;
+        }
 
         // Highlighted positions (last placed piece) get bright magenta edges
         if (highlightedPositions != null && highlightedPositions.contains(positionKey)) {
@@ -99,7 +152,7 @@ public class EdgeMatchingColorStrategy implements ColorStrategy {
         }
 
         // Fixed positions always use cell color (bright cyan)
-        if (fixedPositions.contains(positionKey)) {
+        if (fixedPositions != null && fixedPositions.contains(positionKey)) {
             return ""; // Cell color (bright cyan) will be used instead
         }
 

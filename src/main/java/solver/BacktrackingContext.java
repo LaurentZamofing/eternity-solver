@@ -92,4 +92,20 @@ public class BacktrackingContext {
         }
         return count;
     }
+
+    /**
+     * Gets list of unused piece IDs for display purposes.
+     * Eliminates code duplication in debug/display code.
+     *
+     * @return List of piece IDs that are not yet placed
+     */
+    public java.util.List<Integer> getUnusedPieces() {
+        java.util.List<Integer> unusedPieces = new java.util.ArrayList<>();
+        for (int i = 1; i <= totalPieces; i++) {
+            if (!pieceUsed.get(i)) {
+                unusedPieces.add(i);
+            }
+        }
+        return unusedPieces;
+    }
 }

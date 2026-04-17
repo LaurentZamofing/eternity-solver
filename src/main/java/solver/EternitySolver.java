@@ -141,11 +141,48 @@ public class EternitySolver {
     }
 
     /** Delegates to {@link PlacementOrderTracker#removeLastPlacement} */
+    @Deprecated
     SaveStateManager.PlacementInfo removeLastPlacement() {
+        // Deprecated - callers should use removePlacement(row, col)
         if (placementOrderTracker != null) {
             return placementOrderTracker.removeLastPlacement();
         }
         return null;
+    }
+
+    /** Removes a placement from tracking for a specific position */
+    SaveStateManager.PlacementInfo removePlacement(int row, int col) {
+        if (placementOrderTracker != null) {
+            return placementOrderTracker.removePlacement(row, col);
+        }
+        return null;
+    }
+
+    /** Gets placement history from tracker */
+    public java.util.List<SaveStateManager.PlacementInfo> getPlacementHistory() {
+        if (placementOrderTracker != null) {
+            return placementOrderTracker.getPlacementHistory();
+        }
+        return new java.util.ArrayList<>();
+    }
+
+    /**
+     * Builds placement order map for display purposes.
+     * Eliminates code duplication in debug/display code.
+     *
+     * @return Map of position to placement step number
+     */
+    public java.util.Map<util.PositionKey, Integer> buildPlacementOrderMap() {
+        java.util.Map<util.PositionKey, Integer> placementOrderMap = new java.util.HashMap<>();
+        java.util.List<SaveStateManager.PlacementInfo> allPlacements = getPlacementHistory();
+        if (allPlacements != null) {
+            int step = 1;
+            for (SaveStateManager.PlacementInfo info : allPlacements) {
+                util.PositionKey key = new util.PositionKey(info.row, info.col);
+                placementOrderMap.put(key, step++);
+            }
+        }
+        return placementOrderMap;
     }
 
     // State management delegates
@@ -182,6 +219,8 @@ public class EternitySolver {
             constraintPropagator, domainManager
         );
         this.mrvStrategy.setSortOrder(config.getSortOrder());
+        this.mrvStrategy.setDebugBacktracking(config.isDebugBacktracking());
+        this.mrvStrategy.setDebugShowBoard(config.isDebugShowBoard());
     }
 
     /** Initializes managers. Package-private for {@link HistoricalSolver}. */
@@ -215,7 +254,9 @@ public class EternitySolver {
     void initializeComponents(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
         SolverConfiguration config = configBuilder.build();
         SolverInitializer initializer = new SolverInitializer(this, stats, config.getSortOrder(), config.isVerbose(),
-            config.isPrioritizeBorders(), config.getFixedPositions());
+            config.isPrioritizeBorders(), config.getFixedPositions(),
+            config.isDebugBacktracking(), config.isDebugShowBoard(), config.isDebugShowAlternatives(),
+            config.getDebugMaxCandidates(), config.isDebugStepByStep());
         SolverInitializer.InitializedComponents components = initializer.initializeComponents(
             board, pieces, pieceUsed, totalPieces);
         assignSolverComponents(components);
@@ -365,6 +406,33 @@ public class EternitySolver {
         configBuilder.verbose(enabled);
     }
 
+    public void setDebugBacktracking(boolean enabled) {
+        configBuilder.debugBacktracking(enabled);
+    }
+
+    public void setDebugShowBoard(boolean enabled) {
+        configBuilder.debugShowBoard(enabled);
+    }
+
+    public void setDebugShowAlternatives(boolean enabled) {
+        configBuilder.debugShowAlternatives(enabled);
+    }
+
+    public void setDebugMaxCandidates(int max) {
+        configBuilder.debugMaxCandidates(max);
+    }
+
+    public void setDebugStepByStep(boolean enabled) {
+        configBuilder.debugStepByStep(enabled);
+    }
+
+    /** Temporarily enable/disable debug logging in cell selector (for internal calls) */
+    public void setCellSelectorSilentMode(boolean silent) {
+        if (cellSelector != null) {
+            cellSelector.setSilentMode(silent);
+        }
+    }
+
     /** Resets solver state and statistics. */
     public void reset() {
         stats = new Statistics();
@@ -392,6 +460,20 @@ public class EternitySolver {
     /** Delegates to {@link BoardDisplayManager#printBoardWithLabels} */
     public void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds) {
         displayManager.printBoardWithLabels(board, piecesById, unusedIds);
+    }
+
+    /** Displays board with highlighting and placement order numbers */
+    public void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
+                                    SaveStateManager.PlacementInfo lastPlacement, int[] nextCell,
+                                    java.util.Map<util.PositionKey, Integer> placementOrderMap) {
+        displayManager.printBoardWithLabels(board, piecesById, unusedIds, lastPlacement, nextCell, placementOrderMap, null);
+    }
+
+    /** Displays board with highlighting, placement order numbers, and removed cell indicator */
+    public void printBoardWithLabels(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
+                                    SaveStateManager.PlacementInfo lastPlacement, int[] nextCell,
+                                    java.util.Map<util.PositionKey, Integer> placementOrderMap, int[] removedCell) {
+        displayManager.printBoardWithLabels(board, piecesById, unusedIds, lastPlacement, nextCell, placementOrderMap, removedCell);
     }
 
     /** Delegates to {@link BoardDisplayManager#printBoardWithComparison} */

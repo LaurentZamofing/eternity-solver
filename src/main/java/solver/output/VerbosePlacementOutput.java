@@ -192,7 +192,7 @@ public class VerbosePlacementOutput implements PlacementOutputStrategy {
             }
         } catch (IOException e) {
             // If stdin check fails, skip waiting (test environment)
-            SolverLogger.debug("stdin not available: " + e.getMessage());
+            SolverLogger.info("stdin not available: " + e.getMessage());
         }
     }
 }

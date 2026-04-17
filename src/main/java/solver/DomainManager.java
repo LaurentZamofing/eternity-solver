@@ -266,4 +266,44 @@ public class DomainManager {
             domainCache.clear();
         }
     }
+
+    /**
+     * Logs critical domains (cells with few pieces) for debugging.
+     * Shows cells with 0-5 pieces in their domain.
+     *
+     * @param board Current board
+     * @param maxPiecesToShow Only show cells with this many pieces or fewer (e.g., 5)
+     */
+    public void logCriticalDomains(Board board, int maxPiecesToShow) {
+        if (!ac3Initialized) {
+            util.SolverLogger.info("       ℹ️  AC-3 not initialized - cannot show domains");
+            return;
+        }
+
+        util.SolverLogger.info("       🔍 Critical cells (≤" + maxPiecesToShow + " pieces in domain):");
+
+        int count = 0;
+        for (int r = 0; r < board.getRows(); r++) {
+            for (int c = 0; c < board.getCols(); c++) {
+                if (board.isEmpty(r, c)) {
+                    Map<Integer, List<ValidPlacement>> domain = getDomain(r, c);
+                    if (domain != null && domain.size() <= maxPiecesToShow) {
+                        String cellLabel = String.valueOf((char) ('A' + r)) + (c + 1);
+                        String status = domain.size() == 0 ? "❌ EMPTY" :
+                                      domain.size() == 1 ? "⭐ SINGLETON" :
+                                      domain.size() <= 3 ? "🔴 CRITICAL" : "⚠️  WARNING";
+
+                        int totalRotations = domain.values().stream().mapToInt(List::size).sum();
+                        util.SolverLogger.info("          " + status + " " + cellLabel + ": " +
+                                             domain.size() + " pieces, " + totalRotations + " rotations");
+                        count++;
+                    }
+                }
+            }
+        }
+
+        if (count == 0) {
+            util.SolverLogger.info("          ✅ No critical cells found");
+        }
+    }
 }

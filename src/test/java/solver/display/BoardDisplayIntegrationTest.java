@@ -1,5 +1,7 @@
 package solver.display;
 
+
+import util.PositionKey;
 import model.Board;
 import model.Piece;
 import solver.BoardDisplayManager;
@@ -28,7 +30,7 @@ class BoardDisplayIntegrationTest {
     private Board board;
     private Map<Integer, Piece> pieces;
     private PlacementValidator validator;
-    private Set<String> fixedPositions;
+    private Set<PositionKey> fixedPositions;
     private BoardDisplayManager displayManager;
 
     @BeforeEach
@@ -98,7 +100,7 @@ class BoardDisplayIntegrationTest {
         SaveStateManager.PlacementInfo lastPlaced = new SaveStateManager.PlacementInfo(0, 1, 5, 0);
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, lastPlaced, null);
+            displayManager.printBoardWithLabels(board, pieces, unused, lastPlaced, null, null);
         }, "Should highlight last placed piece in magenta");
     }
 
@@ -111,7 +113,7 @@ class BoardDisplayIntegrationTest {
         int[] nextTarget = new int[]{0, 1}; // A2
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, null, nextTarget);
+            displayManager.printBoardWithLabels(board, pieces, unused, null, nextTarget, null);
         }, "Should highlight next target in blue");
     }
 
@@ -127,7 +129,7 @@ class BoardDisplayIntegrationTest {
         int[] nextTarget = new int[]{0, 2}; // A3
 
         assertDoesNotThrow(() -> {
-            displayManager.printBoardWithLabels(board, pieces, unused, lastPlaced, nextTarget);
+            displayManager.printBoardWithLabels(board, pieces, unused, lastPlaced, nextTarget, null);
         }, "Should highlight both last (magenta) and next (blue)");
     }
 
@@ -135,8 +137,8 @@ class BoardDisplayIntegrationTest {
     @Order(7)
     @DisplayName("Full board display - with fixed pieces in cyan")
     void testDisplayWithFixedPieces() {
-        fixedPositions.add("0,0");
-        fixedPositions.add("2,2");
+        fixedPositions.add(new PositionKey(0, 0));
+        fixedPositions.add(new PositionKey(2, 2));
         displayManager = new BoardDisplayManager(fixedPositions, validator);
 
         board.place(0, 0, pieces.get(1), 0);
@@ -189,8 +191,13 @@ class BoardDisplayIntegrationTest {
         Board largeBoard = new Board(16, 16);
         List<Integer> allPieces = new ArrayList<>(pieces.keySet());
 
+        // Validator must match the board size: build a 16x16 constraints matrix
+        CellConstraints[][] largeConstraints = CellConstraints.createConstraintsMatrix(16, 16);
+        EternitySolver.Statistics largeStats = new EternitySolver.Statistics();
+        PlacementValidator largeValidator = new PlacementValidator(largeConstraints, largeStats, "ascending");
+
         assertDoesNotThrow(() -> {
-            BoardDisplayManager largeDisplay = new BoardDisplayManager(new HashSet<>(), validator);
+            BoardDisplayManager largeDisplay = new BoardDisplayManager(new HashSet<>(), largeValidator);
             largeDisplay.printBoardWithLabels(largeBoard, pieces, allPieces);
         }, "Should handle large 16x16 board display");
     }

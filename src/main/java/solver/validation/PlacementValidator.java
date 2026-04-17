@@ -71,6 +71,15 @@ public class PlacementValidator {
     }
 
     /**
+     * Gets the domain manager for debugging purposes.
+     *
+     * @return Domain manager instance
+     */
+    public DomainManager getDomainManager() {
+        return domainManager;
+    }
+
+    /**
      * Validates a piece placement against pre-placement constraints.
      *
      * <p><b>Important:</b> This validates constraints that can be checked BEFORE

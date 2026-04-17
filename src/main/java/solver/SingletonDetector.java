@@ -1,5 +1,6 @@
 package solver;
 
+import util.DebugHelper;
 import util.SolverLogger;
 
 import model.Board;
@@ -66,6 +67,7 @@ public class SingletonDetector {
     private final FitChecker fitChecker;
     private final Statistics stats;
     private final boolean verbose;
+    private boolean debugBacktracking = false; // Will be set from config
 
     /**
      * Interface to check if a piece fits at a position.
@@ -88,6 +90,15 @@ public class SingletonDetector {
     }
 
     /**
+     * Set debug backtracking mode (detailed logs).
+     *
+     * @param debugBacktracking whether to enable debug logs
+     */
+    public void setDebugBacktracking(boolean debugBacktracking) {
+        this.debugBacktracking = debugBacktracking;
+    }
+
+    /**
      * Searches for a piece that can only go in one place (singleton).
      * This is a powerful optimization: if a piece has only one possible position,
      * it MUST be placed there, otherwise the branch is doomed to fail.
@@ -100,8 +111,15 @@ public class SingletonDetector {
      */
     public SingletonInfo findSingletonPiece(Board board, Map<Integer, Piece> piecesById,
                                            BitSet pieceUsed, int totalPieces) {
+        if (debugBacktracking) {
+            SolverLogger.info("🔍 Checking for singleton pieces (pieces that can only go at one position)...");
+        }
+
+        int piecesChecked = 0;
         for (int pid = 1; pid <= totalPieces; pid++) {
             if (pieceUsed.get(pid)) continue; // Piece already used
+            piecesChecked++;
+
             Piece piece = piecesById.get(pid);
             List<int[]> possiblePositions = new ArrayList<>(); // [r, c, rotation]
 
@@ -138,10 +156,18 @@ public class SingletonDetector {
                     // Choose first possible rotation (arbitrary, we'll test others during backtracking if needed)
                     int[] pos = possiblePositions.get(0);
                     stats.incrementSingletonsFound();
-                    if (verbose) {
-                        String rotInfo = possiblePositions.size() == 1 ?
-                            " with rotation " + (pos[2] * 90) + "°" :
-                            " with " + possiblePositions.size() + " possible rotations";
+
+                    String rowLabel = String.valueOf((char) ('A' + pos[0]));
+                    String rotInfo = possiblePositions.size() == 1 ?
+                        " with rotation " + (pos[2] * 90) + "°" :
+                        " with " + possiblePositions.size() + " possible rotations";
+
+                    if (debugBacktracking) {
+                        SolverLogger.info("🎯 SINGLETON DETECTED! Piece " + pid + " can ONLY go at " + rowLabel + (pos[1] + 1) +
+                                         " (" + pos[0] + ", " + pos[1] + ")" + rotInfo);
+                        SolverLogger.info("   → This piece MUST be placed here (forced move)");
+                        // No pause here - will pause after placement
+                    } else if (verbose) {
                         SolverLogger.info("🎯 SINGLETON found! Piece " + pid + " can only go at (" + pos[0] + ", " + pos[1] + ")" + rotInfo);
                     }
                     return new SingletonInfo(pid, pos[0], pos[1], pos[2]);
@@ -151,11 +177,18 @@ public class SingletonDetector {
             // Dead-end: this piece cannot go anywhere!
             if (possiblePositions.size() == 0) {
                 stats.incrementDeadEnds();
-                if (verbose) {
+                if (debugBacktracking) {
+                    SolverLogger.info("⚠ DEAD-END: Piece " + pid + " cannot be placed anywhere! (backtracking needed)");
+                } else if (verbose) {
                     SolverLogger.info("⚠ DEAD-END: Piece " + pid + " cannot go anywhere!");
                 }
                 return null;
             }
+        }
+
+        if (debugBacktracking) {
+            SolverLogger.info("✓ No singletons found among " + piecesChecked + " available pieces - using MRV selection");
+            // No pause here - will pause after MRV selection
         }
 
         return null; // No singleton found

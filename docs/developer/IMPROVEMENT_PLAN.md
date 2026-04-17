@@ -165,14 +165,31 @@ Tâches : M3 + M8 + QW7.
 - **Risque** : moyen — relève gates bloque CI. Mitigation : combler packages d'abord.
 - **Métrique** : JaCoCo 30/25 passant, MRV PQ bench publié, 0 PMD violation.
 
-### **Chantier 5 — Scaling algorithme** (3-5 j, R&D)
-Tâches : BB1 + BB2.
-- JFR sur solve 8×8 → identifier hot alloc.
-- Pools si allocation > 20 % CPU.
-- DLX POC indépendant dans `solver/experimental/dlx/`.
-- Bench comparatif JMH DLX vs AC-3 (4×4 → 8×8).
-- **Risque** : élevé, expérimental. Mitigation : flag off par défaut.
-- **Métrique** : DLX ≥ 2× plus vite sur 4×4 hard OU décision no-go documentée.
+### **Chantier 5 — Scaling algorithme** (3-5 j, R&D) — ✅ **GO validé 2026-04-18**
+Tâches : **BB1 + BB2 + BB3** (bench contention parallèle ajouté).
+
+#### BB1 — POC Dancing Links (DLX)
+- Ajouter `solver/experimental/dlx/` avec `DancingLinksSolver` indépendant.
+- Conversion `(board, pieces)` → exact-cover matrix (cell constraints + piece-used constraints).
+- Bench JMH `DLXBenchmark.solve4x4Hard` + `solve8x8` à créer.
+- **Go/no-go** : si DLX ≥ 2× plus rapide qu'AC-3 sur 4×4 hard → continuer vers 8×8 ; sinon documenter no-go + supprimer.
+
+#### BB2 — Scaling 16×16 (allocation + JFR)
+- `jfr` profil sur solve 8×8 long (≥ 30 s) → identifier top allocations.
+- Pools : si `Placement` ou `ArrayList<ValidPlacement>` > 20 % CPU, introduire pools thread-local.
+- Migration hot path `HashMap<Integer, Piece>` → `Piece[] piecesByIndex` (déjà partiellement fait via cache `edges` dans C2).
+- Bench gains cumulés : baseline 4×4 post-C2 vs post-BB2 — cible −30 % time.
+
+#### BB3 — Contention WorkStealingExecutor
+- JFR `lock-contention` profil sur solve parallèle 8×8, 2/4/8 threads.
+- Identifier locks chauds sur `SaveStateIO` / `RecordManager`.
+- Redesign : déplacer écriture saves hors du chemin chaud (queue + writer thread dédié).
+
+- **Risque** : élevé, expérimental. Mitigation : tout sous flag off par défaut, PRs séparées.
+- **Métrique** : 
+  - DLX POC bench documenté ≥ 4×4 hard
+  - Scaling : solve 8×8 (puzzle à créer) < 60 s  
+  - Parallèle : scalabilité ≥ 1.8× sur 4 threads
 
 ---
 
@@ -193,10 +210,10 @@ Tâches : BB1 + BB2.
 | Chantier | Statut | Commits | Progress |
 |----------|--------|---------|----------|
 | C1 Stabilisation & mesure | **terminé** | `e105353` + split | 1.1→1.5 ✅ — @Disabled 10→4, +3 tests, coverage baseline, JMH baseline à jour, test split 731→175+375 |
-| C2 Quick wins perf AC-3 | **à démarrer** | — | |
+| C2 Quick wins perf AC-3 | **en cours** | — | QW4 `Piece.isTopLeftFittable*` + QW3 cache `edges` dans `ValidPlacement` ✅ |
 | C3 Structure & DI | pending | — | |
 | C4 Coverage & gates | pending | — | |
-| C5 Scaling (R&D) | pending | — | Hors scope session actuelle |
+| C5 Scaling (R&D) | **go validé** | — | Big bets BB1 + BB2 + BB3 approuvés (2026-04-18). Démarre après C2/C3/C4. |
 
 ### Étapes détaillées Chantier 1
 

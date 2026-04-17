@@ -56,7 +56,7 @@ public class PieceOrderingOptimizer {
             for (int rot = 0; rot < maxRotations; rot++) {
                 int[] edges = piece.edgesRotated(rot);
                 if (validator.fits(board, r, c, edges)) {
-                    validPlacements.add(new DomainManager.ValidPlacement(pid, rot));
+                    validPlacements.add(new DomainManager.ValidPlacement(pid, rot, edges));
                 }
             }
         }

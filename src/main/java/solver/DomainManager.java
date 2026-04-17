@@ -14,14 +14,31 @@ import java.util.Map;
  */
 public class DomainManager {
 
-    /** Stores valid placement details (piece ID and rotation). */
+    /**
+     * Stores valid placement details (piece ID, rotation, and the rotated edges).
+     *
+     * <p>The {@code edges} field caches {@code piece.edgesRotated(rotation)} so
+     * AC-3's hot loop can compare an edge without a {@code HashMap.get()} and
+     * a method dispatch per candidate — on large boards (16×16 target) this
+     * saves tens of millions of map lookups per solve.</p>
+     *
+     * <p>Tests that don't care about edges can use the {@code (pid, rot)}
+     * constructor, which leaves {@code edges == null}; production creation
+     * paths always supply the rotated edges.</p>
+     */
     public static class ValidPlacement {
         public final int pieceId;
         public final int rotation;
+        public final int[] edges;
 
         public ValidPlacement(int pieceId, int rotation) {
+            this(pieceId, rotation, null);
+        }
+
+        public ValidPlacement(int pieceId, int rotation, int[] edges) {
             this.pieceId = pieceId;
             this.rotation = rotation;
+            this.edges = edges;
         }
     }
 
@@ -230,7 +247,7 @@ public class DomainManager {
                 for (int rot = 0; rot < maxRotations; rot++) {
                     int[] edges = piece.edgesRotated(rot);
                     if (fitChecker.fits(board, r, c, edges)) {
-                        domain.add(new ValidPlacement(pid, rot));
+                        domain.add(new ValidPlacement(pid, rot, edges));
                     }
                 }
             }
@@ -244,7 +261,7 @@ public class DomainManager {
                 for (int rot = 0; rot < maxRotations; rot++) {
                     int[] edges = piece.edgesRotated(rot);
                     if (fitChecker.fits(board, r, c, edges)) {
-                        domain.add(new ValidPlacement(pid, rot));
+                        domain.add(new ValidPlacement(pid, rot, edges));
                     }
                 }
             }

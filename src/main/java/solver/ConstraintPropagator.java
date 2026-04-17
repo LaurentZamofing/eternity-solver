@@ -113,12 +113,18 @@ public class ConstraintPropagator {
 
                 int requiredEdge = nbrPlacement.edges[nbrSide];
 
-                // Filter domain: keep only compatible placements (reuse pooled HashMap)
+                // Filter domain: keep only compatible placements (reuse pooled HashMap).
+                // Prefer vp.edges when present (cached at construction in
+                // DomainManager.computeDomain) to avoid a HashMap lookup and a
+                // method dispatch per candidate in this hot loop.
                 writeBuf.clear();
                 for (Map.Entry<Integer, List<ValidPlacement>> entry : newDomain.entrySet()) {
                     List<ValidPlacement> validRotations = null;
                     for (ValidPlacement vp : entry.getValue()) {
-                        int[] edges = piecesById.get(vp.pieceId).edgesRotated(vp.rotation);
+                        int[] edges = vp.edges;
+                        if (edges == null) {
+                            edges = piecesById.get(vp.pieceId).edgesRotated(vp.rotation);
+                        }
                         if (edges[cellSide] == requiredEdge) {
                             if (validRotations == null) validRotations = new ArrayList<>(4);
                             validRotations.add(vp);
@@ -198,7 +204,10 @@ public class ConstraintPropagator {
 
         List<ValidPlacement> filtered = new ArrayList<>();
         for (ValidPlacement vp : currentDomain) {
-            int[] edges = piecesById.get(vp.pieceId).edgesRotated(vp.rotation);
+            int[] edges = vp.edges;
+            if (edges == null) {
+                edges = piecesById.get(vp.pieceId).edgesRotated(vp.rotation);
+            }
             if (edges[edgeIndex] == requiredEdge) {
                 filtered.add(vp);
             }

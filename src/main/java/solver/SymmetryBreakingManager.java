@@ -238,8 +238,7 @@ public class SymmetryBreakingManager {
         if (topLeftFittableIds != null) return topLeftFittableIds;
         Set<Integer> ids = new java.util.HashSet<>();
         for (Map.Entry<Integer, Piece> e : allPieces.entrySet()) {
-            int[] edges = e.getValue().edgesRotated(0);
-            if (edges[0] == 0 && edges[3] == 0) {
+            if (e.getValue().isTopLeftFittableAt(0)) {
                 ids.add(e.getKey());
             }
         }
@@ -345,14 +344,8 @@ public class SymmetryBreakingManager {
     private Set<Integer> topLeftFittableAnyRotation(Map<Integer, Piece> allPieces) {
         Set<Integer> ids = new java.util.HashSet<>();
         for (Map.Entry<Integer, Piece> e : allPieces.entrySet()) {
-            Piece p = e.getValue();
-            int maxRot = p.getUniqueRotationCount();
-            for (int r = 0; r < maxRot; r++) {
-                int[] edges = p.edgesRotated(r);
-                if (edges[0] == 0 && edges[3] == 0) {
-                    ids.add(e.getKey());
-                    break;
-                }
+            if (e.getValue().isTopLeftFittableInAnyRotation()) {
+                ids.add(e.getKey());
             }
         }
         return ids;

@@ -436,7 +436,7 @@ public class MRVCellSelector implements HeuristicStrategy {
             for (int rot = 0; rot < 4; rot++) {
                 int[] candidate = piece.edgesRotated(rot);
                 if (fitChecker.fits(board, r, c, candidate)) {
-                    validPlacements.add(new ValidPlacement(pid, rot));
+                    validPlacements.add(new ValidPlacement(pid, rot, candidate));
                 }
             }
         }

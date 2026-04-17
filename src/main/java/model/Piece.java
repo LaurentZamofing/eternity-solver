@@ -64,6 +64,31 @@ public class Piece {
     }
 
     /**
+     * Returns true if this piece has at least one rotation geometrically
+     * able to fit at the top-left corner (N=0 AND W=0 on that rotation).
+     *
+     * <p>Shortcut for the common "TL fittable" predicate repeated across
+     * SymmetryBreakingManager, DomainManager and tests.</p>
+     */
+    public boolean isTopLeftFittableInAnyRotation() {
+        int maxRot = getUniqueRotationCount();
+        for (int k = 0; k < maxRot; k++) {
+            int[] e = rotations[k];
+            if (e[0] == 0 && e[3] == 0) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if rotating this piece by {@code k} produces a North/West
+     * pair of zero edges (i.e. fits at (0,0) without violating the borders).
+     */
+    public boolean isTopLeftFittableAt(int k) {
+        int[] e = rotations[((k % 4) + 4) % 4];
+        return e[0] == 0 && e[3] == 0;
+    }
+
+    /**
      * Returns the number of unique rotations for this piece.
      * A piece can have 1, 2, or 4 unique rotations depending on its symmetry.
      *

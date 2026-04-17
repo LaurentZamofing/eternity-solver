@@ -230,6 +230,51 @@ public class DomainManager {
         return domain;
     }
 
+    /**
+     * Restricts the AC-3 domain of the top-left cell (0,0) to a single
+     * canonical piece and/or a required rotation, matching the symmetry-
+     * breaking constraints. Must be called after {@link #initializeAC3Domains}.
+     *
+     * <p>Without this pre-filter, AC-3 can reduce (0,0) to a singleton
+     * {@code (piece, rot)} that the symmetry-breaking rule later rejects,
+     * producing a dead-end that the solver cannot recover from (see the
+     * bug tracked by {@code SymmetryBreakingBugTrackingTest}). Aligning the
+     * domain up-front keeps AC-3 and sym-breaking in the same state.</p>
+     *
+     * @param canonicalPieceId the only piece ID allowed at (0,0), or {@code null} to not constrain the piece
+     * @param requiredRotation the only rotation allowed at (0,0), or {@code null} to not constrain rotation
+     */
+    public void restrictTopLeftDomain(Integer canonicalPieceId, Integer requiredRotation) {
+        if (!ac3Initialized || domains == null) return;
+        if (canonicalPieceId == null && requiredRotation == null) return;
+        Map<Integer, List<ValidPlacement>> tl = domains[0][0];
+        if (tl == null || tl.isEmpty()) return;
+
+        if (canonicalPieceId != null) {
+            List<ValidPlacement> kept = tl.get(canonicalPieceId);
+            tl.clear();
+            if (kept != null) {
+                tl.put(canonicalPieceId, new ArrayList<>(kept));
+            }
+        }
+        if (requiredRotation != null) {
+            for (Map.Entry<Integer, List<ValidPlacement>> entry : new ArrayList<>(tl.entrySet())) {
+                List<ValidPlacement> filtered = new ArrayList<>();
+                for (ValidPlacement vp : entry.getValue()) {
+                    if (vp.rotation == requiredRotation) filtered.add(vp);
+                }
+                if (filtered.isEmpty()) {
+                    tl.remove(entry.getKey());
+                } else {
+                    tl.put(entry.getKey(), filtered);
+                }
+            }
+        }
+        if (mrvIndex != null && boardRef != null && boardRef.isEmpty(0, 0)) {
+            mrvIndex.onDomainChanged(0, 0, totalRotationsIn(tl), countOccupiedNeighbors(boardRef, 0, 0));
+        }
+    }
+
     /** Returns AC-3 domain for cell (r,c), or null if not initialized. */
     public Map<Integer, List<ValidPlacement>> getDomain(int r, int c) {
         if (!ac3Initialized || domains == null) return null;

@@ -127,28 +127,49 @@ class SymmetryBreakingBugTrackingTest {
      * assertion sense and remove the @Disabled if applied.
      */
     @Nested
-    @DisplayName("Regression: failing flag combinations on 4x4 easy")
-    class FailingCombos {
+    @DisplayName("Regression: sym-breaking flag combinations on 4x4 easy")
+    class RegressionCombos {
 
         @Test
-        @DisplayName("lex on + rotation off: still fails")
-        void lexOnly_failsOn4x4Easy() {
-            assertFalse(solveWith(true, false, PuzzleFactory.createExample4x4Easy(), 4),
-                "lex on + rotation off should still fail until the bug is found");
+        @DisplayName("lex on + rotation off: solver succeeds (post-fix)")
+        void lexOnly_succeedsOn4x4Easy() {
+            assertTrue(solveWith(true, false, PuzzleFactory.createExample4x4Easy(), 4),
+                "lex on + rotation off must solve after TL domain pre-filter fix");
         }
 
         @Test
-        @DisplayName("lex on + rotation on: still fails")
-        void lexAndRotation_failOn4x4Easy() {
-            assertFalse(solveWith(true, true, PuzzleFactory.createExample4x4Easy(), 4),
-                "both flags on should still fail");
+        @DisplayName("lex on + rotation on: solver succeeds (post-fix)")
+        void lexAndRotation_succeedOn4x4Easy() {
+            assertTrue(solveWith(true, true, PuzzleFactory.createExample4x4Easy(), 4),
+                "both flags on must solve after TL domain pre-filter fix");
         }
 
         @Test
-        @DisplayName("Both flags off: solver succeeds (current default)")
+        @DisplayName("Both flags off: solver still succeeds")
         void bothOff_succeedsOn4x4Easy() {
             assertTrue(solveWith(false, false, PuzzleFactory.createExample4x4Easy(), 4),
-                "with all sym-breaking off the easy puzzle must solve (current default)");
+                "with all sym-breaking off the easy puzzle must solve");
+        }
+
+        /**
+         * After the fix, no lex rejections should originate from
+         * SingletonPlacementStrategy on 4x4 easy — AC-3 cannot propose a
+         * singleton at (0,0) incompatible with the sym-breaking rule
+         * because the domain has been pre-filtered.
+         */
+        @Test
+        @DisplayName("No singleton-sourced lex rejections after fix (4x4 easy)")
+        void noSingletonLexRejectionsAfterFix() {
+            Board board = new Board(4, 4);
+            EternitySolver solver = new EternitySolver();
+            solver.setVerbose(false);
+            solver.setMaxExecutionTime(15_000);
+            solver.setSymmetryBreakingFlags(true, true);
+            solver.solve(board, PuzzleFactory.createExample4x4Easy());
+
+            SymmetryBreakingManager mgr = solver.getSymmetryBreakingManager();
+            assertEquals(0, mgr.getLexRejectionsFromSingleton(),
+                "TL domain pre-filter should eliminate singleton-sourced lex rejections");
         }
     }
 
@@ -165,24 +186,97 @@ class SymmetryBreakingBugTrackingTest {
 
     private static boolean solveWith(boolean lex, boolean rotation,
                                      Map<Integer, Piece> pieces, int size) {
-        // Override flags on a fresh solver via the SymmetryBreakingManager
-        // exposed by EternitySolver. We exercise the actual code path the
-        // production solver uses, not a mocked variant — that's the point:
-        // surface the real bug.
         Board board = new Board(size, size);
         EternitySolver solver = new EternitySolver();
         solver.setVerbose(false);
         solver.setMaxExecutionTime(20_000);
-
-        // The solver builds its own SymmetryBreakingManager when solve() runs.
-        // We can't reach into it before that — so we use the package-private
-        // overrides via a small wrapper: solve once with default config, then
-        // assert on the result. (TODO: thread the flags through EternitySolver
-        // setters so this helper can configure them cleanly.)
-        // For now this helper is mostly to document the expected outcome of
-        // the public API — flag toggling is tested directly on the manager
-        // in the dedicated unit tests above.
         solver.setSymmetryBreakingFlags(lex, rotation);
         return solver.solve(board, pieces);
+    }
+
+    /**
+     * Diagnostic test (A1.2): print the rejection counters from the
+     * SymmetryBreakingManager after a failed solve. The numbers tell us
+     * which rule (lex vs rotation) is doing the over-pruning, and
+     * the coordinates of the first rejection point us at the geometry
+     * of the bug.
+     *
+     * <p>This test always passes — it's purely informational; the values
+     * surface in the test report's stdout for analysis.</p>
+     */
+    @Test
+    @DisplayName("[A1.2 diag] rejection counters after lex+rotation on 4x4 easy")
+    void diagnosticRejectionCountersOn4x4Easy() {
+        Board board = new Board(4, 4);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(20_000);
+        solver.setSymmetryBreakingFlags(true, true);
+        boolean solved = solver.solve(board, PuzzleFactory.createExample4x4Easy());
+
+        SymmetryBreakingManager mgr = solver.getSymmetryBreakingManager();
+        assertNotNull(mgr, "manager must be built after solve()");
+
+        System.err.println("=== A1.2 diagnostic — solve4x4Easy with lex+rotation ON ===");
+        System.err.println("  solved          : " + solved);
+        System.err.println("  lexRejections   : " + mgr.getLexRejections());
+        System.err.println("  rotRejections   : " + mgr.getRotationRejections());
+        System.err.println("  firstLexReject  : ("
+            + mgr.getFirstLexRejectionRow() + "," + mgr.getFirstLexRejectionCol()
+            + ") piece " + mgr.getFirstLexRejectionPieceId());
+    }
+
+    /**
+     * Diagnostic test (A1.4b): split lex rejection counts by CALL SITE
+     * (PlacementValidator vs SingletonPlacementStrategy) to tell us which
+     * solver path proposes the bogus TL placements. Replaces the previous
+     * verbose-log variant which blocked forever in Scanner.nextLine on
+     * macOS because System.console() is non-null even in forked surefire.
+     *
+     * <p>Expected: if all rejections come from SingletonPlacementStrategy,
+     * the bug is in SingletonDetector (proposing infeasible TL singletons).
+     * If from PlacementValidator, the bug is upstream in MRV/AC-3 domain
+     * pruning or piece-rotation enumeration.</p>
+     */
+    @Test
+    @DisplayName("[A1.4b diag] lex rejections broken down by call-site on 4x4 easy")
+    void diagnosticCallSiteBreakdownOn4x4Easy() {
+        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4Easy();
+        Board board = new Board(4, 4);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(15_000);
+        solver.setSymmetryBreakingFlags(true, true);
+        boolean solved = solver.solve(board, pieces);
+
+        SymmetryBreakingManager mgr = solver.getSymmetryBreakingManager();
+        assertNotNull(mgr, "manager must be built after solve()");
+
+        System.err.println("=== A1.4b diagnostic — call-site breakdown ===");
+        System.err.println("  solved                     : " + solved);
+        System.err.println("  lexRejections (total)      : " + mgr.getLexRejections());
+        System.err.println("  lexRejectionsFromSingleton : " + mgr.getLexRejectionsFromSingleton());
+        System.err.println("  lexRejectionsFromValidator : " + mgr.getLexRejectionsFromValidator());
+        System.err.println("  lexRejectionsFromOther     : " + mgr.getLexRejectionsFromOther());
+        System.err.println("  firstLexReject             : ("
+            + mgr.getFirstLexRejectionRow() + "," + mgr.getFirstLexRejectionCol()
+            + ") piece " + mgr.getFirstLexRejectionPieceId()
+            + " rot " + mgr.getFirstLexRejectionRotation());
+
+        // Scénario A vs B : piece 7 fitte-t-elle à TL (N=0,W=0) dans AU MOINS une rotation ?
+        long rejPid = mgr.getFirstLexRejectionPieceId();
+        if (rejPid >= 0) {
+            Piece p = pieces.get((int) rejPid);
+            StringBuilder rotList = new StringBuilder();
+            for (int r = 0; r < 4; r++) {
+                int[] edges = p.edgesRotated(r);
+                if (edges[0] == 0 && edges[3] == 0) {
+                    if (rotList.length() > 0) rotList.append(",");
+                    rotList.append(r);
+                }
+            }
+            System.err.println("  piece " + rejPid + " TL-fittable at rotations: ["
+                + (rotList.length() == 0 ? "NONE" : rotList) + "]");
+        }
     }
 }

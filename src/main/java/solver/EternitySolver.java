@@ -266,6 +266,16 @@ public class EternitySolver {
     void initializeDomains(Board board, Map<Integer, Piece> pieces, BitSet pieceUsed, int totalPieces) {
         if (useAC3) {
             this.domainManager.initializeAC3Domains(board, pieces, pieceUsed, totalPieces);
+            // Pre-filter (0,0) so AC-3 cannot produce singletons that the
+            // sym-breaking rule would later reject. Without this, AC-3 and
+            // SymmetryBreakingManager reason on divergent state spaces and
+            // the solver dead-ends on puzzles like 4x4 easy — see fix for
+            // the bug tracked in SymmetryBreakingBugTrackingTest.
+            if (symmetryBreakingManager != null) {
+                this.domainManager.restrictTopLeftDomain(
+                    symmetryBreakingManager.computeCanonicalTopLeftPieceId(pieces),
+                    symmetryBreakingManager.computeRequiredTopLeftRotation());
+            }
         }
     }
 
@@ -349,8 +359,11 @@ public class EternitySolver {
 
         initializeManagers(pieces);
         initializeComponents(board, pieces, pieceUsed, totalPieces);
-        initializeDomains(board, pieces, pieceUsed, totalPieces);
+        // Build sym-breaking manager BEFORE domain init so the TL-domain
+        // pre-filter in initializeDomains can read its canonical piece and
+        // required rotation. Dependency order: sym-breaking → AC-3 domains.
         initializeSymmetryBreaking(board);
+        initializeDomains(board, pieces, pieceUsed, totalPieces);
         initializePlacementStrategies();
 
         boolean solved = solveBacktracking(board, pieces, pieceUsed, totalPieces);
@@ -389,8 +402,12 @@ public class EternitySolver {
         symmetryBreakingManager.logConfiguration();
     }
 
-    // Defaults match SymmetryBreakingManager defaults; callers (tests) can
-    // override before solve() to exercise both regression states.
+    // Defaults stay OFF: the TL-domain pre-filter (2026-04-17) fixed the
+    // 4x4 easy deadlock, but 4x4 hard still can't solve with lex+rot on
+    // (a separate canonical-piece selection bug — lex forces piece 7 at TL
+    // rot 0, but no valid solution of that variant has piece 7 at TL rot 0
+    // in any board rotation). Flags stay OFF until the hard-variant bug
+    // is fixed. Tests override explicitly via setSymmetryBreakingFlags.
     private boolean pendingLexFlag = false;
     private boolean pendingRotationFlag = false;
 
@@ -402,6 +419,15 @@ public class EternitySolver {
     public void setSymmetryBreakingFlags(boolean lexicographic, boolean rotational) {
         this.pendingLexFlag = lexicographic;
         this.pendingRotationFlag = rotational;
+    }
+
+    /**
+     * Returns the live SymmetryBreakingManager built for the last solve, or
+     * null if {@link #solve} hasn't been called yet. Tests inspect rejection
+     * counters via this accessor.
+     */
+    public SymmetryBreakingManager getSymmetryBreakingManager() {
+        return symmetryBreakingManager;
     }
 
     /** Returns solver statistics. */

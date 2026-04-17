@@ -209,11 +209,11 @@ Tâches : **BB1 + BB2 + BB3** (bench contention parallèle ajouté).
 
 | Chantier | Statut | Commits | Progress |
 |----------|--------|---------|----------|
-| C1 Stabilisation & mesure | **terminé** | `e105353` + split | 1.1→1.5 ✅ — @Disabled 10→4, +3 tests, coverage baseline, JMH baseline à jour, test split 731→175+375 |
-| C2 Quick wins perf AC-3 | **en cours** | — | QW4 `Piece.isTopLeftFittable*` + QW3 cache `edges` dans `ValidPlacement` ✅ |
-| C3 Structure & DI | pending | — | |
-| C4 Coverage & gates | pending | — | |
-| C5 Scaling (R&D) | **go validé** | — | Big bets BB1 + BB2 + BB3 approuvés (2026-04-18). Démarre après C2/C3/C4. |
+| C1 Stabilisation & mesure | **terminé** | `e105353`, `27acd09` | @Disabled 10→4, +3 tests, coverage baseline, split 731→175+375 |
+| C2 Quick wins perf AC-3 | **terminé** | `8651d2e`, `acff823` | QW3+QW4 (cache edges, isTopLeftFittable) + M1 (undo-stack O(Δ)) |
+| C3 Structure & DI | **partiel** | `acff823` | Interface `Solver` créée. M4/M5/M6 reportés (large surface, hors budget session). |
+| C4 Coverage & gates | **partiel** | `7d12778`, `f4f8389` | Gate 20/18 → 24/22. +QuietPlacementOutputTest. M3 bench MRV bloqué sur puzzle 6×6+ à créer. |
+| C5 Scaling (R&D) | **go validé** | — | BB1 + BB2 + BB3 approuvés. Démarre plus tard. |
 
 ### Étapes détaillées Chantier 1
 
@@ -275,24 +275,47 @@ Validation : `mvn test -Dtest=TimeoutCheckerTest,PlacementValidatorTest,DebugPla
 ### Historique commits liés au plan
 
 ```
-(baseline)
-3de0d99 chore: remove obsolete archive and root-level MD files
-3d0f947 fix: restoreAC3Domains recomputes all cells, not just (r,c) + neighbors
-5e5d855 diag: isolate 4x4 hard bug to AC-3 propagation (pre-existing, not sym-breaking)
-b8093e3 fix: re-apply TL domain filter after backtrack/recompute
+(baseline — bug fixes pré-plan)
 34f693e fix: TL domain pre-filter eliminates AC-3 ↔ sym-breaking conflict
+b8093e3 fix: re-apply TL domain filter after backtrack/recompute
+5e5d855 diag: isolate 4x4 hard bug to AC-3 propagation (pre-existing, not sym-breaking)
+3d0f947 fix: restoreAC3Domains recomputes all cells, not just (r,c) + neighbors
+3de0d99 chore: remove obsolete archive and root-level MD files
 
-(WIP C1, pas encore committé)
-— ConstraintPropagatorTest : 3 @Disabled retirés, realistic FitChecker
+(C1 stabilisation & mesure)
+e105353 chore(tests): C1 stabilisation — @Disabled cleanup, 3 new test classes, plan doc
+27acd09 refactor(tests): split SymmetryBreakingBugTrackingTest (731 → 175 + 375 LOC)
+
+(C2 quick wins perf AC-3)
+8651d2e perf(ac3): cache rotated edges on ValidPlacement, add Piece.isTopLeftFittable
+acff823 perf(ac3): undo-stack for restoreAC3Domains — O(Δ) instead of O(W·H)
+
+(C3 structure & DI — partiel)
+acff823 (idem : introduit l'interface Solver)
+
+(C4 coverage & gates — partiel)
+7d12778 chore(ci): raise JaCoCo gate to LINE 24% / BRANCH 22%
+f4f8389 feat(solver): expose setMRVIndexEnabled on EternitySolver + test solver/output
 ```
 
-### Prochaine action
-1. Traiter les 7 `@Disabled` restants (`integration/*`).
-2. `mvn jacoco:report` + publier chiffres dans ce fichier.
-3. Créer les 3 tests manquants (PlacementValidatorTest, DebuggerTest, TimeoutCheckerTest).
-4. Baseline JMH dans `.github/perf-baseline.json`.
-5. Split `SymmetryBreakingBugTrackingTest` (731 LOC → regression + diagnostic).
-6. Commit + push Chantier 1.
+**Total session** : 8 commits après la baseline, suite 1512/1512 verte, coverage LINE 25% / BRANCH 24% (gates 24/22), 4 @Disabled restants tous documentés.
+
+### Prochaines actions (après session courante)
+
+**C3 (reste)** :
+1. Extraire `EternitySolverBuilder` fluent depuis les ~15 setters sur `EternitySolver` (ciblé: 537 → ≤ 350 LOC). M4.
+2. Dé-statique `SaveStateManager.useBinaryFormat` (utilisé seulement dans test @Disabled — à supprimer ou rendre instance-level) + `DebugHelper.stepByStepEnabled`. M5.
+3. Template method `SaveStateIO.writeSection(header, content)` factorisant les 4 writers. M6.
+
+**C4 (reste)** :
+1. **M3 bench MRV PQ 6×6/8×8** : nécessite d'abord un puzzle 6×6 (non disponible dans `PuzzleFactory`). Créer `createExample6x6()` + bench comparatif dans `FullSolveBenchmark` avec `setMRVIndexEnabled(true/false)`.
+2. Continuer à monter JaCoCo gate de 24/22 → 30/25 après +3-5 tests sur packages sous-couverts (`config/`, `monitoring/util/`).
+3. PMD/Checkstyle `failOnViolation=true` sur règles critiques (wildcard imports déjà géré en hook séparé).
+
+**C5 (green-lit, après C3/C4)** :
+1. BB1 — DLX POC sous `solver/experimental/dlx/` + bench comparatif.
+2. BB2 — JFR profil solve 8×8 → pools allocs.
+3. BB3 — JFR lock-contention sur solveParallel (en parallèle avec fix `solveParallel` actuellement @Disabled).
 
 ### Tracker tâches
 - #28 C1 Stabilisation — `in_progress`

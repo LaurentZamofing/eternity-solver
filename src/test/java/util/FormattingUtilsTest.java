@@ -1,9 +1,13 @@
 package util;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -12,29 +16,59 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Comprehensive tests for FormattingUtils.
- * Tests duration formatting, headers, separators, boxes, percentages, and progress bars.
+ *
+ * <p>FormattingUtils has two kinds of outputs:</p>
+ * <ul>
+ *   <li>Logging methods (printHeader, printSeparator, printBox, ...) — written
+ *       via SolverLogger. Captured through a Logback ListAppender so length
+ *       assertions see the raw message, not the appender-formatted line.</li>
+ *   <li>Terminal-control methods (printProgressBar uses \r + System.out.flush
+ *       to repaint in place) — still written directly to stdout. Captured
+ *       through System.setOut for those tests only.</li>
+ * </ul>
  */
 @DisplayName("FormattingUtils Tests")
 public class FormattingUtilsTest {
+
+    private ListAppender<ILoggingEvent> appender;
+    private Logger solverLogger;
 
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final PrintStream originalOut = System.out;
 
     @BeforeEach
     void setUpStreams() {
+        appender = new ListAppender<>();
+        appender.start();
+        solverLogger = (Logger) LoggerFactory.getLogger("EternitySolver");
+        solverLogger.addAppender(appender);
         System.setOut(new PrintStream(outContent));
     }
 
     @AfterEach
     void restoreStreams() {
+        if (solverLogger != null && appender != null) {
+            solverLogger.detachAppender(appender);
+        }
         System.setOut(originalOut);
     }
 
+    /** Joins all captured log messages — used for Logback-backed methods. */
     private String getOutput() {
+        StringBuilder sb = new StringBuilder();
+        for (ILoggingEvent event : appender.list) {
+            sb.append(event.getFormattedMessage()).append('\n');
+        }
+        return sb.toString();
+    }
+
+    /** Raw stdout — used for System.out-based methods (progress bar). */
+    private String getStdout() {
         return outContent.toString();
     }
 
     private void resetOutput() {
+        appender.list.clear();
         outContent.reset();
     }
 
@@ -349,7 +383,7 @@ public class FormattingUtilsTest {
     @DisplayName("printProgressBar at 0% progress")
     void testPrintProgressBarZero() {
         assertDoesNotThrow(() -> FormattingUtils.printProgressBar(0, 100, 20));
-        String output = getOutput();
+        String output = getStdout();
         assertTrue(output.contains("0/100") || output.contains("0%"));
     }
 
@@ -357,7 +391,7 @@ public class FormattingUtilsTest {
     @DisplayName("printProgressBar at 50% progress")
     void testPrintProgressBarHalf() {
         assertDoesNotThrow(() -> FormattingUtils.printProgressBar(50, 100, 20));
-        String output = getOutput();
+        String output = getStdout();
         assertTrue(output.contains("50/100") || output.contains("50"));
     }
 
@@ -365,7 +399,7 @@ public class FormattingUtilsTest {
     @DisplayName("printProgressBar at 100% progress")
     void testPrintProgressBarFull() {
         assertDoesNotThrow(() -> FormattingUtils.printProgressBar(100, 100, 20));
-        String output = getOutput();
+        String output = getStdout();
         assertTrue(output.contains("100") || output.contains("%"));
     }
 
@@ -373,7 +407,7 @@ public class FormattingUtilsTest {
     @DisplayName("printProgressBar with different totals")
     void testPrintProgressBarDifferentTotal() {
         assertDoesNotThrow(() -> FormattingUtils.printProgressBar(72, 256, 30));
-        String output = getOutput();
+        String output = getStdout();
         assertFalse(output.isEmpty(), "Should produce some output");
     }
 
@@ -483,7 +517,7 @@ public class FormattingUtilsTest {
     void testPrintProgressBarRatio() {
         assertDoesNotThrow(() -> FormattingUtils.printProgressBar(25, 100, 20));
 
-        String output = getOutput();
+        String output = getStdout();
         // Just verify it produces output - \r makes exact matching difficult
         assertFalse(output.isEmpty(), "Should produce some output");
     }

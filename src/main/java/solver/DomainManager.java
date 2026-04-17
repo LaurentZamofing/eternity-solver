@@ -124,6 +124,13 @@ public class DomainManager {
     /** Computes valid placements for cell (r,c) by testing all available pieces in all rotations. */
     public List<ValidPlacement> computeDomain(Board board, int r, int c,
                                               Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
+        // Validate inputs at the boundary. Without this, an empty piecesById
+        // silently skips every iteration and never dereferences `board`, so a
+        // null board goes undetected until much later in the solver.
+        java.util.Objects.requireNonNull(board, "board");
+        java.util.Objects.requireNonNull(piecesById, "piecesById");
+        java.util.Objects.requireNonNull(pieceUsed, "pieceUsed");
+
         List<ValidPlacement> domain = new ArrayList<>();
 
         // Iterate pieces in order specified by sortOrder

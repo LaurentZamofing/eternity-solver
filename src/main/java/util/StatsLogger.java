@@ -145,9 +145,12 @@ public class StatsLogger {
                 data.put("fitChecks", stats.fitChecks);
             }
 
-            // Calculate pieces per second
+            // Calculate pieces per second. Cast to double up-front: both operands
+            // were integer (depth is int, MILLIS_PER_SECOND and totalComputeTimeMs
+            // are long), so the division silently truncated to 0 whenever the
+            // numerator was smaller than the denominator (e.g. 48 * 1000 / 300000).
             if (totalComputeTimeMs > 0 && depth > 0) {
-                double piecesPerSec = (depth * TimeConstants.MILLIS_PER_SECOND) / totalComputeTimeMs;
+                double piecesPerSec = ((double) depth * TimeConstants.MILLIS_PER_SECOND) / totalComputeTimeMs;
                 data.put("piecesPerSec", Math.round(piecesPerSec * 100.0) / 100.0);
             } else {
                 data.put("piecesPerSec", 0.0);

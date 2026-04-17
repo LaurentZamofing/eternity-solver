@@ -74,18 +74,20 @@ public class BoardDisplayServiceTest {
     void testEmptyCellsDisplayWithRotations() {
         Board board = new Board(3, 3);
 
-        // Place corner pieces to make interior cells valid for placement
-        Piece corner1 = new Piece(1, new int[]{0, 1, 2, 0});  // Top-left corner
-        Piece corner2 = new Piece(2, new int[]{0, 0, 3, 4});  // Top-right corner
+        // Place just one corner so the adjacent empty cells are constrained
+        // (border + occupied neighbor) — hasConstraints() returns true, so
+        // the renderer emits the (pieces/rotations) format instead of 9 spaces.
+        Piece corner1 = new Piece(1, new int[]{0, 1, 2, 0});  // top-left: N=0, E=1, S=2, W=0
         board.place(0, 0, corner1, 0);
-        board.place(0, 2, corner2, 0);
 
-        // Create pieces map with unused pieces (for interior cells)
+        // Candidate pieces that can actually fit somewhere — each has at least
+        // one border-compatible rotation so countCandidatesWithRotations
+        // finds hits and the output contains the '(' format marker.
         Map<Integer, Piece> piecesMap = new HashMap<>();
-        piecesMap.put(1, corner1);  // Already placed
-        piecesMap.put(2, corner2);  // Already placed
-        piecesMap.put(3, new Piece(3, new int[]{1, 5, 6, 7}));  // Available
-        piecesMap.put(4, new Piece(4, new int[]{2, 8, 9, 10}));  // Available
+        piecesMap.put(1, corner1);                                 // already placed
+        piecesMap.put(2, new Piece(2, new int[]{0, 0, 5, 1}));     // top-right corner candidate: N=0, E=0, S=5, W=1
+        piecesMap.put(3, new Piece(3, new int[]{0, 7, 5, 1}));     // top edge candidate: N=0, W=1 matches corner1.E
+        piecesMap.put(4, new Piece(4, new int[]{2, 8, 0, 0}));     // bottom-left corner candidate
 
         StringWriter stringWriter = new StringWriter();
         PrintWriter writer = new PrintWriter(stringWriter);
@@ -95,13 +97,12 @@ public class BoardDisplayServiceTest {
 
         String output = stringWriter.toString();
 
-        // The output shows counts in (pieces/rotations) format for empty cells
-        // Should see format like (2/8) or similar for cells with candidates
+        // At least one empty border cell must report candidates in (p/r) form.
         assertTrue(output.contains("("), "Should contain opening parenthesis for count");
         assertTrue(output.contains("/"), "Should contain slash separator for pieces/rotations");
         assertTrue(output.contains(")"), "Should contain closing parenthesis for count");
 
-        // Check that output doesn't contain ??? or ?? which would indicate errors
+        // Error markers should never appear.
         assertFalse(output.contains("???"), "Should NOT contain ??? error markers");
         assertFalse(output.contains("? ??"), "Should NOT contain broken formatting");
     }

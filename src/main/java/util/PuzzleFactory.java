@@ -222,28 +222,39 @@ public class PuzzleFactory {
                 lineNumber++;
                 line = line.trim();
 
-                // Skip empty lines
-                if (line.isEmpty()) {
+                // Skip empty lines and comment lines (the on-disk file starts with
+                // "# Eternity II - 16×16 - ..." and other metadata headers).
+                if (line.isEmpty() || line.startsWith("#")) {
                     continue;
                 }
 
                 String[] parts = line.split("\\s+");
-                if (parts.length != 4) {
-                    throw new IllegalArgumentException(
-                        String.format("Invalid line format at line %d (expected 4 values: N S W E): %s",
-                                    lineNumber, line)
-                    );
+
+                // Two supported shapes:
+                //   4 tokens — "N S W E" (legacy; id is auto-assigned)
+                //   5 tokens — "pieceId N E S W" (the on-disk format written today)
+                int north, east, south, west;
+                int pieceId;
+                if (parts.length == 5) {
+                    pieceId = Integer.parseInt(parts[0]);
+                    north = Integer.parseInt(parts[1]);
+                    east  = Integer.parseInt(parts[2]);
+                    south = Integer.parseInt(parts[3]);
+                    west  = Integer.parseInt(parts[4]);
+                } else if (parts.length == 4) {
+                    pieceId = id;
+                    north = Integer.parseInt(parts[0]);
+                    south = Integer.parseInt(parts[1]);
+                    west  = Integer.parseInt(parts[2]);
+                    east  = Integer.parseInt(parts[3]);
+                } else {
+                    throw new IllegalArgumentException(String.format(
+                        "Invalid line format at line %d (expected 4 or 5 values): %s",
+                        lineNumber, line));
                 }
 
-                // File format: N, S, W, E
-                // Internal format: N, E, S, W
-                int north = Integer.parseInt(parts[0]);
-                int south = Integer.parseInt(parts[1]);
-                int west = Integer.parseInt(parts[2]);
-                int east = Integer.parseInt(parts[3]);
-
                 int[] edges = new int[]{north, east, south, west};
-                pieces.put(id, new Piece(id, edges));
+                pieces.put(pieceId, new Piece(pieceId, edges));
                 id++;
             }
         } catch (IOException e) {

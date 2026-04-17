@@ -73,12 +73,13 @@ class ValidPieceCounterTest {
     @Order(3)
     @DisplayName("Should count multiple valid pieces")
     void testMultipleValidPieces() {
-        // Empty position with lenient constraints
-        List<Integer> unusedIds = Arrays.asList(1, 2, 3, 4, 5);
+        // Interior cell (1,1): pieces must have all edges non-zero. With no
+        // occupied neighbors, any such piece fits in every rotation.
+        List<Integer> unusedIds = Arrays.asList(3, 5, 6);
 
-        int count = counter.countValidPieces(board, 0, 0, piecesById, unusedIds);
+        int count = counter.countValidPieces(board, 1, 1, piecesById, unusedIds);
 
-        assertTrue(count >= 2, "Should find multiple valid pieces for empty board");
+        assertTrue(count >= 2, "Should find multiple valid interior pieces");
     }
 
     @Test
@@ -285,29 +286,38 @@ class ValidPieceCounterTest {
     }
 
     private PlacementValidator createValidator() {
-        // Simple mock validator that checks edge matching
+        // Mock validator that mirrors the real border and neighbor rules:
+        //   - border edges must be 0
+        //   - interior edges must be non-0
+        //   - occupied neighbors must have matching edges
         return new PlacementValidator(null, null, null) {
             @Override
             public boolean fits(Board board, int row, int col, int[] edges) {
-                // North edge check
-                if (row > 0 && !board.isEmpty(row - 1, col)) {
-                    int neighborSouth = board.getPlacement(row - 1, col).edges[2];
-                    if (edges[0] != neighborSouth) return false;
+                int rows = board.getRows();
+                int cols = board.getCols();
+                boolean topBorder = row == 0;
+                boolean bottomBorder = row == rows - 1;
+                boolean leftBorder = col == 0;
+                boolean rightBorder = col == cols - 1;
+
+                // Border / interior edge-value rules
+                if (topBorder ? edges[0] != 0 : edges[0] == 0) return false;
+                if (rightBorder ? edges[1] != 0 : edges[1] == 0) return false;
+                if (bottomBorder ? edges[2] != 0 : edges[2] == 0) return false;
+                if (leftBorder ? edges[3] != 0 : edges[3] == 0) return false;
+
+                // Occupied neighbor edge-matching
+                if (!topBorder && !board.isEmpty(row - 1, col)) {
+                    if (edges[0] != board.getPlacement(row - 1, col).edges[2]) return false;
                 }
-                // East edge check
-                if (col < board.getCols() - 1 && !board.isEmpty(row, col + 1)) {
-                    int neighborWest = board.getPlacement(row, col + 1).edges[3];
-                    if (edges[1] != neighborWest) return false;
+                if (!rightBorder && !board.isEmpty(row, col + 1)) {
+                    if (edges[1] != board.getPlacement(row, col + 1).edges[3]) return false;
                 }
-                // South edge check
-                if (row < board.getRows() - 1 && !board.isEmpty(row + 1, col)) {
-                    int neighborNorth = board.getPlacement(row + 1, col).edges[0];
-                    if (edges[2] != neighborNorth) return false;
+                if (!bottomBorder && !board.isEmpty(row + 1, col)) {
+                    if (edges[2] != board.getPlacement(row + 1, col).edges[0]) return false;
                 }
-                // West edge check
-                if (col > 0 && !board.isEmpty(row, col - 1)) {
-                    int neighborEast = board.getPlacement(row, col - 1).edges[1];
-                    if (edges[3] != neighborEast) return false;
+                if (!leftBorder && !board.isEmpty(row, col - 1)) {
+                    if (edges[3] != board.getPlacement(row, col - 1).edges[1]) return false;
                 }
                 return true;
             }

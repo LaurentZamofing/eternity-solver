@@ -160,6 +160,33 @@ public class MRVCellSelector implements HeuristicStrategy {
      * @param totalPieces total number of pieces
      * @return coordinates [r, c] of most constrained cell, or null if none
      */
+    /**
+     * Counts how many valid (piece, rotation) placements exist for a cell.
+     *
+     * <p>Uses the AC-3 domain if it's been initialised — that's the canonical
+     * source — otherwise falls back to brute-force computation via the
+     * fit checker. Returns the TOTAL number of (piece, rotation) tuples,
+     * not the number of unique piece IDs (a cell with 1 piece in 4
+     * rotations is ranked higher MRV than a cell with 4 pieces in 1
+     * rotation each).</p>
+     *
+     * <p>Extracted from {@link #findNextCellMRV} for clarity and to enable
+     * unit testing of the counting logic in isolation.</p>
+     */
+    int countValidRotationsAt(Board board, int r, int c,
+                              Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
+        if (useAC3 && domainManager.isAC3Initialized()) {
+            Map<Integer, List<ValidPlacement>> domain = domainManager.getDomain(r, c);
+            if (domain == null) return 0;
+            int total = 0;
+            for (List<ValidPlacement> placements : domain.values()) {
+                total += placements.size();
+            }
+            return total;
+        }
+        return getValidPlacements(board, r, c, piecesById, pieceUsed, totalPieces).size();
+    }
+
     public int[] findNextCellMRV(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         // Fast path: when the MRV index is wired up and we're not in border-
         // priority or debug mode, the priority queue gives us the answer in
@@ -194,28 +221,8 @@ public class MRVCellSelector implements HeuristicStrategy {
                     // Detect if this is a border cell
                     boolean isBorder = (r == 0 || r == board.getRows() - 1 || c == 0 || c == board.getCols() - 1);
 
-                    // Use AC-3 domains if available for more efficient MRV
-                    // IMPORTANT: Count TOTAL ROTATIONS, not just unique pieces
-                    // This gives more accurate MRV: a cell with 1 piece having 4 rotations
-                    // should be ranked LOWER than a cell with 1 piece having 1 rotation
-                    int totalValidRotations;
-                    if (useAC3 && domainManager.isAC3Initialized()) {
-                        Map<Integer, List<ValidPlacement>> domain = domainManager.getDomain(r, c);
-                        // Count total number of valid placements (piece + rotation combinations)
-                        if (domain != null) {
-                            totalValidRotations = 0;
-                            for (List<ValidPlacement> placements : domain.values()) {
-                                totalValidRotations += placements.size();
-                            }
-                        } else {
-                            totalValidRotations = 0;
-                        }
-                    } else {
-                        // Fall back to computing from scratch
-                        List<ValidPlacement> validPlacements = getValidPlacements(board, r, c, piecesById, pieceUsed, totalPieces);
-                        // Count total valid placements (each entry is a piece + rotation combination)
-                        totalValidRotations = validPlacements.size();
-                    }
+                    // Count valid rotations (AC-3 domain size if available, else compute from scratch)
+                    int totalValidRotations = countValidRotationsAt(board, r, c, piecesById, pieceUsed, totalPieces);
 
                     // If no possibilities, it's an immediate dead-end
                     if (totalValidRotations == 0) {

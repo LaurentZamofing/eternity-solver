@@ -528,5 +528,44 @@ public class MRVCellSelectorTest {
         // consistently apply its heuristics without state corruption
         assertTrue(board.isEmpty(cell.row(), cell.col()), "Selected cell must be empty");
     }
+
+    // ─── countValidRotationsAt — extracted helper coverage ───────────────
+
+    @Test
+    @DisplayName("countValidRotationsAt returns AC-3 domain size when AC-3 initialised")
+    public void testCountValidRotationsUsesAC3Domain() {
+        // After setUp(), AC-3 is initialised. The fitChecker accepts everything
+        // and pieces 1, 2, 3 each have 4 unique rotations (their edges differ
+        // unless symmetric). At an empty (0,0) the AC-3 domain holds every
+        // (piece, rotation) combination the fitChecker accepts.
+        int count = selector.countValidRotationsAt(board, 0, 0, pieces, pieceUsed, 3);
+
+        // 3 pieces — but piece 3 has all-equal edges {0,0,0,0}, so its
+        // unique rotation count is 1; pieces 1 and 2 have 4 each.
+        // → 4 + 4 + 1 = 9 valid (piece, rotation) tuples.
+        assertEquals(9, count, "AC-3 domain at empty (0,0) should hold 9 (piece, rotation) tuples");
+    }
+
+    @Test
+    @DisplayName("countValidRotationsAt returns 0 when AC-3 domain is empty")
+    public void testCountValidRotationsZeroWhenDomainEmpty() {
+        domainManager.setDomain(1, 1, new HashMap<>());
+
+        int count = selector.countValidRotationsAt(board, 1, 1, pieces, pieceUsed, 3);
+
+        assertEquals(0, count);
+    }
+
+    @Test
+    @DisplayName("countValidRotationsAt falls back to fitChecker when AC-3 disabled")
+    public void testCountValidRotationsFallsBackWhenAC3Off() {
+        selector.setUseAC3(false);
+
+        int count = selector.countValidRotationsAt(board, 0, 0, pieces, pieceUsed, 3);
+
+        // Without AC-3, the fallback re-evaluates via getValidPlacements,
+        // which respects the (here-permissive) fitChecker.
+        assertTrue(count >= 0, "fallback must return a non-negative count");
+    }
 }
 

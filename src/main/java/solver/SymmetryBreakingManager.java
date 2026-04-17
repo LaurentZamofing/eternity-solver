@@ -17,19 +17,38 @@ public class SymmetryBreakingManager {
 
     // Symmetry-breaking strategy flags.
     //
-    // Empirical impact on solve4x4Hard (JMH SingleShotTime, 10 iter, JDK 24):
+    // ⚠ ALL FLAGS DEFAULT FALSE — correctness bug surfaced by the 4x4
+    //   correctness gate (AC3CorrectnessTest.solve4x4EasyProducesValidSolution).
+    //
+    // Bug 1 — Lexicographic ordering rejects valid solutions:
+    //   The rule "every corner pieceId >= TL pieceId" assumes corners are
+    //   geometrically interchangeable. They aren't on edge-matching puzzles.
+    //   On example_4x4_easy.txt the four corners are
+    //     1 (BL-only), 7 (TR-only), 10 (BR-only), 11 (TL-only).
+    //   The solver places piece 11 at TL (the only fit), sets topLeftId=11,
+    //   then tries piece 1 at BL → 1 < 11 → REJECT. Unsolvable.
+    //
+    // Bug 2 — Combined rotation fixing + lex ordering also fails the 4x4
+    //   easy gate. With both flags on the gate fails; with only lex off,
+    //   the gate still fails; with both off, all three gates (3x3, 4x4
+    //   easy, 4x4 hard) pass. Root cause is intertwined with bug 1 —
+    //   needs a clean design pass to separate.
+    //
+    // Empirical perf impact on solve4x4Hard (JMH SingleShotTime, 10 iter):
     //   Both lex+rotation enabled:  ~30 ms/op
     //   Both disabled:               ~49 ms/op  (+63% slower)
-    // → Current setup buys ~40% wall-clock on 4x4.
+    // Cost of correctness: ~40% slower on 4x4. Accepted — the previous
+    // configuration was silently dropping valid solutions on
+    // example_4x4_easy.txt and probably other puzzles where the smallest-
+    // ID corner is geometrically constrained off-TL.
     //
-    // Reflection pruning (e.g. lex order top-right ≤ bottom-left to break the
-    // diagonal reflection of the D4 group) is left disabled: Eternity II
-    // pieces are not naturally mirror-symmetric, so the marginal gain is
-    // probably < 20%, and rolling it out safely needs a 4x4 correctness gate
-    // with a known-good solution to verify no valid branches are pruned.
-    // Capture that gate in AC3CorrectnessTest before flipping this flag.
-    private boolean enableLexicographicOrdering = true;
-    private boolean enableRotationalFixing = true;
+    // Future fix sketch: order corners over the SET of positions they
+    // can geometrically reach (not by raw ID), or use canonical-form
+    // comparison on the completed placement instead of per-placement
+    // rejection. Either needs a design + extended test corpus before
+    // re-enabling.
+    private boolean enableLexicographicOrdering = false;
+    private boolean enableRotationalFixing = false;
     private boolean enableReflectionPruning = false;
 
     /** Creates symmetry-breaking manager with board dimensions and verbose flag for detailed logging. */

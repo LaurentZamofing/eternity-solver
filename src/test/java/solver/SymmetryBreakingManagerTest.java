@@ -31,8 +31,13 @@ public class SymmetryBreakingManagerTest {
         pieces.put(3, new Piece(3, new int[]{0, 3, 3, 0})); // Corner piece
         pieces.put(4, new Piece(4, new int[]{1, 2, 3, 4})); // Regular piece
 
-        // Create manager (3x3 board, verbose=false)
+        // Create manager (3x3 board, verbose=false).
+        // Symmetry-breaking flags ship OFF by default (correctness bug on
+        // 4x4 puzzles, see SymmetryBreakingManager). These tests still
+        // exercise the rule logic, so we enable both flags here.
         manager = new SymmetryBreakingManager(3, 3, false);
+        manager.setLexicographicOrdering(true);
+        manager.setRotationalFixing(true);
     }
 
     @Test

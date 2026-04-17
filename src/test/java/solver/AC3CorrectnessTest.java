@@ -13,19 +13,25 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Correctness gate for AC-3 changes.
+ * Correctness gate for AC-3, MRV, sym-breaking, and any future heuristic
+ * change that touches the search algorithm.
  *
- * <p>Solves the 3x3 example puzzle end-to-end and verifies the result
- * is a complete, valid edge-matching solution (all cells filled, every
- * adjacent pair shares matching edges, borders are zero). If an AC-3
- * optimization drops valid placements silently, this test catches it
- * without needing a specific solution to compare against.</p>
+ * <p>Solves a series of puzzles end-to-end (3x3 example, 4x4 easy, 4x4
+ * hard) and verifies each result is a complete, valid edge-matching
+ * solution: all cells filled, every adjacent pair shares matching edges,
+ * borders are zero. If an optimisation drops valid placements silently,
+ * one of these tests fails — without needing a hand-written reference
+ * solution to compare against.</p>
  *
- * <p>Runs in the default suite (not tagged slow) — the 3x3 solve is
- * quick; {@code @Timeout(30)} prevents any regression from hanging
- * the suite.</p>
+ * <p>The 4x4 cases are the gate that unblocks future symmetry-breaking
+ * extensions (reflection pruning) and MRV PQ activation: any rule that
+ * silently rejects a valid branch on a 4x4 will fail here.</p>
+ *
+ * <p>Runs in the default suite (not tagged slow). {@code @Timeout(45)}
+ * caps each method at 45 s; on the local machine the 4x4 hard variant
+ * solves in a few hundred ms.</p>
  */
-@Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Timeout(value = 45, unit = TimeUnit.SECONDS)
 class AC3CorrectnessTest {
 
     @Test
@@ -38,6 +44,32 @@ class AC3CorrectnessTest {
         boolean solved = solver.solve(board, PuzzleFactory.createExample3x3());
 
         assertTrue(solved, "3x3 example must be solvable");
+        verifyCompleteValidSolution(board);
+    }
+
+    @Test
+    void solve4x4EasyProducesValidSolution() {
+        Board board = new Board(4, 4);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(40_000);
+
+        boolean solved = solver.solve(board, PuzzleFactory.createExample4x4Easy());
+
+        assertTrue(solved, "4x4 easy example must be solvable");
+        verifyCompleteValidSolution(board);
+    }
+
+    @Test
+    void solve4x4HardProducesValidSolution() {
+        Board board = new Board(4, 4);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(40_000);
+
+        boolean solved = solver.solve(board, PuzzleFactory.createExample4x4HardV3());
+
+        assertTrue(solved, "4x4 hard variant must be solvable");
         verifyCompleteValidSolution(board);
     }
 

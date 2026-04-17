@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 class ParallelSolvingIntegrationTest {
 
     @Test
-    @Disabled("TODO: solveParallel() method needs investigation - sequential works but parallel doesn't")
+    @Disabled("solveParallel() returns false on a solvable 2x2 — parallel search bug independent from AC-3/sym-breaking fixes. Needs a dedicated investigation; see IMPROVEMENT_PLAN.md Chantier 3/5.")
     @DisplayName("Work-stealing should find solution faster than sequential")
     @Timeout(value = 15, unit = TimeUnit.SECONDS)
     void testWorkStealingPerformance() {
@@ -100,7 +100,7 @@ class ParallelSolvingIntegrationTest {
     }
 
     @Test
-    @Disabled("TODO: Depends on solveParallel() working - needs investigation")
+    @Disabled("Depends on solveParallel() — see testWorkStealingPerformance note; tracked in IMPROVEMENT_PLAN.md.")
     @DisplayName("Solution found flag should stop other threads")
     @Timeout(value = 35, unit = TimeUnit.SECONDS)
     void testSolutionFoundStopsThreads() throws InterruptedException {

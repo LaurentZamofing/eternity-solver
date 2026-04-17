@@ -86,7 +86,7 @@ class SaveStateIntegrationTest {
     }
 
     @Test
-    @Disabled("TODO: SaveStateIO.saveCurrentState() doesn't create .bin - use SaveStateManager.saveState() instead")
+    @Disabled("Binary save-format path in SaveStateManager.enableBinaryFormat() is unused in production; re-enable when the feature lands or delete. Tracked in IMPROVEMENT_PLAN.md.")
     @Order(2)
     @DisplayName("Should save and load state in binary format")
     void testBinaryFormatSaveLoad() throws Exception {
@@ -123,7 +123,7 @@ class SaveStateIntegrationTest {
     }
 
     @Test
-    @Disabled("TODO: saveCurrentState() uses getPuzzleSubDir which returns different path - verify saves/ structure")
+    @Disabled("saveCurrentState() writes under getPuzzleSubDir(), not saves/<puzzle>/; the test's path assumption is stale. Fix path lookup or delete. Tracked in IMPROVEMENT_PLAN.md.")
     @Order(3)
     @DisplayName("Should preserve milestone saves")
     void testMilestonePreservation() throws Exception {

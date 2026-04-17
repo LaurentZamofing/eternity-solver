@@ -1,7 +1,6 @@
 package integration;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
@@ -104,69 +103,6 @@ public class CLIIntegrationTest {
     }
 
     @Test
-    @Disabled("Requires Maven classpath configuration - run with: mvn verify")
-    public void testInvalidPuzzleName() {
-        try {
-            ProcessBuilder pb = new ProcessBuilder(
-                "java", "-cp", "bin:lib/*", "MainCLI", "puzzle_inexistant"
-            );
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-
-            int exitCode = process.waitFor();
-            assertEquals(1, exitCode, "Puzzle invalide devrait retourner exit code 1");
-
-            java.io.BufferedReader reader = new java.io.BufferedReader(
-                new java.io.InputStreamReader(process.getInputStream())
-            );
-            StringBuilder output = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
-            }
-
-            String errorOutput = output.toString();
-            assertTrue(errorOutput.contains("Erreur") || errorOutput.contains("inconnu"),
-                      "Devrait afficher message d'erreur pour puzzle invalide");
-
-        } catch (Exception e) {
-            fail("Exception lors du test puzzle invalide: " + e.getMessage());
-        }
-    }
-
-    @Test
-    @Disabled("Requires Maven classpath configuration - run with: mvn verify")
-    public void testInvalidThreadsValue() {
-        try {
-            ProcessBuilder pb = new ProcessBuilder(
-                "java", "-cp", "bin:lib/*", "MainCLI", "-t", "invalid", "example_3x3"
-            );
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-
-            int exitCode = process.waitFor();
-            assertEquals(1, exitCode, "Valeur threads invalide devrait retourner exit code 1");
-
-            java.io.BufferedReader reader = new java.io.BufferedReader(
-                new java.io.InputStreamReader(process.getInputStream())
-            );
-            StringBuilder output = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
-            }
-
-            String errorOutput = output.toString();
-            assertTrue(errorOutput.contains("Erreur") || errorOutput.contains("entier"),
-                      "Devrait afficher message d'erreur pour valeur invalide");
-
-        } catch (Exception e) {
-            fail("Exception lors du test threads invalide: " + e.getMessage());
-        }
-    }
-
-    @Test
-    @Disabled("Requires Maven classpath configuration - run with: mvn verify")
     public void testSolveExample3x3() {
         try {
             ProcessBuilder pb = new ProcessBuilder(

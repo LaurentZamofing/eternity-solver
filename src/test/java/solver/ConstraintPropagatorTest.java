@@ -4,7 +4,6 @@ import model.Board;
 import model.Piece;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 
 import java.util.BitSet;
@@ -29,12 +28,30 @@ public class ConstraintPropagatorTest {
     private Board board;
     private Map<Integer, Piece> pieces;
     private BitSet pieceUsed;
+    private int tlPieceId;
+    private int tlRotation;
+
+    private DomainManager.FitChecker realisticFitChecker() {
+        return (b, r, c, edges) -> {
+            if (r == 0 && edges[0] != 0) return false;
+            if (c == 0 && edges[3] != 0) return false;
+            if (r == b.getRows() - 1 && edges[2] != 0) return false;
+            if (c == b.getCols() - 1 && edges[1] != 0) return false;
+            if (r > 0 && !b.isEmpty(r - 1, c) && b.getPlacement(r - 1, c).edges[2] != edges[0]) return false;
+            if (c > 0 && !b.isEmpty(r, c - 1) && b.getPlacement(r, c - 1).edges[1] != edges[3]) return false;
+            if (r < b.getRows() - 1 && !b.isEmpty(r + 1, c) && b.getPlacement(r + 1, c).edges[0] != edges[2]) return false;
+            if (c < b.getCols() - 1 && !b.isEmpty(r, c + 1) && b.getPlacement(r, c + 1).edges[3] != edges[1]) return false;
+            return true;
+        };
+    }
 
     @BeforeEach
     public void setUp() {
-        // Create mock fit checker
-        DomainManager.FitChecker fitChecker = (b, r, c, edges) -> true;
-        domainManager = new DomainManager(fitChecker);
+        // Realistic fit checker: borders must be 0 and any placed neighbour
+        // edge must match. Mirrors the checks PlacementValidator.fits() makes
+        // in production; the earlier mock (always-true) caused AC-3 tests to
+        // skip real constraint propagation logic.
+        domainManager = new DomainManager(realisticFitChecker());
 
         // Create statistics
         stats = new ConstraintPropagator.Statistics();
@@ -48,46 +65,59 @@ public class ConstraintPropagatorTest {
         pieceUsed = new BitSet(pieces.size() + 1);
 
         // Initialize domains
-        domainManager.initializeAC3Domains(board, pieces, pieceUsed, board.getRows() * board.getCols());
+        domainManager.initializeAC3Domains(board, pieces, pieceUsed, pieces.size());
+
+        // Find a piece that actually fits at TL (0,0) in some rotation — the
+        // earlier hard-coded "piece 1" only worked with the always-true mock.
+        findTLPlaceable();
+    }
+
+    private void findTLPlaceable() {
+        for (Map.Entry<Integer, Piece> e : pieces.entrySet()) {
+            for (int rot = 0; rot < 4; rot++) {
+                int[] edges = e.getValue().edgesRotated(rot);
+                if (edges[0] == 0 && edges[3] == 0) {
+                    tlPieceId = e.getKey();
+                    tlRotation = rot;
+                    return;
+                }
+            }
+        }
+        fail("No TL-fittable piece in test puzzle");
     }
 
     private Map<Integer, Piece> createTestPieces() {
-        Map<Integer, Piece> pieces = new HashMap<>();
-        pieces.put(1, new Piece(1, new int[]{1, 2, 3, 4}));
-        pieces.put(2, new Piece(2, new int[]{5, 6, 7, 8}));
-        pieces.put(3, new Piece(3, new int[]{0, 0, 0, 0}));
-        return pieces;
+        // Use the real 3x3 example so AC-3 runs on a valid, solvable puzzle.
+        // The earlier three-piece map with random edges could not satisfy any
+        // border constraint, which is why AC-3 tests had to be @Disabled.
+        return util.PuzzleFactory.createExample3x3();
     }
 
     @Test
-    @Disabled("Requires realistic FitChecker for proper AC-3 testing")
     @DisplayName("Propagate AC-3 without dead ends")
     public void testPropagateAC3Success() {
-        // Place a piece at (0,0) and propagate constraints
-        Piece piece = pieces.get(1);
-        board.place(0, 0, piece, 0);
-        pieceUsed.set(1);
+        Piece piece = pieces.get(tlPieceId);
+        board.place(0, 0, piece, tlRotation);
+        pieceUsed.set(tlPieceId);
 
-        boolean result = propagator.propagateAC3(board, 0, 0, 1, 0, pieces, pieceUsed, 3);
+        boolean result = propagator.propagateAC3(board, 0, 0, tlPieceId, tlRotation, pieces, pieceUsed, pieces.size());
 
-        assertTrue(result, "Propagation should succeed with no dead ends");
+        assertTrue(result, "Propagation should succeed with valid TL placement");
     }
 
     @Test
-    @Disabled("Requires realistic FitChecker for proper AC-3 testing")
     @DisplayName("Enable and disable AC-3")
     public void testEnableDisableAC3() {
-        // Place a piece to have something to propagate
-        Piece piece = pieces.get(1);
-        board.place(0, 0, piece, 0);
-        pieceUsed.set(1);
+        Piece piece = pieces.get(tlPieceId);
+        board.place(0, 0, piece, tlRotation);
+        pieceUsed.set(tlPieceId);
 
         propagator.setUseAC3(false);
-        boolean result1 = propagator.propagateAC3(board, 0, 0, 1, 0, pieces, pieceUsed, 3);
+        boolean result1 = propagator.propagateAC3(board, 0, 0, tlPieceId, tlRotation, pieces, pieceUsed, pieces.size());
         assertTrue(result1, "Should succeed when AC-3 disabled");
 
         propagator.setUseAC3(true);
-        boolean result2 = propagator.propagateAC3(board, 0, 0, 1, 0, pieces, pieceUsed, 3);
+        boolean result2 = propagator.propagateAC3(board, 0, 0, tlPieceId, tlRotation, pieces, pieceUsed, pieces.size());
         assertTrue(result2, "Should succeed when AC-3 enabled");
     }
 
@@ -96,11 +126,10 @@ public class ConstraintPropagatorTest {
     public void testStatisticsUpdated() {
         long initialDeadEnds = stats.getDeadEndsDetected();
 
-        // Place a piece and propagate
-        Piece piece = pieces.get(1);
-        board.place(0, 0, piece, 0);
-        pieceUsed.set(1);
-        propagator.propagateAC3(board, 0, 0, 1, 0, pieces, pieceUsed, 3);
+        Piece piece = pieces.get(tlPieceId);
+        board.place(0, 0, piece, tlRotation);
+        pieceUsed.set(tlPieceId);
+        propagator.propagateAC3(board, 0, 0, tlPieceId, tlRotation, pieces, pieceUsed, pieces.size());
 
         // Dead ends count should be same or increased (depending on board state)
         assertTrue(stats.getDeadEndsDetected() >= initialDeadEnds,
@@ -110,13 +139,11 @@ public class ConstraintPropagatorTest {
     @Test
     @DisplayName("Propagate after placement")
     public void testPropagateAfterPlacement() {
-        // Place a piece
-        Piece piece = pieces.get(1);
-        board.place(0, 0, piece, 0);
-        pieceUsed.set(1);
+        Piece piece = pieces.get(tlPieceId);
+        board.place(0, 0, piece, tlRotation);
+        pieceUsed.set(tlPieceId);
 
-        // Propagate constraints
-        boolean result = propagator.propagateAC3(board, 0, 0, 1, 0, pieces, pieceUsed, 3);
+        boolean result = propagator.propagateAC3(board, 0, 0, tlPieceId, tlRotation, pieces, pieceUsed, pieces.size());
 
         // Should still succeed (or detect dead end based on constraints)
         assertNotNull(result, "Propagation should return a result");
@@ -157,28 +184,23 @@ public class ConstraintPropagatorTest {
     }
 
     @Test
-    @Disabled("Requires realistic FitChecker for proper AC-3 testing")
-    @DisplayName("Propagate with empty board")
+    @DisplayName("Propagate with fresh board + placed TL piece")
     public void testPropagateEmptyBoard() {
-        Board emptyBoard = new Board(3, 3);
-        BitSet emptyUsed = new BitSet(pieces.size() + 1);
+        Board freshBoard = new Board(3, 3);
+        BitSet freshUsed = new BitSet(pieces.size() + 1);
+        DomainManager freshDM = new DomainManager(realisticFitChecker());
+        freshDM.initializeAC3Domains(freshBoard, pieces, freshUsed, pieces.size());
 
-        DomainManager.FitChecker fitChecker = (b, r, c, edges) -> true;
-        DomainManager emptyDomainManager = new DomainManager(fitChecker);
-        emptyDomainManager.initializeAC3Domains(emptyBoard, pieces, emptyUsed, emptyBoard.getRows() * emptyBoard.getCols());
+        ConstraintPropagator freshCP = new ConstraintPropagator(
+                freshDM, new ConstraintPropagator.Statistics());
 
-        ConstraintPropagator emptyPropagator = new ConstraintPropagator(
-                emptyDomainManager, new ConstraintPropagator.Statistics());
+        Piece piece = pieces.get(tlPieceId);
+        freshBoard.place(0, 0, piece, tlRotation);
+        freshUsed.set(tlPieceId);
 
-        // Place a piece to propagate from
-        Piece piece = pieces.get(1);
-        emptyBoard.place(0, 0, piece, 0);
-        emptyUsed.set(1);
+        boolean result = freshCP.propagateAC3(freshBoard, 0, 0, tlPieceId, tlRotation, pieces, freshUsed, pieces.size());
 
-        boolean result = emptyPropagator.propagateAC3(emptyBoard, 0, 0, 1, 0, pieces, emptyUsed,
-                emptyBoard.getRows() * emptyBoard.getCols());
-
-        assertTrue(result, "Propagation should succeed with placed piece");
+        assertTrue(result, "Propagation should succeed with placed TL piece on fresh board");
     }
 
     @Test
@@ -251,13 +273,18 @@ public class ConstraintPropagatorTest {
     @Test
     @DisplayName("filterDomain keeps only placements whose edge[edgeIndex] matches required")
     public void testFilterDomainEdgeMatching() {
-        // Piece 1 = {1,2,3,4} ; piece 2 = {5,6,7,8}.
-        // North edges: 1, 5. Filter for edge[0] == 1 → keep only piece 1 rotation 0.
+        // Local pieces used only by this test so we can reason about exact
+        // edge values — the shared setUp now uses real puzzle pieces.
+        Map<Integer, Piece> localPieces = new HashMap<>();
+        localPieces.put(1, new Piece(1, new int[]{1, 2, 3, 4}));
+        localPieces.put(2, new Piece(2, new int[]{5, 6, 7, 8}));
+
+        // North edges at rot 0: 1, 5. Filter for edge[0] == 1 → keep only piece 1 rot 0.
         java.util.List<DomainManager.ValidPlacement> input = java.util.List.of(
             new DomainManager.ValidPlacement(1, 0),
             new DomainManager.ValidPlacement(2, 0)
         );
-        java.util.List<DomainManager.ValidPlacement> kept = propagator.filterDomain(input, 1, 0, pieces);
+        java.util.List<DomainManager.ValidPlacement> kept = propagator.filterDomain(input, 1, 0, localPieces);
 
         assertEquals(1, kept.size());
         assertEquals(1, kept.get(0).pieceId);

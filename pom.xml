@@ -346,10 +346,9 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
-                            <!-- Seuils calés juste sous la couverture actuelle (LINE 21%, BRANCH 21%)
-                                 pour agir comme garde de non-régression. À bumper au fur et à mesure
-                                 que la couverture monte. L'ancien seuil 90% était aspirationnel et
-                                 bloquait tout le CI. -->
+                            <!-- Non-regression floor, kept ~1pt under current coverage.
+                                 2026-04-18 measurement: LINE 25%, BRANCH 24%. Raise as
+                                 Chantier 4 tests land (target 30% LINE, 25% BRANCH). -->
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>
@@ -357,12 +356,12 @@
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.20</minimum>
+                                            <minimum>0.24</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.18</minimum>
+                                            <minimum>0.22</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

@@ -48,6 +48,10 @@ public class EternitySolver {
     private boolean useAC3 = true;
     private boolean useDomainCache = true;
 
+    /** Package-private toggle for tests that need to isolate AC-3 from the
+     *  backtracking search path. Production code leaves it on. */
+    public void setUseAC3(boolean enabled) { this.useAC3 = enabled; }
+
     private DomainManager domainManager;
     private ConstraintPropagator constraintPropagator;
     private SingletonDetector singletonDetector;

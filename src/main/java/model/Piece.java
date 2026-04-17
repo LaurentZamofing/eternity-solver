@@ -9,6 +9,8 @@ import java.util.Arrays;
 public class Piece {
     private final int id;            // unique piece identifier
     private final int[] edges;       // edges in order [N, E, S, W]
+    // Cached rotations [0=0°, 1=90°, 2=180°, 3=270°]. Returned directly; callers must not mutate.
+    private final int[][] rotations;
 
     /**
      * Constructor
@@ -22,6 +24,13 @@ public class Piece {
         }
         this.id = id;
         this.edges = Arrays.copyOf(edges, 4);
+        int n = this.edges[0], e = this.edges[1], s = this.edges[2], w = this.edges[3];
+        this.rotations = new int[][] {
+            this.edges,                  // 0°   [N, E, S, W]
+            new int[] {w, n, e, s},      // 90°  cw: N<-W, E<-N, S<-E, W<-S
+            new int[] {s, w, n, e},      // 180°     N<-S, E<-W, S<-N, W<-E
+            new int[] {e, s, w, n},      // 270° cw: N<-E, E<-S, S<-W, W<-N
+        };
     }
 
     /**
@@ -40,29 +49,18 @@ public class Piece {
     }
 
     /**
-     * Returns a new array representing the edges after clockwise k*90° rotation.
-     * k is reduced modulo 4.
+     * Returns the cached edge array for clockwise k*90° rotation.
+     * k is reduced modulo 4. The returned array is the internal cached
+     * rotation — callers MUST treat it as read-only; mutation corrupts
+     * all subsequent fit/AC-3 checks.
+     *
      * Mapping (90° cw): newN = W, newE = N, newS = E, newW = S
      *
      * @param k number of 90° clockwise rotations
-     * @return new edge array after rotation (or internal array if k=0)
+     * @return cached edge array after rotation (do not mutate)
      */
     public int[] edgesRotated(int k) {
-        k = ((k % 4) + 4) % 4;
-        if (k == 0) return Arrays.copyOf(edges, 4);  // Return defensive copy for immutability
-
-        // Optimization: direct rotation without loop
-        int n = edges[0], e = edges[1], s = edges[2], w = edges[3];
-        switch (k) {
-            case 1:  // 90° clockwise: N<-W, E<-N, S<-E, W<-S
-                return new int[]{w, n, e, s};
-            case 2:  // 180°: N<-S, E<-W, S<-N, W<-E
-                return new int[]{s, w, n, e};
-            case 3:  // 270° clockwise: N<-E, E<-S, S<-W, W<-N
-                return new int[]{e, s, w, n};
-            default:
-                return Arrays.copyOf(edges, 4);  // Should never happen, but return copy
-        }
+        return rotations[((k % 4) + 4) % 4];
     }
 
     /**

@@ -6,6 +6,11 @@
 # Pièces fixes (pieceId row col rotation)
 # Verbose: false
 # SeuillAffichage: 10
+# DebugBacktracking: true
+# DebugShowBoard: true
+# DebugShowAlternatives: true
+# DebugMaxCandidates: 5
+# DebugStepByStep: true
 #
 
 # SortOrder: ascending

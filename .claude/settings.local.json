@@ -130,7 +130,18 @@
       "Bash(git check-ignore:*)",
       "Bash(./gradlew test:*)",
       "Bash(./mvnw clean test:*)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(pgrep:*)",
+      "Bash(javap:*)",
+      "Bash(tee:*)",
+      "Bash(/tmp/debug_mrv.log)",
+      "Bash(unzip:*)",
+      "Bash(./run_debug_clean.sh:*)",
+      "Bash(/Users/laurentzamofing/dev/eternity/.gitignore)",
+      "Bash(git stash *)",
+      "Bash(grep -E \"\\\\.java$|\\\\.xml$|\\\\.sh$\")",
+      "Bash(grep -E \"\\\\.md$\")",
+      "Bash(grep -vE \"\\\\.java$|\\\\.xml$|\\\\.sh$|\\\\.md$\")"
     ],
     "deny": [],
     "ask": []

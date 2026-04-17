@@ -75,3 +75,5 @@ out/
 
 # Thread save files
 saves/thread_*.txt
+*.bak*
+*.old

@@ -23,39 +23,16 @@ public interface HeuristicStrategy {
 
     /**
      * Represents a position on the board.
+     *
+     * <p>Java 21 record — equals/hashCode/toString and accessors generated
+     * automatically. Callers access components via {@code row()} / {@code col()}
+     * (method form, not field form).</p>
      */
-    class CellPosition {
-        public final int row;
-        public final int col;
+    record CellPosition(int row, int col) {
 
-        public CellPosition(int row, int col) {
-            this.row = row;
-            this.col = col;
-        }
-
-        /**
-         * Converts to array format [row, col] for backward compatibility.
-         */
+        /** Converts to array format [row, col] for backward compatibility. */
         public int[] toArray() {
             return new int[]{row, col};
-        }
-
-        @Override
-        public String toString() {
-            return "(" + row + ", " + col + ")";
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (!(obj instanceof CellPosition)) return false;
-            CellPosition other = (CellPosition) obj;
-            return this.row == other.row && this.col == other.col;
-        }
-
-        @Override
-        public int hashCode() {
-            return 31 * row + col;
         }
     }
 

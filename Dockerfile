@@ -1,5 +1,5 @@
 # Multi-stage build for Eternity Solver
-FROM eclipse-temurin:11-jdk-alpine AS builder
+FROM eclipse-temurin:21-jdk-alpine AS builder
 
 # Set working directory
 WORKDIR /build
@@ -18,7 +18,7 @@ RUN chmod +x compile.sh build_jar.sh
 RUN ./build_jar.sh
 
 # Runtime stage - minimal image
-FROM eclipse-temurin:11-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 # Metadata
 LABEL maintainer="Laurent Zamofing"

@@ -81,8 +81,8 @@ public class MRVCellSelectorTest {
         HeuristicStrategy.CellPosition cell = selector.selectNextCell(board, pieces, pieceUsed, 3);
 
         assertNotNull(cell, "Should select a cell on empty board");
-        assertTrue(cell.row >= 0 && cell.row < 3, "Row should be in valid range");
-        assertTrue(cell.col >= 0 && cell.col < 3, "Column should be in valid range");
+        assertTrue(cell.row() >= 0 && cell.row() < 3, "Row should be in valid range");
+        assertTrue(cell.col() >= 0 && cell.col() < 3, "Column should be in valid range");
     }
 
     @Test
@@ -114,7 +114,7 @@ public class MRVCellSelectorTest {
         HeuristicStrategy.CellPosition cell = selector.selectNextCell(board, pieces, pieceUsed, 3);
 
         assertNotNull(cell, "Should select an empty cell");
-        assertFalse(cell.row == 1 && cell.col == 1, "Should not select occupied cell (1,1)");
+        assertFalse(cell.row() == 1 && cell.col() == 1, "Should not select occupied cell (1,1)");
     }
 
     @Test
@@ -126,7 +126,7 @@ public class MRVCellSelectorTest {
 
         assertNotNull(cell);
         // With border prioritization, should select border cell
-        boolean isBorder = cell.row == 0 || cell.row == 2 || cell.col == 0 || cell.col == 2;
+        boolean isBorder = cell.row() == 0 || cell.row() == 2 || cell.col() == 0 || cell.col() == 2;
         assertTrue(isBorder || board.getRows() * board.getCols() == 1,
                 "Should prioritize border cells");
     }
@@ -159,10 +159,10 @@ public class MRVCellSelectorTest {
         HeuristicStrategy.CellPosition cell = selector.selectNextCell(board, pieces, pieceUsed, 3);
 
         assertNotNull(cell);
-        assertTrue(cell.row >= 0, "Row should be non-negative");
-        assertTrue(cell.col >= 0, "Column should be non-negative");
-        assertTrue(cell.row < board.getRows(), "Row should be within board bounds");
-        assertTrue(cell.col < board.getCols(), "Column should be within board bounds");
+        assertTrue(cell.row() >= 0, "Row should be non-negative");
+        assertTrue(cell.col() >= 0, "Column should be non-negative");
+        assertTrue(cell.row() < board.getRows(), "Row should be within board bounds");
+        assertTrue(cell.col() < board.getCols(), "Column should be within board bounds");
     }
 
     @Test
@@ -232,7 +232,7 @@ public class MRVCellSelectorTest {
         HeuristicStrategy.CellPosition cell = selector.selectNextCell(board, pieces, pieceUsed, 3);
 
         assertNotNull(cell, "Should select from remaining cells");
-        assertTrue(cell.row > 0, "Should not select from filled top row");
+        assertTrue(cell.row() > 0, "Should not select from filled top row");
     }
 
     @Test
@@ -255,7 +255,7 @@ public class MRVCellSelectorTest {
         assertNotNull(cell);
         // Cell should be selected based on MRV heuristic
         // Exact cell depends on domain sizes, just verify it's valid
-        assertTrue(board.isEmpty(cell.row, cell.col), "Selected cell should be empty");
+        assertTrue(board.isEmpty(cell.row(), cell.col()), "Selected cell should be empty");
     }
 
     @Test
@@ -376,7 +376,7 @@ public class MRVCellSelectorTest {
         HeuristicStrategy.CellPosition cell = selector.selectNextCell(board, pieces, pieceUsed, 3);
 
         if (cell != null) {
-            assertTrue(board.isEmpty(cell.row, cell.col), "Selected cell should be empty");
+            assertTrue(board.isEmpty(cell.row(), cell.col()), "Selected cell should be empty");
             // The cell chosen should have minimum rotations among all empty cells
             // (validation would require computing all rotation counts - complex)
         }
@@ -463,7 +463,7 @@ public class MRVCellSelectorTest {
         HeuristicStrategy.CellPosition cell = selector.selectNextCell(board, pieces, pieceUsed, 3);
 
         assertNotNull(cell, "Should select a cell");
-        assertTrue(board.isEmpty(cell.row, cell.col), "Selected cell should be empty");
+        assertTrue(board.isEmpty(cell.row(), cell.col()), "Selected cell should be empty");
 
         // The key validation: the selector should not throw exceptions
         // and should maintain internal consistency (even though we can't directly
@@ -494,8 +494,8 @@ public class MRVCellSelectorTest {
 
         assertNotNull(cell1, "First selection should succeed");
         assertNotNull(cell2, "Second selection should succeed");
-        assertEquals(cell1.row, cell2.row, "Selections should be deterministic (same row)");
-        assertEquals(cell1.col, cell2.col, "Selections should be deterministic (same col)");
+        assertEquals(cell1.row(), cell2.row(), "Selections should be deterministic (same row)");
+        assertEquals(cell1.col(), cell2.col(), "Selections should be deterministic (same col)");
     }
 
     @Test
@@ -526,7 +526,7 @@ public class MRVCellSelectorTest {
 
         // The exact cell depends on domain sizes, but the selector should
         // consistently apply its heuristics without state corruption
-        assertTrue(board.isEmpty(cell.row, cell.col), "Selected cell must be empty");
+        assertTrue(board.isEmpty(cell.row(), cell.col()), "Selected cell must be empty");
     }
 }
 

@@ -291,7 +291,7 @@ public class EternitySolver {
         if (pos == null) {
             return null;
         }
-        return new int[]{pos.row, pos.col};
+        return new int[]{pos.row(), pos.col()};
     }
 
 

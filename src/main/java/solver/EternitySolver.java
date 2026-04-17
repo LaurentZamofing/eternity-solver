@@ -27,7 +27,7 @@ import java.util.Random;
  *   - Arc propagation (AC-3)
  *   - Meta-heuristic methods
  */
-public class EternitySolver {
+public class EternitySolver implements Solver {
 
     /** Type alias for backward compatibility - delegates to StatisticsManager. */
     public static class Statistics extends StatisticsManager { }

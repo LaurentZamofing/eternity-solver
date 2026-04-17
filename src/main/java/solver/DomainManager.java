@@ -54,6 +54,13 @@ public class DomainManager {
     private Integer tlRestrictionPieceId = null;
     private Integer tlRestrictionRotation = null;
 
+    // AC-3 undo-stack. Each frame records the OLD domain map for every cell
+    // written during one propagation pass, so backtracks can restore O(Δ)
+    // cells instead of rebuilding every empty cell O(W·H). Frames are
+    // opened at the start of propagateAC3 and popped by restoreAC3Domains.
+    private final java.util.Deque<java.util.HashMap<Integer, Map<Integer, List<ValidPlacement>>>> undoStack
+        = new java.util.ArrayDeque<>();
+
     // Domain cache for non-AC-3 mode
     private Map<Integer, List<ValidPlacement>> domainCache = null;
     private boolean useDomainCache = true;
@@ -165,26 +172,56 @@ public class DomainManager {
         return n;
     }
 
+    /** Opens a new undo-stack frame. Every subsequent {@link #setDomain} call
+     *  records the previous domain map of the mutated cell in this frame so
+     *  it can be reverted by {@link #popFrame} without a full recompute. */
+    public void beginFrame() {
+        undoStack.push(new java.util.HashMap<>());
+    }
+
+    /** Pops the most recent frame and restores every recorded cell to its
+     *  pre-frame domain. No-op if no frame is open. */
+    public void popFrame() {
+        if (undoStack.isEmpty() || domains == null) return;
+        java.util.HashMap<Integer, Map<Integer, List<ValidPlacement>>> frame = undoStack.pop();
+        int cols = domains[0].length;
+        for (Map.Entry<Integer, Map<Integer, List<ValidPlacement>>> e : frame.entrySet()) {
+            int key = e.getKey();
+            int rr = key / cols;
+            int cc = key % cols;
+            domains[rr][cc] = e.getValue();
+            if (mrvIndex != null && boardRef != null && boardRef.isEmpty(rr, cc)) {
+                mrvIndex.onDomainChanged(rr, cc, totalRotationsIn(e.getValue()),
+                    countOccupiedNeighbors(boardRef, rr, cc));
+            }
+        }
+    }
+
+    /** Discards the most recent frame without restoring (used on successful
+     *  propagation+recursion where the mutations are final). */
+    public void commitFrame() {
+        if (!undoStack.isEmpty()) undoStack.pop();
+    }
+
     /**
-     * Restores AC-3 domains after backtracking.
+     * Restores AC-3 domains after a failed placement or backtrack.
      *
-     * <p>Previously recomputed only (r,c) and its 4 neighbors. That's
-     * insufficient because AC-3 propagation is cascading — a single
-     * placement can reduce domains of cells several hops away via the
-     * queue in {@link ConstraintPropagator#propagateAC3}. Restoring only
-     * the local neighborhood left distant cells with stale, over-reduced
-     * domains, which caused deterministic dead-ends on search paths that
-     * should have solutions (surfaced by 4x4 hard with piece 7 rot 0
-     * forced at TL — the pre-existing bug documented in
-     * {@code SymmetryBreakingBugTrackingTest}).</p>
-     *
-     * <p>Now recomputes every empty cell. Simple and correct; the cost
-     * is O(W·H) per backtrack, acceptable for small boards and still a
-     * small fraction of the placement attempt cost.</p>
+     * <p>When an undo-stack frame is open (normal case — {@link ConstraintPropagator#propagateAC3}
+     * pushes one on entry via {@link #beginFrame}), this pops the frame in
+     * O(Δ) where Δ is the number of cells whose domain was mutated during
+     * propagation. Falls back to the previous O(W·H) recompute when no
+     * frame is available (legacy paths / tests calling restore without a
+     * matching propagate).</p>
      */
     public void restoreAC3Domains(Board board, int r, int c, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (!ac3Initialized) return;
 
+        if (!undoStack.isEmpty()) {
+            popFrame();
+            return;
+        }
+
+        // Fallback path when no frame is open.
         for (int rr = 0; rr < board.getRows(); rr++) {
             for (int cc = 0; cc < board.getCols(); cc++) {
                 if (board.isEmpty(rr, cc)) {
@@ -330,9 +367,18 @@ public class DomainManager {
         return domains[r][c];
     }
 
-    /** Sets domain for cell (r,c), used during constraint propagation. */
+    /** Sets domain for cell (r,c), used during constraint propagation. Records
+     *  the old domain in the current undo frame if one is open, so the write
+     *  can be rolled back on backtrack without a full recompute. */
     public void setDomain(int r, int c, Map<Integer, List<ValidPlacement>> domain) {
         if (domains != null && r >= 0 && r < domains.length && c >= 0 && c < domains[0].length) {
+            if (!undoStack.isEmpty()) {
+                java.util.HashMap<Integer, Map<Integer, List<ValidPlacement>>> frame = undoStack.peek();
+                int key = r * domains[0].length + c;
+                if (!frame.containsKey(key)) {
+                    frame.put(key, domains[r][c]);
+                }
+            }
             domains[r][c] = domain;
             if (r == 0 && c == 0) {
                 applyTopLeftRestriction();
@@ -354,6 +400,7 @@ public class DomainManager {
         domains = null;
         tlRestrictionPieceId = null;
         tlRestrictionRotation = null;
+        undoStack.clear();
     }
 
     /** Enables or disables domain caching. */

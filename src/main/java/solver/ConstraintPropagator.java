@@ -57,6 +57,10 @@ public class ConstraintPropagator {
                                 Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (!useAC3 || !domainManager.isAC3Initialized()) return true;
 
+        // Open an undo-stack frame so every setDomain call is recorded and
+        // can be rolled back cheaply on dead-end/backtrack in restoreAC3Domains.
+        domainManager.beginFrame();
+
         // AC-3 with cascading propagation
         // Queue of cells whose domains need to be updated
         Queue<int[]> queue = new java.util.LinkedList<>();

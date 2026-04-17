@@ -6,6 +6,7 @@ import model.Board;
 import model.Piece;
 import model.Placement;
 import util.SaveManager;
+import util.SaveStore;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -40,6 +41,15 @@ public class ParallelSolverOrchestrator {
     private final AtomicReference<Board> globalBestBoard;
     private final AtomicReference<Map<Integer, Piece>> globalBestPieces;
     private final Object lockObject;
+
+    // Persistence — injectable for tests; production uses on-disk SaveManager.
+    private SaveStore saveStore = SaveManager.defaultStore();
+
+    /** Overrides the persistence backend (typically in tests). */
+    public void setSaveStore(SaveStore saveStore) {
+        if (saveStore == null) throw new IllegalArgumentException("saveStore cannot be null");
+        this.saveStore = saveStore;
+    }
 
     /** Creates orchestrator with solver template and all shared state dependencies. */
     public ParallelSolverOrchestrator(
@@ -146,8 +156,8 @@ public class ParallelSolverOrchestrator {
         boolean loadedFromSave = false;
 
         // Try to load from save
-        if (SaveManager.hasThreadState(threadId)) {
-            Object[] savedState = SaveManager.loadThreadState(threadId, allPieces);
+        if (saveStore.hasThreadState(threadId)) {
+            Object[] savedState = saveStore.loadThreadState(threadId, allPieces);
             if (savedState != null) {
                 localBoard = (Board) savedState[0];
                 @SuppressWarnings("unchecked")

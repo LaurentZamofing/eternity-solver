@@ -6,6 +6,7 @@ import model.Board;
 import model.Piece;
 import runner.PuzzleDefinition.HintPlacement;
 import util.SaveManager;
+import util.SaveStore;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +29,14 @@ import java.util.Set;
  */
 public class PuzzleExecutor {
 
+    // Persistence — injectable for tests; production uses on-disk SaveManager.
+    private SaveStore saveStore = SaveManager.defaultStore();
+
+    public void setSaveStore(SaveStore saveStore) {
+        if (saveStore == null) throw new IllegalArgumentException("saveStore cannot be null");
+        this.saveStore = saveStore;
+    }
+
     /**
      * Executes a puzzle from start to finish.
      *
@@ -46,12 +55,12 @@ public class PuzzleExecutor {
         Map<Integer, Piece> piecesToPlace;
 
         // Handle save/load for supported puzzles
-        if (puzzleDef.supportsSaveLoad() && SaveManager.hasSavedState()) {
+        if (puzzleDef.supportsSaveLoad() && saveStore.hasSavedState()) {
             SolverLogger.info("╔══════════════════════════════════════════════════════════╗");
             SolverLogger.info("║              SAVE DETECTED                         ║");
             SolverLogger.info("╚══════════════════════════════════════════════════════════╝\n");
 
-            Object[] savedState = SaveManager.loadBestState(allPieces);
+            Object[] savedState = saveStore.loadBestState(allPieces);
             if (savedState != null) {
                 board = (Board) savedState[0];
                 @SuppressWarnings("unchecked")

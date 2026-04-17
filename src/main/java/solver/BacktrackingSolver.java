@@ -6,6 +6,7 @@ import model.Board;
 import model.Piece;
 import util.SaveManager;
 import util.SaveStateManager;
+import util.SaveStore;
 import util.TimeConstants;
 
 import java.util.ArrayList;
@@ -68,6 +69,9 @@ public class BacktrackingSolver {
     private final int threadId;
     private final long randomSeed;
     private long lastThreadSaveTime;
+
+    // Persistence (injectable for tests; defaults to on-disk SaveManager)
+    private SaveStore saveStore = SaveManager.defaultStore();
 
     // Timing
     private final long startTimeMs;
@@ -136,6 +140,12 @@ public class BacktrackingSolver {
         this.randomSeed = randomSeed;
         this.startTimeMs = startTimeMs;
         this.lastThreadSaveTime = 0;
+    }
+
+    /** Overrides the persistence backend. Call before {@link #solve} — typically only in tests. */
+    public void setSaveStore(SaveStore saveStore) {
+        if (saveStore == null) throw new IllegalArgumentException("saveStore cannot be null");
+        this.saveStore = saveStore;
     }
 
     /**
@@ -214,7 +224,7 @@ public class BacktrackingSolver {
         if (threadId >= 0 && (currentTime - lastThreadSaveTime > THREAD_SAVE_INTERVAL)) {
             lastThreadSaveTime = currentTime;
             try {
-                SaveManager.saveThreadState(board, piecesById, currentDepth, threadId, randomSeed);
+                saveStore.saveThreadState(board, piecesById, currentDepth, threadId, randomSeed);
             } catch (RuntimeException e) {
                 // Log error but don't crash the solver - saving is optional
                 SolverLogger.warn("Error saving thread " + threadId + " state: " + e.getMessage());

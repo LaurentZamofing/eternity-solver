@@ -7,6 +7,7 @@ import solver.DiversificationStrategy;
 import solver.SharedSearchState;
 import solver.SolverConstants;
 import util.SaveManager;
+import util.SaveStore;
 import util.SolverLogger;
 
 import java.util.ArrayList;
@@ -44,6 +45,14 @@ public class ParallelExecutionCoordinator {
     private final SharedSearchState sharedState;
     private final BoardCopyService boardCopyService;
     private final DiversificationStrategy diversificationStrategy;
+
+    // Persistence — injectable for tests; production uses on-disk SaveManager.
+    private SaveStore saveStore = SaveManager.defaultStore();
+
+    public void setSaveStore(SaveStore saveStore) {
+        if (saveStore == null) throw new IllegalArgumentException("saveStore cannot be null");
+        this.saveStore = saveStore;
+    }
 
     /**
      * Creates coordinator with required dependencies.
@@ -181,8 +190,8 @@ public class ParallelExecutionCoordinator {
         boolean loadedFromSave = false;
 
         // Try to load from saved state
-        if (SaveManager.hasThreadState(threadId)) {
-            Object[] savedState = SaveManager.loadThreadState(threadId, allPieces);
+        if (saveStore.hasThreadState(threadId)) {
+            Object[] savedState = saveStore.loadThreadState(threadId, allPieces);
             if (savedState != null) {
                 localBoard = (Board) savedState[0];
                 @SuppressWarnings("unchecked")

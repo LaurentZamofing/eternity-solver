@@ -17,11 +17,45 @@ import java.util.Set;
 
 /**
  * Manager for saving and loading puzzle state.
+ *
+ * <p>Static methods remain for backwards compatibility. New code should
+ * prefer injecting {@link SaveStore} (see {@link #defaultStore()}) so
+ * tests can swap in a fake.</p>
  */
 public class SaveManager {
 
     private static final String SAVE_DIR = "saves";
     private static final String SAVE_FILE = "best_state.txt";
+
+    /**
+     * Returns a {@link SaveStore} that delegates to this class's static
+     * methods — i.e. the real on-disk persistence. Callers should inject
+     * this instance by default and tests can substitute a fake.
+     */
+    public static SaveStore defaultStore() {
+        return DefaultSaveStore.INSTANCE;
+    }
+
+    private static final class DefaultSaveStore implements SaveStore {
+        static final DefaultSaveStore INSTANCE = new DefaultSaveStore();
+
+        @Override public boolean hasThreadState(int threadId) {
+            return SaveManager.hasThreadState(threadId);
+        }
+        @Override public Object[] loadThreadState(int threadId, Map<Integer, Piece> allPieces) {
+            return SaveManager.loadThreadState(threadId, allPieces);
+        }
+        @Override public void saveThreadState(model.Board board, Map<Integer, Piece> allPieces,
+                                              int depth, int threadId, long randomSeed) {
+            SaveManager.saveThreadState(board, allPieces, depth, threadId, randomSeed);
+        }
+        @Override public boolean hasSavedState() {
+            return SaveManager.hasSavedState();
+        }
+        @Override public Object[] loadBestState(Map<Integer, Piece> allPieces) {
+            return SaveManager.loadBestState(allPieces);
+        }
+    }
 
     /**
      * Saves the current board state.

@@ -4,7 +4,10 @@ import util.CellLabelFormatter;
 import util.PositionKey;
 import util.SaveStateManager;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Tracks piece placement order to enable intelligent backtracking

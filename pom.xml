@@ -400,7 +400,8 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.21.2</version>
+                <!-- 3.27.0+ accepts targetJdk 17/21/24; 3.21.2 capped at JDK 17. -->
+                <version>3.27.0</version>
                 <configuration>
                     <linkXRef>false</linkXRef>
                     <failOnViolation>false</failOnViolation>

@@ -383,7 +383,25 @@ public class EternitySolver {
             board.getCols(),
             configBuilder.build().isVerbose()
         );
+        // Apply pending overrides if a test/caller set them before solve()
+        symmetryBreakingManager.setLexicographicOrdering(pendingLexFlag);
+        symmetryBreakingManager.setRotationalFixing(pendingRotationFlag);
         symmetryBreakingManager.logConfiguration();
+    }
+
+    // Defaults match SymmetryBreakingManager defaults; callers (tests) can
+    // override before solve() to exercise both regression states.
+    private boolean pendingLexFlag = false;
+    private boolean pendingRotationFlag = false;
+
+    /**
+     * Overrides the symmetry-breaking flags for the next call to {@link #solve}.
+     * Must be called before {@code solve()} — the manager is freshly built
+     * each solve and reads these values.
+     */
+    public void setSymmetryBreakingFlags(boolean lexicographic, boolean rotational) {
+        this.pendingLexFlag = lexicographic;
+        this.pendingRotationFlag = rotational;
     }
 
     /** Returns solver statistics. */

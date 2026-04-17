@@ -1,0 +1,188 @@
+package solver;
+
+import model.Board;
+import model.Piece;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import util.PuzzleFactory;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Targeted tests that pin down the SymmetryBreakingManager bug found by
+ * {@link AC3CorrectnessTest#solve4x4EasyProducesValidSolution}.
+ *
+ * <p>The flags ship OFF (commit e5b7716) because re-enabling them with the
+ * redesigned per-TL canonical rule still fails the 4x4 easy gate. This
+ * suite isolates the failure surface by:
+ *  <ol>
+ *    <li>checking the TL-fittable computation against real puzzle pieces;</li>
+ *    <li>asserting the per-placement rule decisions on the 4 corner positions
+ *        with the actual easy/hard piece sets;</li>
+ *    <li>solving each puzzle with combinations of flag states so the failing
+ *        combination is documented and pinned to a regression test.</li>
+ *  </ol>
+ *
+ * <p>Run with: {@code mvn test -Dtest=SymmetryBreakingBugTrackingTest}.</p>
+ */
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
+class SymmetryBreakingBugTrackingTest {
+
+    /**
+     * The 4x4 easy puzzle has exactly one piece (id=11) with N=0 AND W=0 at
+     * rotation 0. The redesigned canonical rule must therefore identify
+     * piece 11 as the only TL-fittable canonical piece.
+     */
+    @Test
+    @DisplayName("4x4 easy: only piece 11 is TL-fittable at rotation 0")
+    void easyPuzzleHasSingleTLCandidateAtRot0() {
+        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4Easy();
+
+        Set<Integer> tlFittable = computeTLFittableAtRot0(pieces);
+
+        assertEquals(Set.of(11), tlFittable,
+            "easy puzzle: only piece 11 has N=0 AND W=0 at rotation 0; got " + tlFittable);
+    }
+
+    /**
+     * The 4x4 hard variant has exactly one TL-fittable piece (id=7).
+     */
+    @Test
+    @DisplayName("4x4 hard: only piece 7 is TL-fittable at rotation 0")
+    void hardPuzzleHasSingleTLCandidateAtRot0() {
+        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4HardV3();
+
+        Set<Integer> tlFittable = computeTLFittableAtRot0(pieces);
+
+        assertEquals(Set.of(7), tlFittable,
+            "hard puzzle: only piece 7 has N=0 AND W=0 at rotation 0; got " + tlFittable);
+    }
+
+    /**
+     * On the easy puzzle, the canonical TL piece is 11. With lex on, the
+     * rule must accept piece 11 at TL and reject any other piece at TL.
+     */
+    @Test
+    @DisplayName("4x4 easy + lex on: TL accepts only the canonical TL piece (11)")
+    void easyPuzzleLexAcceptsOnlyCanonicalTLPiece() {
+        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4Easy();
+        SymmetryBreakingManager mgr = new SymmetryBreakingManager(4, 4, false);
+        mgr.setLexicographicOrdering(true);
+        mgr.setRotationalFixing(false);
+        Board board = new Board(4, 4);
+
+        // Canonical piece passes
+        assertTrue(mgr.isPlacementAllowed(board, 0, 0, 11, 0, pieces),
+            "canonical TL piece must be allowed at (0,0)");
+
+        // Non-canonical TL-fittable IDs (in some rotation) must be rejected
+        for (int otherTLFittable : Set.of(1, 10)) { // also TL-fittable in some rotation
+            assertFalse(mgr.isPlacementAllowed(board, 0, 0, otherTLFittable, 0, pieces),
+                "non-canonical TL-fittable piece " + otherTLFittable + " must be rejected at (0,0)");
+        }
+
+        // Pieces that aren't TL-fittable at all are also rejected
+        for (int notTL : Set.of(2, 3, 4, 5, 6, 8, 9, 12, 13, 14, 15, 16)) {
+            assertFalse(mgr.isPlacementAllowed(board, 0, 0, notTL, 0, pieces),
+                "non-TL-fittable piece " + notTL + " must be rejected at (0,0)");
+        }
+    }
+
+    /**
+     * Other corners (TR/BL/BR) are unconstrained by the new lex rule —
+     * they're pinned by edge matching in the real solver, not by symmetry.
+     */
+    @Test
+    @DisplayName("4x4 easy + lex on: non-TL corners are unconstrained by lex")
+    void easyPuzzleLexDoesNotConstrainOtherCorners() {
+        Map<Integer, Piece> pieces = PuzzleFactory.createExample4x4Easy();
+        SymmetryBreakingManager mgr = new SymmetryBreakingManager(4, 4, false);
+        mgr.setLexicographicOrdering(true);
+        mgr.setRotationalFixing(false);
+        Board board = new Board(4, 4);
+        board.place(0, 0, pieces.get(11), 0); // canonical TL placed
+
+        // Any piece is allowed at TR/BL/BR per the new rule (edge matching
+        // catches the actual constraints elsewhere).
+        for (int pid : pieces.keySet()) {
+            assertTrue(mgr.isPlacementAllowed(board, 0, 3, pid, 0, pieces),
+                "TR must accept piece " + pid + " (lex doesn't constrain non-TL corners)");
+            assertTrue(mgr.isPlacementAllowed(board, 3, 0, pid, 0, pieces),
+                "BL must accept piece " + pid);
+            assertTrue(mgr.isPlacementAllowed(board, 3, 3, pid, 0, pieces),
+                "BR must accept piece " + pid);
+        }
+    }
+
+    /**
+     * Document the exact failing combination: lex+rotation both on, 4x4 easy.
+     * This is the regression test for the bug surfaced post-redesign.
+     * Currently expected to FAIL (xfail) — when the fix lands, flip the
+     * assertion sense and remove the @Disabled if applied.
+     */
+    @Nested
+    @DisplayName("Regression: failing flag combinations on 4x4 easy")
+    class FailingCombos {
+
+        @Test
+        @DisplayName("lex on + rotation off: still fails")
+        void lexOnly_failsOn4x4Easy() {
+            assertFalse(solveWith(true, false, PuzzleFactory.createExample4x4Easy(), 4),
+                "lex on + rotation off should still fail until the bug is found");
+        }
+
+        @Test
+        @DisplayName("lex on + rotation on: still fails")
+        void lexAndRotation_failOn4x4Easy() {
+            assertFalse(solveWith(true, true, PuzzleFactory.createExample4x4Easy(), 4),
+                "both flags on should still fail");
+        }
+
+        @Test
+        @DisplayName("Both flags off: solver succeeds (current default)")
+        void bothOff_succeedsOn4x4Easy() {
+            assertTrue(solveWith(false, false, PuzzleFactory.createExample4x4Easy(), 4),
+                "with all sym-breaking off the easy puzzle must solve (current default)");
+        }
+    }
+
+    // ─── Helpers ────────────────────────────────────────────────────────
+
+    private static Set<Integer> computeTLFittableAtRot0(Map<Integer, Piece> pieces) {
+        java.util.Set<Integer> ids = new java.util.HashSet<>();
+        for (Map.Entry<Integer, Piece> e : pieces.entrySet()) {
+            int[] edges = e.getValue().edgesRotated(0);
+            if (edges[0] == 0 && edges[3] == 0) ids.add(e.getKey());
+        }
+        return ids;
+    }
+
+    private static boolean solveWith(boolean lex, boolean rotation,
+                                     Map<Integer, Piece> pieces, int size) {
+        // Override flags on a fresh solver via the SymmetryBreakingManager
+        // exposed by EternitySolver. We exercise the actual code path the
+        // production solver uses, not a mocked variant — that's the point:
+        // surface the real bug.
+        Board board = new Board(size, size);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(20_000);
+
+        // The solver builds its own SymmetryBreakingManager when solve() runs.
+        // We can't reach into it before that — so we use the package-private
+        // overrides via a small wrapper: solve once with default config, then
+        // assert on the result. (TODO: thread the flags through EternitySolver
+        // setters so this helper can configure them cleanly.)
+        // For now this helper is mostly to document the expected outcome of
+        // the public API — flag toggling is tested directly on the manager
+        // in the dedicated unit tests above.
+        solver.setSymmetryBreakingFlags(lex, rotation);
+        return solver.solve(board, pieces);
+    }
+}

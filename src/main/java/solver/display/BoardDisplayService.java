@@ -1,77 +1,40 @@
 package solver.display;
 
-import util.PositionKey;
-import util.SolverLogger;
 import model.Board;
 import model.Piece;
-import model.Placement;
+import util.PositionKey;
+import util.SolverLogger;
 
 import java.io.PrintWriter;
 import java.util.Map;
 
 /**
- * Unified facade for board visualization.
- * Provides simple, commonly-used display methods.
+ * Simple console board display (non-file rendering).
  *
- * <h2>Purpose (Phase 5 Consolidation)</h2>
- * This service consolidates fragmented visualization code across:
- * <ul>
- *   <li>solver/BoardVisualizer.java</li>
- *   <li>solver/BoardDisplayManager.java - Advanced rendering with color strategies</li>
- *   <li>util/BoardRenderer.java - Deprecated, use this instead</li>
- *   <li>util/BoardTextRenderer.java - Deprecated, use this instead</li>
- *   <li>util/SaveBoardRenderer.java - Deprecated, use this instead</li>
- * </ul>
+ * <p>Phase 2 refactor: the 556-line original mixed console display,
+ * save-file rendering, and candidate-counting logic. File I/O and
+ * candidate counting now live in {@link SaveFileRenderer}; this class
+ * keeps the concise text/framed display helpers used during a solve.</p>
  *
- * <h2>Usage</h2>
- * <pre>
- * BoardDisplayService display = new BoardDisplayService();
- *
- * // Simple display
- * display.displayBoard(board);
- *
- * // With frame
- * display.displayBoardWithFrame(board, "Current Solution");
- * </pre>
- *
- * <h2>Advanced Features</h2>
- * For color-coded displays with edge validation, use:
- * <ul>
- *   <li>{@link BoardDisplayManager} - Full-featured with validators</li>
- *   <li>{@link LabeledBoardRenderer} - Direct renderer access</li>
- *   <li>{@link ComparisonBoardRenderer} - Board comparison</li>
- * </ul>
- *
- * @author Eternity Solver Team
- * @version 2.0.0 (Phase 5 refactoring)
+ * <p>The legacy {@code writeToSaveFile*} static entry points are kept
+ * as thin delegations so existing callers (SaveStateIO and a handful
+ * of tests) don't need to change.</p>
  */
 public class BoardDisplayService {
 
-    /**
-     * Displays a board with simple text formatting.
-     *
-     * @param board Board to display
-     */
+    /** Displays a board as plain text via the logger. */
     public void displayBoard(Board board) {
         SolverLogger.info(formatBoardSimple(board));
     }
 
-    /**
-     * Displays a board with frame and title.
-     *
-     * @param board Board to display
-     * @param title Title to display
-     */
+    /** Displays a board inside a decorative frame with a title. */
     public void displayBoardWithFrame(Board board, String title) {
         printBoardWithFrame(board, title);
     }
 
     /**
-     * Formats board as simple text grid.
-     * Each cell shows: pieceId:rotation
-     *
-     * @param board Board to format
-     * @return Formatted string
+     * Formats the board as a simple text grid (one line per row, each
+     * cell shown as "pieceId:rotation" or "--" for empty cells).
      */
     public String formatBoardSimple(Board board) {
         StringBuilder sb = new StringBuilder();
@@ -92,465 +55,51 @@ public class BoardDisplayService {
         return sb.toString();
     }
 
-    /**
-     * Prints board to console with decorative frame/border.
-     *
-     * @param board Board to print
-     * @param title Title to display
-     */
+    /** Prints the board with a Unicode frame and a centered title. */
     public void printBoardWithFrame(Board board, String title) {
-        int width = board.getCols() * 6 + 2;
-        String border = "═".repeat(Math.max(0, width));
+        String content = formatBoardSimple(board);
+        String[] lines = content.split("\n");
 
-        SolverLogger.info("\n╔" + border + "╗");
-        SolverLogger.info("║ " + centerText(title, width - 2) + " ║");
-        SolverLogger.info("╠" + border + "╣");
+        int maxLineLength = title.length();
+        for (String line : lines) {
+            if (line.length() > maxLineLength) maxLineLength = line.length();
+        }
 
-        String boardStr = formatBoardSimple(board);
+        int frameWidth = maxLineLength + 4;
 
-        for (String line : boardStr.split("\n")) {
+        SolverLogger.info("╔" + "═".repeat(frameWidth - 2) + "╗");
+        SolverLogger.info("║ " + centerText(title, frameWidth - 4) + " ║");
+        SolverLogger.info("╠" + "═".repeat(frameWidth - 2) + "╣");
+
+        for (String line : lines) {
             if (!line.trim().isEmpty()) {
-                SolverLogger.info("║ " + line);
+                SolverLogger.info("║ " + String.format("%-" + (frameWidth - 4) + "s", line) + " ║");
             }
         }
 
-        SolverLogger.info("╚" + border + "╝\n");
+        SolverLogger.info("╚" + "═".repeat(frameWidth - 2) + "╝");
     }
 
-    /**
-     * Centers text within a given width.
-     *
-     * @param text Text to center
-     * @param width Total width
-     * @return Centered text with padding
-     */
     private String centerText(String text, int width) {
-        if (text == null) text = "";
-        if (text.length() >= width) {
-            return text.substring(0, width);
-        }
-        int leftPad = (width - text.length()) / 2;
-        int rightPad = width - text.length() - leftPad;
-        return " ".repeat(Math.max(0, leftPad)) + text + " ".repeat(Math.max(0, rightPad));
+        if (text.length() >= width) return text;
+        int padding = (width - text.length()) / 2;
+        return " ".repeat(padding) + text + " ".repeat(width - text.length() - padding);
     }
 
-    /**
-     * Generates a visual ASCII representation of the board for save files.
-     * Replaces deprecated SaveBoardRenderer.generateBoardVisual().
-     *
-     * @param writer PrintWriter to write the visual representation
-     * @param board Board to render
-     */
+    // ════════════════════════════════════════════════════════════════
+    // Legacy save-file entry points — delegate to SaveFileRenderer.
+    // Kept for backward compatibility with SaveStateIO and existing
+    // tests. Prefer SaveFileRenderer.* in new code.
+    // ════════════════════════════════════════════════════════════════
+
     public static void writeToSaveFile(PrintWriter writer, Board board) {
-        int rows = board.getRows();
-        int cols = board.getCols();
-
-        // Top border
-        writer.print("# ┌");
-        for (int c = 0; c < cols; c++) {
-            writer.print("──────");
-            if (c < cols - 1) writer.print("┬");
-        }
-        writer.println("┐");
-
-        // Board content with pipes
-        for (int r = 0; r < rows; r++) {
-            writer.print("# │");
-            for (int c = 0; c < cols; c++) {
-                if (board.isEmpty(r, c)) {
-                    writer.print("  --  ");
-                } else {
-                    Placement p = board.getPlacement(r, c);
-                    writer.printf(" %3d:%d ", p.getPieceId(), p.getRotation());
-                }
-                writer.print("│");
-            }
-            writer.println();
-
-            // Row separator (except after last row)
-            if (r < rows - 1) {
-                writer.print("# ├");
-                for (int c = 0; c < cols; c++) {
-                    writer.print("──────");
-                    if (c < cols - 1) writer.print("┼");
-                }
-                writer.println("┤");
-            }
-        }
-
-        // Bottom border
-        writer.print("# └");
-        for (int c = 0; c < cols; c++) {
-            writer.print("──────");
-            if (c < cols - 1) writer.print("┴");
-        }
-        writer.println("┘");
+        SaveFileRenderer.writeToSaveFile(writer, board);
     }
 
-    /**
-     * Generates a detailed visual ASCII representation with edge information for save files.
-     * Replaces deprecated SaveBoardRenderer.generateBoardVisualDetailed().
-     *
-     * @param writer PrintWriter to write the visual representation
-     * @param board Board to render
-     * @param allPieces Map of all pieces for displaying edge details
-     * @param domainManager Optional DomainManager for AC-3 domains (null = use estimation)
-     * @param placementOrderMap Map of position (PositionKey) to placement step number (null = no order display)
-     */
-    public static void writeToSaveFileDetailed(PrintWriter writer, Board board, Map<Integer, Piece> allPieces,
-                                               solver.DomainManager domainManager, java.util.Map<PositionKey, Integer> placementOrderMap) {
-        int rows = board.getRows();
-        int cols = board.getCols();
-
-        util.SolverLogger.info("Generating detailed save file visualization:");
-        util.SolverLogger.info("  Board size: {}x{}", rows, cols);
-
-        // Count placed pieces
-        int placedCount = 0;
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                if (!board.isEmpty(r, c)) placedCount++;
-            }
-        }
-        util.SolverLogger.info("  Placed pieces: {}/{}", placedCount, rows * cols);
-        util.SolverLogger.info("  Pieces map size: {}", allPieces != null ? allPieces.size() : 0);
-        util.SolverLogger.info("  Using AC-3 domains: {}", domainManager != null && domainManager.isAC3Initialized());
-
-        // Generate top horizontal separator
-        StringBuilder separator = new StringBuilder("# ├");
-        for (int c = 0; c < cols; c++) {
-            separator.append("─────────");
-            if (c < cols - 1) separator.append("┬");
-        }
-        separator.append("┤");
-        writer.println(separator.toString());
-
-        for (int r = 0; r < rows; r++) {
-            // Pre-compute candidate counts for this row (needed for both line1 and line2)
-            CandidateCount[] rowCandidates = new CandidateCount[cols];
-            for (int c = 0; c < cols; c++) {
-                if (board.isEmpty(r, c)) {
-                    if (domainManager != null && domainManager.isAC3Initialized()) {
-                        java.util.Map<Integer, java.util.List<solver.DomainManager.ValidPlacement>> domain =
-                            domainManager.getDomain(r, c);
-                        int numPieces = (domain != null) ? domain.size() : 0;
-                        rowCandidates[c] = new CandidateCount(numPieces, numPieces);
-                    } else {
-                        rowCandidates[c] = countCandidatesWithRotations(board, r, c, allPieces);
-                    }
-                }
-            }
-
-            // Line 1: north edges (empty cells show nothing) + placement order in top-right
-            StringBuilder line1 = new StringBuilder("# │");
-            for (int c = 0; c < cols; c++) {
-                if (board.isEmpty(r, c)) {
-                    line1.append("    .    ");  // Empty cells: just dot on line 1
-                } else {
-                    Placement p = board.getPlacement(r, c);
-                    // Use edges from Placement (already rotated)
-                    int northEdge = p.edges[0];
-
-                    // Get placement order if available
-                    PositionKey posKey = new PositionKey(r, c);
-                    String orderSuffix = "";
-                    if (placementOrderMap != null && placementOrderMap.containsKey(posKey)) {
-                        int order = placementOrderMap.get(posKey);
-                        orderSuffix = "#" + order;
-                    }
-
-                    // Format: edge centered + order right-aligned
-                    // Keep edge at position 3-4 (centered), order fills from right
-                    // Examples: "    0  #1", "    0 #27", "    0#112", "   15#114"
-                    int totalLength = 2 + orderSuffix.length();
-                    int leftPadding = Math.max(3, (9 - totalLength) / 2 + (9 - totalLength) % 2);
-                    String formatted = String.format("%" + leftPadding + "s%2d%s", "", northEdge, orderSuffix);
-                    // Pad to exactly 9 chars
-                    if (formatted.length() < 9) {
-                        formatted = String.format("%-9s", formatted);
-                    }
-                    line1.append(formatted);
-                }
-                line1.append("│");
-            }
-            writer.println(line1.toString());
-
-            // Line 2: piece ID with edges OR (pieces/rotations) count
-            StringBuilder line2 = new StringBuilder("# │");
-            for (int c = 0; c < cols; c++) {
-                if (board.isEmpty(r, c)) {
-                    // Don't display counts for cells with no constraints (not on border and no neighbors)
-                    if (!board.hasConstraints(r, c)) {
-                        line2.append("         ");  // 9 spaces (same as occupied cells)
-                    } else {
-                        CandidateCount count = rowCandidates[c];
-                        if (count.numPieces > 0 || count.numRotations > 0) {
-                            // Format: (PPP/RRR) = 9 chars exactly
-                            line2.append(String.format("(%3d/%3d)", count.numPieces, count.numRotations));
-                        } else {
-                            line2.append("   ∅     ");  // Empty set symbol if no candidates
-                        }
-                    }
-                } else {
-                    Placement p = board.getPlacement(r, c);
-                    // Use edges from Placement (already rotated)
-                    int westEdge = p.edges[3];  // WEST = 3
-                    int eastEdge = p.edges[1];  // EAST = 1
-                    line2.append(String.format("%2d %3d %2d", westEdge, p.getPieceId(), eastEdge));
-                }
-                line2.append("│");
-            }
-            writer.println(line2.toString());
-
-            // Line 3: south edges
-            StringBuilder line3 = new StringBuilder("# │");
-            for (int c = 0; c < cols; c++) {
-                if (board.isEmpty(r, c)) {
-                    line3.append("    .    ");
-                } else {
-                    Placement p = board.getPlacement(r, c);
-                    // Use edges from Placement (already rotated)
-                    int southEdge = p.edges[2];  // SOUTH = 2
-                    line3.append(String.format("   %2d    ", southEdge));
-                }
-                line3.append("│");
-            }
-            writer.println(line3.toString());
-
-            // Separator between rows
-            if (r < rows - 1) {
-                StringBuilder sep = new StringBuilder("# ├");
-                for (int c = 0; c < cols; c++) {
-                    sep.append("─────────");
-                    if (c < cols - 1) sep.append("┼");
-                }
-                sep.append("┤");
-                writer.println(sep.toString());
-            }
-        }
-
-        // Bottom separator
-        StringBuilder bottomSep = new StringBuilder("# └");
-        for (int c = 0; c < cols; c++) {
-            bottomSep.append("─────────");
-            if (c < cols - 1) bottomSep.append("┴");
-        }
-        bottomSep.append("┘");
-        writer.println(bottomSep.toString());
-
-        util.SolverLogger.info("Save file visualization generated successfully");
-        util.SolverLogger.info("  Total rows rendered: {}", rows);
-    }
-
-    /**
-     * Counts the number of candidate pieces that can be placed in an empty cell.
-     * Useful for debugging and understanding solver progress.
-     *
-     * @param board Current board state
-     * @param row Row of empty cell
-     * @param col Column of empty cell
-     * @param allPieces All pieces (to check which ones are available)
-     * @return Number of pieces that could fit in this cell
-     */
-    private static int countCandidates(Board board, int row, int col, Map<Integer, Piece> allPieces) {
-        if (allPieces == null) return 0;
-
-        int count = 0;
-
-        // Check each piece
-        for (Piece piece : allPieces.values()) {
-            // Skip if piece is already placed
-            boolean isPlaced = false;
-            for (int r = 0; r < board.getRows(); r++) {
-                for (int c = 0; c < board.getCols(); c++) {
-                    if (!board.isEmpty(r, c)) {
-                        Placement p = board.getPlacement(r, c);
-                        if (p.getPieceId() == piece.getId()) {
-                            isPlaced = true;
-                            break;
-                        }
-                    }
-                }
-                if (isPlaced) break;
-            }
-
-            if (isPlaced) continue;
-
-            // Try all 4 rotations
-            for (int rotation = 0; rotation < 4; rotation++) {
-                if (canPlacePiece(board, row, col, piece, rotation, allPieces)) {
-                    count++;
-                    break; // Count piece once, not each rotation
-                }
-            }
-        }
-
-        return count;
-    }
-
-    /**
-     * Checks if a piece can be placed at a specific position with constraints.
-     *
-     * @param board Current board
-     * @param row Row position
-     * @param col Column position
-     * @param piece Piece to place
-     * @param rotation Rotation to try
-     * @param allPieces All pieces map
-     * @return true if piece fits all edge constraints
-     */
-    private static boolean canPlacePiece(Board board, int row, int col, Piece piece, int rotation, Map<Integer, Piece> allPieces) {
-        int[] edges = piece.edgesRotated(rotation);
-        int north = edges[0];
-        int east = edges[1];
-        int south = edges[2];
-        int west = edges[3];
-
-        // IMPORTANT: Interior cells cannot have 0 edges
-        boolean isTopBorder = (row == 0);
-        boolean isBottomBorder = (row == board.getRows() - 1);
-        boolean isLeftBorder = (col == 0);
-        boolean isRightBorder = (col == board.getCols() - 1);
-
-        // Interior cells: no edge can be 0
-        if (!isTopBorder && north == 0) return false;
-        if (!isBottomBorder && south == 0) return false;
-        if (!isLeftBorder && west == 0) return false;
-        if (!isRightBorder && east == 0) return false;
-
-        // Check north neighbor
-        if (row > 0) {
-            if (board.isEmpty(row - 1, col)) {
-                // No constraint yet
-            } else {
-                Placement northPlacement = board.getPlacement(row - 1, col);
-                // Use edges from Placement (already rotated)
-                int northSouth = northPlacement.edges[2]; // South edge of north piece
-                if (northSouth != north) return false;
-            }
-        } else {
-            // Top border
-            if (north != 0) return false;
-        }
-
-        // Check east neighbor
-        if (col < board.getCols() - 1) {
-            if (board.isEmpty(row, col + 1)) {
-                // No constraint yet
-            } else {
-                Placement eastPlacement = board.getPlacement(row, col + 1);
-                // Use edges from Placement (already rotated)
-                int eastWest = eastPlacement.edges[3]; // West edge of east piece
-                if (eastWest != east) return false;
-            }
-        } else {
-            // Right border
-            if (east != 0) return false;
-        }
-
-        // Check south neighbor
-        if (row < board.getRows() - 1) {
-            if (board.isEmpty(row + 1, col)) {
-                // No constraint yet
-            } else {
-                Placement southPlacement = board.getPlacement(row + 1, col);
-                // Use edges from Placement (already rotated)
-                int southNorth = southPlacement.edges[0]; // North edge of south piece
-                if (southNorth != south) return false;
-            }
-        } else {
-            // Bottom border
-            if (south != 0) return false;
-        }
-
-        // Check west neighbor
-        if (col > 0) {
-            if (board.isEmpty(row, col - 1)) {
-                // No constraint yet
-            } else {
-                Placement westPlacement = board.getPlacement(row, col - 1);
-                // Use edges from Placement (already rotated)
-                int westEast = westPlacement.edges[1]; // East edge of west piece
-                if (westEast != west) return false;
-            }
-        } else {
-            // Left border
-            if (west != 0) return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Finds a piece by ID from the allPieces map.
-     */
-    private static Piece findPieceById(Board board, Map<Integer, Piece> allPieces, int pieceId) {
-        return allPieces.get(pieceId);
-    }
-
-    /**
-     * Counts both the number of pieces and total rotations that can fit in a cell.
-     * Similar to countCandidates() but also counts rotations.
-     *
-     * @param board Current board state
-     * @param row Row of empty cell
-     * @param col Column of empty cell
-     * @param allPieces All pieces (to check which ones are available)
-     * @return CandidateCount with both pieces and rotations count
-     */
-    private static CandidateCount countCandidatesWithRotations(Board board, int row, int col, Map<Integer, Piece> allPieces) {
-        if (allPieces == null) return new CandidateCount(0, 0);
-
-        int numPieces = 0;
-        int numRotations = 0;
-
-        // Check each piece
-        for (Piece piece : allPieces.values()) {
-            // Skip if piece is already placed
-            boolean isPlaced = false;
-            for (int r = 0; r < board.getRows(); r++) {
-                for (int c = 0; c < board.getCols(); c++) {
-                    if (!board.isEmpty(r, c)) {
-                        Placement p = board.getPlacement(r, c);
-                        if (p.getPieceId() == piece.getId()) {
-                            isPlaced = true;
-                            break;
-                        }
-                    }
-                }
-                if (isPlaced) break;
-            }
-
-            if (isPlaced) continue;
-
-            // Count valid rotations for this piece
-            int validRotationsForThisPiece = 0;
-            for (int rotation = 0; rotation < 4; rotation++) {
-                if (canPlacePiece(board, row, col, piece, rotation, allPieces)) {
-                    validRotationsForThisPiece++;
-                    numRotations++;
-                }
-            }
-
-            // Count this piece if at least one rotation works
-            if (validRotationsForThisPiece > 0) {
-                numPieces++;
-            }
-        }
-
-        return new CandidateCount(numPieces, numRotations);
-    }
-
-    /**
-     * Simple holder for candidate count results.
-     */
-    private static class CandidateCount {
-        final int numPieces;
-        final int numRotations;
-
-        CandidateCount(int numPieces, int numRotations) {
-            this.numPieces = numPieces;
-            this.numRotations = numRotations;
-        }
+    public static void writeToSaveFileDetailed(PrintWriter writer, Board board,
+                                               Map<Integer, Piece> allPieces,
+                                               solver.DomainManager domainManager,
+                                               Map<PositionKey, Integer> placementOrderMap) {
+        SaveFileRenderer.writeToSaveFileDetailed(writer, board, allPieces, domainManager, placementOrderMap);
     }
 }

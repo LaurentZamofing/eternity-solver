@@ -107,10 +107,10 @@ public class BacktrackingHistoryManager {
             stats.backtracks++;
             backtrackCount++;
 
-            System.out.println(threadLabel + "  → Pre-loaded backtrack #" + backtrackCount +
+            util.SolverLogger.info(threadLabel + "  → Pre-loaded backtrack #" + backtrackCount +
                              ": removing piece " + pieceId + " (rot=" + oldRotation + ") at [" +
                              row + "," + col + "]");
-            System.out.println(threadLabel + "  → Depth reduced to: " +
+            util.SolverLogger.info(threadLabel + "  → Depth reduced to: " +
                              placementOrder.size() + " pieces");
 
             // Try alternative rotations before backtracking further
@@ -153,7 +153,7 @@ public class BacktrackingHistoryManager {
             int[] candidate = piece.edgesRotated(rot);
 
             if (validator.fits(board, row, col, candidate)) {
-                System.out.println(threadLabel + "  → Trying alternative rotation " + rot +
+                util.SolverLogger.info(threadLabel + "  → Trying alternative rotation " + rot +
                                  " for piece " + pieceId + " at [" + row + "," + col + "]");
 
                 // Place with new rotation

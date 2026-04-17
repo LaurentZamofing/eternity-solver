@@ -14,7 +14,7 @@ import util.SolverLogger;
  * Usage:
  * <pre>
  * SolverLogger.info(AnsiColorHelper.RED + "Error!" + AnsiColorHelper.RESET);
- * System.out.println(AnsiColorHelper.colorize("Success", AnsiColorHelper.GREEN));
+ * util.SolverLogger.println(AnsiColorHelper.colorize("Success", AnsiColorHelper.GREEN));
  * </pre>
  *
  * All methods are static and thread-safe.

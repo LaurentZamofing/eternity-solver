@@ -200,7 +200,7 @@ public class ParallelExecutionCoordinator {
 
                 loadedFromSave = true;
                 synchronized (System.out) {
-                    System.out.println("📂 Thread " + threadId + " restored from save: "
+                    util.SolverLogger.info("📂 Thread " + threadId + " restored from save: "
                         + savedDepth + " pieces placed");
                 }
             } else {

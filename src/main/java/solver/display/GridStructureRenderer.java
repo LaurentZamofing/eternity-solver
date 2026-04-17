@@ -49,48 +49,48 @@ public class GridStructureRenderer {
      * Renders column header with numbers (1, 2, 3, ...).
      */
     public void renderHeader() {
-        System.out.print("     ");
+        util.SolverLogger.print("     ");
         for (int c = 0; c < cols; c++) {
-            System.out.printf("  %2d     ", (c + 1));
-            if (c < cols - 1) System.out.print(" ");
+            util.SolverLogger.printf("  %2d     ", (c + 1));
+            if (c < cols - 1) util.SolverLogger.print(" ");
         }
-        System.out.println();
+        util.SolverLogger.println();
     }
 
     /**
      * Renders top border line.
      */
     public void renderTopBorder() {
-        System.out.print("   ─");
+        util.SolverLogger.print("   ─");
         for (int c = 0; c < cols; c++) {
-            System.out.print("─────────");
-            if (c < cols - 1) System.out.print("─");
+            util.SolverLogger.print("─────────");
+            if (c < cols - 1) util.SolverLogger.print("─");
         }
-        System.out.println();
+        util.SolverLogger.println();
     }
 
     /**
      * Renders row separator line (between rows).
      */
     public void renderRowSeparator() {
-        System.out.print("   ├");
+        util.SolverLogger.print("   ├");
         for (int c = 0; c < cols; c++) {
-            System.out.print("─────────");
-            if (c < cols - 1) System.out.print("┼");
+            util.SolverLogger.print("─────────");
+            if (c < cols - 1) util.SolverLogger.print("┼");
         }
-        System.out.println("┤");
+        util.SolverLogger.println("┤");
     }
 
     /**
      * Renders bottom border line.
      */
     public void renderBottomBorder() {
-        System.out.print("   └");
+        util.SolverLogger.print("   └");
         for (int c = 0; c < cols; c++) {
-            System.out.print("─────────");
-            if (c < cols - 1) System.out.print("┴");
+            util.SolverLogger.print("─────────");
+            if (c < cols - 1) util.SolverLogger.print("┴");
         }
-        System.out.println("┘");
+        util.SolverLogger.println("┘");
     }
 
     /**
@@ -107,6 +107,6 @@ public class GridStructureRenderer {
      * Renders cell border (vertical bar).
      */
     public void renderCellBorder() {
-        System.out.print("│");
+        util.SolverLogger.print("│");
     }
 }

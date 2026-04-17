@@ -106,15 +106,15 @@ public abstract class AbstractBoardRenderer {
      * @param row Row index
      */
     protected void renderNorthEdgeLine(int row) {
-        System.out.print("   │");
+        util.SolverLogger.print("   │");
         int cols = board.getCols();
 
         for (int col = 0; col < cols; col++) {
             String cellContent = formatNorthEdge(row, col);
-            System.out.print(cellContent);
+            util.SolverLogger.print(cellContent);
             gridRenderer.renderCellBorder();
         }
-        System.out.println();
+        util.SolverLogger.println();
     }
 
     /**
@@ -124,15 +124,15 @@ public abstract class AbstractBoardRenderer {
      */
     protected void renderMiddleLine(int row) {
         char rowLabel = gridRenderer.getRowLabel(row);
-        System.out.print(" " + rowLabel + " │");
+        util.SolverLogger.print(" " + rowLabel + " │");
         int cols = board.getCols();
 
         for (int col = 0; col < cols; col++) {
             String cellContent = formatMiddleContent(row, col);
-            System.out.print(cellContent);
+            util.SolverLogger.print(cellContent);
             gridRenderer.renderCellBorder();
         }
-        System.out.println();
+        util.SolverLogger.println();
     }
 
     /**
@@ -141,15 +141,15 @@ public abstract class AbstractBoardRenderer {
      * @param row Row index
      */
     protected void renderSouthEdgeLine(int row) {
-        System.out.print("   │");
+        util.SolverLogger.print("   │");
         int cols = board.getCols();
 
         for (int col = 0; col < cols; col++) {
             String cellContent = formatSouthEdge(row, col);
-            System.out.print(cellContent);
+            util.SolverLogger.print(cellContent);
             gridRenderer.renderCellBorder();
         }
-        System.out.println();
+        util.SolverLogger.println();
     }
 
     /**

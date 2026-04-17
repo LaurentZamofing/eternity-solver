@@ -273,4 +273,51 @@ public final class SolverLogger {
     public static Logger getLogger(String name) {
         return LoggerFactory.getLogger(name);
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // STREAM-STYLE HELPERS (for migrating System.out.print* callers)
+    //
+    // These buffer characters in a thread-local StringBuilder and flush
+    // at each newline. Enables drop-in replacement of System.out.print /
+    // printf without restructuring multi-line board renderers.
+    // ═══════════════════════════════════════════════════════════════
+
+    private static final ThreadLocal<StringBuilder> LINE_BUFFER =
+        ThreadLocal.withInitial(StringBuilder::new);
+
+    /** Appends to the current line. Flushes on newline. */
+    public static void print(String text) {
+        if (text == null || text.isEmpty()) return;
+        StringBuilder buf = LINE_BUFFER.get();
+        int from = 0;
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == '\n') {
+                buf.append(text, from, i);
+                logger.info(buf.toString());
+                buf.setLength(0);
+                from = i + 1;
+            }
+        }
+        if (from < text.length()) {
+            buf.append(text, from, text.length());
+        }
+    }
+
+    /** Flushes any buffered text plus an empty line. */
+    public static void println() {
+        StringBuilder buf = LINE_BUFFER.get();
+        logger.info(buf.toString());
+        buf.setLength(0);
+    }
+
+    /** Appends text then flushes the current line. */
+    public static void println(String text) {
+        print(text);
+        println();
+    }
+
+    /** Formats and appends; flushes on any newline inside the formatted result. */
+    public static void printf(String format, Object... args) {
+        print(String.format(format, args));
+    }
 }

@@ -80,39 +80,39 @@ public class ComparisonBoardFormatter implements BoardFormatter {
     }
 
     private void printColumnHeader(int cols) {
-        System.out.print("     ");
+        util.SolverLogger.print("     ");
         for (int c = 0; c < cols; c++) {
-            System.out.printf("  %2d     ", (c + 1));
-            if (c < cols - 1) System.out.print(" ");
+            util.SolverLogger.printf("  %2d     ", (c + 1));
+            if (c < cols - 1) util.SolverLogger.print(" ");
         }
         SolverLogger.info("");
     }
 
     private void printTopLine(int cols) {
-        System.out.print("   " + HORIZONTAL);
+        util.SolverLogger.print("   " + HORIZONTAL);
         for (int c = 0; c < cols; c++) {
-            System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
-            if (c < cols - 1) System.out.print(HORIZONTAL);
+            util.SolverLogger.print(repeat(HORIZONTAL, CELL_WIDTH));
+            if (c < cols - 1) util.SolverLogger.print(HORIZONTAL);
         }
         SolverLogger.info("");
     }
 
     private void printNorthEdgeLine(Board current, Board reference, int row, int cols) {
-        System.out.print("   " + VERTICAL);
+        util.SolverLogger.print("   " + VERTICAL);
         for (int c = 0; c < cols; c++) {
             String cellColor = getCellComparisonColor(current, reference, row, c);
 
             if (current.isEmpty(row, c)) {
-                System.out.print(spaces(CELL_WIDTH));
+                util.SolverLogger.print(spaces(CELL_WIDTH));
             } else {
                 int[] edges = current.getPlacement(row, c).edges;
                 int edgeNorth = edges[0];
 
-                System.out.print(cellColor);
-                System.out.printf("   %2d    ", edgeNorth);
-                System.out.print(RESET);
+                util.SolverLogger.print(cellColor);
+                util.SolverLogger.printf("   %2d    ", edgeNorth);
+                util.SolverLogger.print(RESET);
             }
-            System.out.print(VERTICAL);
+            util.SolverLogger.print(VERTICAL);
         }
         SolverLogger.info("");
     }
@@ -120,7 +120,7 @@ public class ComparisonBoardFormatter implements BoardFormatter {
     private void printMiddleLine(Board current, Board reference, Map<Integer, Piece> piecesById,
                                   List<Integer> unusedIds, FitsChecker fitsChecker, int row, int cols) {
         char rowLabel = rowLabel(row);
-        System.out.print(" " + rowLabel + " " + VERTICAL);
+        util.SolverLogger.print(" " + rowLabel + " " + VERTICAL);
 
         for (int c = 0; c < cols; c++) {
             String cellColor = getCellComparisonColor(current, reference, row, c);
@@ -131,17 +131,17 @@ public class ComparisonBoardFormatter implements BoardFormatter {
 
                 // Use comparison color if it was occupied in reference
                 if (!reference.isEmpty(row, c)) {
-                    System.out.print(cellColor); // Magenta for regression
+                    util.SolverLogger.print(cellColor); // Magenta for regression
                 } else {
                     // Color according to piece count
                     String countColor = getCountColor(validCount);
                     if (!countColor.isEmpty()) {
-                        System.out.print(countColor);
+                        util.SolverLogger.print(countColor);
                     }
                 }
 
-                System.out.printf("  (%3d)  ", validCount);
-                System.out.print(RESET);
+                util.SolverLogger.printf("  (%3d)  ", validCount);
+                util.SolverLogger.print(RESET);
 
             } else {
                 int pieceId = current.getPlacement(row, c).getPieceId();
@@ -150,49 +150,49 @@ public class ComparisonBoardFormatter implements BoardFormatter {
                 int edgeEast = edges[1];
 
                 // Display with comparison color
-                System.out.print(cellColor);
-                System.out.printf("%2d %3d %2d", edgeWest, pieceId, edgeEast);
-                System.out.print(RESET);
+                util.SolverLogger.print(cellColor);
+                util.SolverLogger.printf("%2d %3d %2d", edgeWest, pieceId, edgeEast);
+                util.SolverLogger.print(RESET);
             }
-            System.out.print(VERTICAL);
+            util.SolverLogger.print(VERTICAL);
         }
         SolverLogger.info("");
     }
 
     private void printSouthEdgeLine(Board current, Board reference, int row, int cols) {
-        System.out.print("   " + VERTICAL);
+        util.SolverLogger.print("   " + VERTICAL);
         for (int c = 0; c < cols; c++) {
             String cellColor = getCellComparisonColor(current, reference, row, c);
 
             if (current.isEmpty(row, c)) {
-                System.out.print(spaces(CELL_WIDTH));
+                util.SolverLogger.print(spaces(CELL_WIDTH));
             } else {
                 int[] edges = current.getPlacement(row, c).edges;
                 int edgeSouth = edges[2];
 
-                System.out.print(cellColor);
-                System.out.printf("   %2d    ", edgeSouth);
-                System.out.print(RESET);
+                util.SolverLogger.print(cellColor);
+                util.SolverLogger.printf("   %2d    ", edgeSouth);
+                util.SolverLogger.print(RESET);
             }
-            System.out.print(VERTICAL);
+            util.SolverLogger.print(VERTICAL);
         }
         SolverLogger.info("");
     }
 
     private void printSeparatorLine(int cols) {
-        System.out.print("   " + HORIZONTAL);
+        util.SolverLogger.print("   " + HORIZONTAL);
         for (int c = 0; c < cols; c++) {
-            System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
-            if (c < cols - 1) System.out.print(CROSS);
+            util.SolverLogger.print(repeat(HORIZONTAL, CELL_WIDTH));
+            if (c < cols - 1) util.SolverLogger.print(CROSS);
         }
         SolverLogger.info("");
     }
 
     private void printBottomLine(int cols) {
-        System.out.print("   " + HORIZONTAL);
+        util.SolverLogger.print("   " + HORIZONTAL);
         for (int c = 0; c < cols; c++) {
-            System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
-            if (c < cols - 1) System.out.print(HORIZONTAL);
+            util.SolverLogger.print(repeat(HORIZONTAL, CELL_WIDTH));
+            if (c < cols - 1) util.SolverLogger.print(HORIZONTAL);
         }
         SolverLogger.info("");
     }

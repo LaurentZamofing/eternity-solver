@@ -103,15 +103,15 @@ public class DetailedBoardFormatter implements BoardFormatter {
     }
 
     private void printTopBorder(Board board, int row, int lastRow, int lastCol, CellCoord mrvCell) {
-        System.out.print("|");
+        util.SolverLogger.print("|");
         for (int c = 0; c < board.getCols(); c++) {
             boolean highlight = shouldHighlight(row, c, lastRow, lastCol, mrvCell);
             if (highlight) {
-                System.out.print(BOLD + "---------" + RESET);
+                util.SolverLogger.print(BOLD + "---------" + RESET);
             } else {
-                System.out.print("---------");
+                util.SolverLogger.print("---------");
             }
-            System.out.print("|");
+            util.SolverLogger.print("|");
         }
         SolverLogger.info("");
     }
@@ -121,15 +121,15 @@ public class DetailedBoardFormatter implements BoardFormatter {
             boolean highlight = shouldHighlight(row, c, lastRow, lastCol, mrvCell);
             Placement p = board.getPlacement(row, c);
 
-            if (highlight) System.out.print(BOLD);
+            if (highlight) util.SolverLogger.print(BOLD);
 
             if (p == null) {
-                System.out.print("|         ");  // 9 spaces
+                util.SolverLogger.print("|         ");  // 9 spaces
             } else {
-                System.out.printf("|   %2d    ", p.edges[0]);
+                util.SolverLogger.printf("|   %2d    ", p.edges[0]);
             }
 
-            if (highlight) System.out.print(RESET);
+            if (highlight) util.SolverLogger.print(RESET);
         }
         SolverLogger.info("|");
     }
@@ -142,17 +142,17 @@ public class DetailedBoardFormatter implements BoardFormatter {
             // Determine color
             String color = getCellColor(row, c, lastRow, lastCol, mrvCell, p, counts);
 
-            if (!color.isEmpty()) System.out.print(color);
+            if (!color.isEmpty()) util.SolverLogger.print(color);
 
             if (p == null) {
                 // Empty cell - show count
-                System.out.printf("|   %3d   ", counts[row][c]);
+                util.SolverLogger.printf("|   %3d   ", counts[row][c]);
             } else {
                 // Placed piece - show edges and ID
-                System.out.printf("|%2d %3d %2d", p.edges[3], p.getPieceId(), p.edges[1]);
+                util.SolverLogger.printf("|%2d %3d %2d", p.edges[3], p.getPieceId(), p.edges[1]);
             }
 
-            if (!color.isEmpty()) System.out.print(RESET);
+            if (!color.isEmpty()) util.SolverLogger.print(RESET);
         }
         SolverLogger.info("|");
     }
@@ -162,23 +162,23 @@ public class DetailedBoardFormatter implements BoardFormatter {
             boolean highlight = shouldHighlight(row, c, lastRow, lastCol, mrvCell);
             Placement p = board.getPlacement(row, c);
 
-            if (highlight) System.out.print(BOLD);
+            if (highlight) util.SolverLogger.print(BOLD);
 
             if (p == null) {
-                System.out.print("|         ");  // 9 spaces
+                util.SolverLogger.print("|         ");  // 9 spaces
             } else {
-                System.out.printf("|   %2d    ", p.edges[2]);
+                util.SolverLogger.printf("|   %2d    ", p.edges[2]);
             }
 
-            if (highlight) System.out.print(RESET);
+            if (highlight) util.SolverLogger.print(RESET);
         }
         SolverLogger.info("|");
     }
 
     private void printFinalBorder(int cols) {
-        System.out.print("|");
+        util.SolverLogger.print("|");
         for (int c = 0; c < cols; c++) {
-            System.out.print("---------|");
+            util.SolverLogger.print("---------|");
         }
         SolverLogger.info("");
     }

@@ -9,7 +9,7 @@ package solver.visualization;
  * - LabeledBoardFormatter: Coordinate labels with edge validation
  * - ComparisonBoardFormatter: Side-by-side comparison with color coding
  *
- * All formatters output directly to System.out using ANSI color codes.
+ * All formatters output directly to the logger (util.SolverLogger) using ANSI color codes.
  *
  * Usage:
  * <pre>
@@ -26,7 +26,7 @@ package solver.visualization;
 public interface BoardFormatter {
 
     /**
-     * Formats and displays the board to System.out.
+     * Formats and displays the board to the logger (util.SolverLogger).
      *
      * @param context Context object containing board, pieces, and formatting options
      * @throws IllegalArgumentException if required context fields are missing

@@ -370,7 +370,7 @@ public class ParallelSolverOrchestrator {
 
     private void printThreadRestored(int threadId, int depth) {
         synchronized (System.out) {
-            System.out.println("📂 Thread " + threadId + " restored from save: " +
+            util.SolverLogger.info("📂 Thread " + threadId + " restored from save: " +
                              depth + " pieces placed");
         }
     }
@@ -378,7 +378,7 @@ public class ParallelSolverOrchestrator {
     private void printThreadStart(int threadId, WorkerState state) {
         synchronized (System.out) {
             if (state.cornerPieceId != null) {
-                System.out.println("🚀 Thread " + threadId + " started (seed=" + state.seed +
+                util.SolverLogger.info("🚀 Thread " + threadId + " started (seed=" + state.seed +
                                  ") - Fixed corner: piece " + state.cornerPieceId +
                                  " at (" + state.cornerRow + "," + state.cornerCol + ")");
             } else {
@@ -412,7 +412,7 @@ public class ParallelSolverOrchestrator {
             SolverLogger.info("║                  PROGRESS - 30 minutes                 ║");
             SolverLogger.info("╚════════════════════════════════════════════════════════╝");
             SolverLogger.info("📊 Max depth:  " + depth + " pieces placed");
-            System.out.println("⭐ Best score:  " + score + "/" + maxScore +
+            util.SolverLogger.info("⭐ Best score:  " + score + "/" + maxScore +
                              " internal edges (" + String.format("%.1f%%", percentage) + ")");
             SolverLogger.info("");
         }

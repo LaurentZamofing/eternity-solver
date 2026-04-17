@@ -145,7 +145,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
         if (verbose) {
             solver.printBoardWithCounts(context.board, context.piecesById, context.pieceUsed,
                                        context.totalPieces, r, c);
-            System.out.println("✓ Singleton placed: ID=" + pid + ", Rotation=" + (rot * 90) +
+            util.SolverLogger.info("✓ Singleton placed: ID=" + pid + ", Rotation=" + (rot * 90) +
                              "°, Edges=" + java.util.Arrays.toString(candidate));
             // No pause here - will pause after placement
         }

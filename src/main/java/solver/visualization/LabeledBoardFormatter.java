@@ -81,28 +81,28 @@ public class LabeledBoardFormatter implements BoardFormatter {
     }
 
     private void printColumnHeader(int cols) {
-        System.out.print("     ");  // Left margin
+        util.SolverLogger.print("     ");  // Left margin
         for (int c = 0; c < cols; c++) {
-            System.out.printf("  %2d     ", (c + 1));
-            if (c < cols - 1) System.out.print(" ");
+            util.SolverLogger.printf("  %2d     ", (c + 1));
+            if (c < cols - 1) util.SolverLogger.print(" ");
         }
         SolverLogger.info("");
     }
 
     private void printTopLine(int cols) {
-        System.out.print("   " + HORIZONTAL);
+        util.SolverLogger.print("   " + HORIZONTAL);
         for (int c = 0; c < cols; c++) {
-            System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
-            if (c < cols - 1) System.out.print(HORIZONTAL);
+            util.SolverLogger.print(repeat(HORIZONTAL, CELL_WIDTH));
+            if (c < cols - 1) util.SolverLogger.print(HORIZONTAL);
         }
         SolverLogger.info("");
     }
 
     private void printNorthEdgeLine(Board board, int row, int cols, Set<PositionKey> fixedPositions) {
-        System.out.print("   " + VERTICAL);
+        util.SolverLogger.print("   " + VERTICAL);
         for (int c = 0; c < cols; c++) {
             printNorthEdge(board, row, c, fixedPositions);
-            System.out.print(VERTICAL);
+            util.SolverLogger.print(VERTICAL);
         }
         SolverLogger.info("");
     }
@@ -111,7 +111,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
         boolean isFixed = fixedPositions != null && fixedPositions.contains(new PositionKey(row, col));
 
         if (board.isEmpty(row, col)) {
-            System.out.print(spaces(CELL_WIDTH));
+            util.SolverLogger.print(spaces(CELL_WIDTH));
         } else {
             int[] edges = board.getPlacement(row, col).edges;
             int edgeNorth = edges[0];
@@ -120,24 +120,24 @@ public class LabeledBoardFormatter implements BoardFormatter {
             String edgeColor = getEdgeMatchColorForNorth(board, row, col);
 
             if (isFixed) {
-                System.out.print(BOLD_BRIGHT_CYAN);
+                util.SolverLogger.print(BOLD_BRIGHT_CYAN);
             } else if (!edgeColor.isEmpty()) {
-                System.out.print(edgeColor);
+                util.SolverLogger.print(edgeColor);
             }
 
-            System.out.printf("   %2d    ", edgeNorth);
-            System.out.print(RESET);
+            util.SolverLogger.printf("   %2d    ", edgeNorth);
+            util.SolverLogger.print(RESET);
         }
     }
 
     private void printMiddleLine(Board board, Map<Integer, Piece> piecesById, List<Integer> unusedIds,
                                   FitsChecker fitsChecker, int row, int cols, Set<PositionKey> fixedPositions) {
         char rowLabel = rowLabel(row);
-        System.out.print(" " + rowLabel + " " + VERTICAL);
+        util.SolverLogger.print(" " + rowLabel + " " + VERTICAL);
 
         for (int c = 0; c < cols; c++) {
             printCellContent(board, piecesById, unusedIds, fitsChecker, row, c, cols, fixedPositions);
-            System.out.print(VERTICAL);
+            util.SolverLogger.print(VERTICAL);
         }
         SolverLogger.info("");
     }
@@ -153,9 +153,9 @@ public class LabeledBoardFormatter implements BoardFormatter {
             // Color according to count
             String countColor = getCountColor(validCount);
 
-            if (!countColor.isEmpty()) System.out.print(countColor);
-            System.out.printf("  (%3d)  ", validCount);
-            if (!countColor.isEmpty()) System.out.print(RESET);
+            if (!countColor.isEmpty()) util.SolverLogger.print(countColor);
+            util.SolverLogger.printf("  (%3d)  ", validCount);
+            if (!countColor.isEmpty()) util.SolverLogger.print(RESET);
 
         } else {
             int pieceId = board.getPlacement(row, col).getPieceId();
@@ -169,34 +169,34 @@ public class LabeledBoardFormatter implements BoardFormatter {
 
             // Display West
             if (isFixed) {
-                System.out.print(BOLD_BRIGHT_CYAN);
+                util.SolverLogger.print(BOLD_BRIGHT_CYAN);
             } else if (!westColor.isEmpty()) {
-                System.out.print(westColor);
+                util.SolverLogger.print(westColor);
             }
-            System.out.printf("%2d", edgeWest);
-            System.out.print(RESET);
+            util.SolverLogger.printf("%2d", edgeWest);
+            util.SolverLogger.print(RESET);
 
             // Display ID (always cyan if fixed)
-            if (isFixed) System.out.print(BOLD_BRIGHT_CYAN);
-            System.out.printf(" %3d ", pieceId);
-            System.out.print(RESET);
+            if (isFixed) util.SolverLogger.print(BOLD_BRIGHT_CYAN);
+            util.SolverLogger.printf(" %3d ", pieceId);
+            util.SolverLogger.print(RESET);
 
             // Display East
             if (isFixed) {
-                System.out.print(BOLD_BRIGHT_CYAN);
+                util.SolverLogger.print(BOLD_BRIGHT_CYAN);
             } else if (!eastColor.isEmpty()) {
-                System.out.print(eastColor);
+                util.SolverLogger.print(eastColor);
             }
-            System.out.printf("%2d", edgeEast);
-            System.out.print(RESET);
+            util.SolverLogger.printf("%2d", edgeEast);
+            util.SolverLogger.print(RESET);
         }
     }
 
     private void printSouthEdgeLine(Board board, int row, int cols, Set<PositionKey> fixedPositions) {
-        System.out.print("   " + VERTICAL);
+        util.SolverLogger.print("   " + VERTICAL);
         for (int c = 0; c < cols; c++) {
             printSouthEdge(board, row, c, fixedPositions);
-            System.out.print(VERTICAL);
+            util.SolverLogger.print(VERTICAL);
         }
         SolverLogger.info("");
     }
@@ -205,7 +205,7 @@ public class LabeledBoardFormatter implements BoardFormatter {
         boolean isFixed = fixedPositions != null && fixedPositions.contains(new PositionKey(row, col));
 
         if (board.isEmpty(row, col)) {
-            System.out.print(spaces(CELL_WIDTH));
+            util.SolverLogger.print(spaces(CELL_WIDTH));
         } else {
             int[] edges = board.getPlacement(row, col).edges;
             int edgeSouth = edges[2];
@@ -214,30 +214,30 @@ public class LabeledBoardFormatter implements BoardFormatter {
             String edgeColor = getEdgeMatchColorForSouth(board, row, col);
 
             if (isFixed) {
-                System.out.print(BOLD_BRIGHT_CYAN);
+                util.SolverLogger.print(BOLD_BRIGHT_CYAN);
             } else if (!edgeColor.isEmpty()) {
-                System.out.print(edgeColor);
+                util.SolverLogger.print(edgeColor);
             }
 
-            System.out.printf("   %2d    ", edgeSouth);
-            System.out.print(RESET);
+            util.SolverLogger.printf("   %2d    ", edgeSouth);
+            util.SolverLogger.print(RESET);
         }
     }
 
     private void printSeparatorLine(int cols) {
-        System.out.print("   " + HORIZONTAL);
+        util.SolverLogger.print("   " + HORIZONTAL);
         for (int c = 0; c < cols; c++) {
-            System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
-            if (c < cols - 1) System.out.print(CROSS);
+            util.SolverLogger.print(repeat(HORIZONTAL, CELL_WIDTH));
+            if (c < cols - 1) util.SolverLogger.print(CROSS);
         }
         SolverLogger.info("");
     }
 
     private void printBottomLine(int cols) {
-        System.out.print("   " + HORIZONTAL);
+        util.SolverLogger.print("   " + HORIZONTAL);
         for (int c = 0; c < cols; c++) {
-            System.out.print(repeat(HORIZONTAL, CELL_WIDTH));
-            if (c < cols - 1) System.out.print(HORIZONTAL);
+            util.SolverLogger.print(repeat(HORIZONTAL, CELL_WIDTH));
+            if (c < cols - 1) util.SolverLogger.print(HORIZONTAL);
         }
         SolverLogger.info("");
     }

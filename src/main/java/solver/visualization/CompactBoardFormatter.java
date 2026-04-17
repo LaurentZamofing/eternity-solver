@@ -71,7 +71,7 @@ public class CompactBoardFormatter implements BoardFormatter {
      */
     private void printTopBorder(int cols) {
         for (int c = 0; c < cols; c++) {
-            System.out.print("-------");
+            util.SolverLogger.print("-------");
         }
         SolverLogger.info("");
     }
@@ -83,13 +83,13 @@ public class CompactBoardFormatter implements BoardFormatter {
         for (int c = 0; c < cols; c++) {
             Placement p = board.getPlacement(row, c);
             if (p == null) {
-                System.out.print("|     |");
+                util.SolverLogger.print("|     |");
             } else {
                 int n = p.edges[0];
                 if (n == 0) {
-                    System.out.print("|     |");
+                    util.SolverLogger.print("|     |");
                 } else {
-                    System.out.printf("|  %2d |", n);
+                    util.SolverLogger.printf("|  %2d |", n);
                 }
             }
         }
@@ -110,11 +110,11 @@ public class CompactBoardFormatter implements BoardFormatter {
                 String countStr = GridDrawingHelper.formatPieceCount(count, 3);
 
                 if (count > 999) {
-                    System.out.print("| 999+|");
+                    util.SolverLogger.print("| 999+|");
                 } else if (count > 0) {
-                    System.out.printf("| %3d |", count);
+                    util.SolverLogger.printf("| %3d |", count);
                 } else {
-                    System.out.print("|  X  |");  // Dead end
+                    util.SolverLogger.print("|  X  |");  // Dead end
                 }
             } else {
                 // Placed piece: show West and East edges
@@ -122,7 +122,7 @@ public class CompactBoardFormatter implements BoardFormatter {
                 int e = p.edges[1];
                 String wStr = GridDrawingHelper.formatEdge(w);
                 String eStr = GridDrawingHelper.formatEdge(e);
-                System.out.printf("|%s %s|", wStr, eStr);
+                util.SolverLogger.printf("|%s %s|", wStr, eStr);
             }
         }
         SolverLogger.info("");
@@ -135,13 +135,13 @@ public class CompactBoardFormatter implements BoardFormatter {
         for (int c = 0; c < cols; c++) {
             Placement p = board.getPlacement(row, c);
             if (p == null) {
-                System.out.print("|     |");
+                util.SolverLogger.print("|     |");
             } else {
                 int s = p.edges[2];
                 if (s == 0) {
-                    System.out.print("|     |");
+                    util.SolverLogger.print("|     |");
                 } else {
-                    System.out.printf("|  %2d |", s);
+                    util.SolverLogger.printf("|  %2d |", s);
                 }
             }
         }

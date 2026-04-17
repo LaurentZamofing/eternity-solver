@@ -84,3 +84,10 @@ saves/**/stats_history.jsonl
 # Claude Code local state
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# Image assets — kept locally but not tracked in git (solo project, ~100MB)
+# Restore from backup or re-add when needed.
+src/main/resources/static/pieces/
+src/main/resources/static/patterns/
+pieces/
+data/indice1/images/

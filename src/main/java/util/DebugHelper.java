@@ -43,6 +43,15 @@ public class DebugHelper {
             return;
         }
 
+        // If stdin is not attached to an interactive console (CI, mvn test, piped
+        // input), readLine() would block the entire JVM forever. Skip the pause
+        // and disable step-by-step mode so subsequent calls also short-circuit.
+        if (System.console() == null) {
+            stepByStepEnabled = false;
+            SolverLogger.warn("Step-by-step mode disabled: no interactive console (headless/test run).");
+            return;
+        }
+
         try {
             System.out.println();
             System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

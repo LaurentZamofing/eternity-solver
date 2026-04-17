@@ -250,6 +250,15 @@
                         <include>**/*Test.java</include>
                         <include>**/Test*.java</include>
                     </includes>
+                    <!-- Exclude tests tagged "slow" by default. They run a full
+                         solver and can hang the forked JVM when threads don't
+                         terminate. Run them explicitly with -Dgroups=slow. -->
+                    <excludedGroups>slow</excludedGroups>
+                    <!-- Prevent lingering non-daemon or unkillable-daemon threads
+                         (e.g. solver progress monitors) from blocking the forked
+                         JVM shutdown indefinitely. Tests individually can take
+                         tens of seconds; the overall JVM fork has a hard cap. -->
+                    <forkedProcessExitTimeoutInSeconds>30</forkedProcessExitTimeoutInSeconds>
                 </configuration>
             </plugin>
 

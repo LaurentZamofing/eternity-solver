@@ -20,6 +20,12 @@ public class DebugHelper {
     private boolean stepByStepEnabled = false;
     private final BufferedReader reader;
 
+    /** Returns whether an interactive console is attached. Overridable for
+     *  tests so the pause() interactive path can be exercised in headless runs. */
+    boolean hasInteractiveConsole() {
+        return System.console() != null;
+    }
+
     public DebugHelper() {
         this(new BufferedReader(new InputStreamReader(System.in)));
     }
@@ -44,7 +50,7 @@ public class DebugHelper {
     public void pause() {
         if (!stepByStepEnabled) return;
 
-        if (System.console() == null) {
+        if (!hasInteractiveConsole()) {
             stepByStepEnabled = false;
             SolverLogger.warn("Step-by-step mode disabled: no interactive console (headless/test run).");
             return;

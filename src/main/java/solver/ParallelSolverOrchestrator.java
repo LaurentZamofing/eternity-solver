@@ -126,10 +126,11 @@ public class ParallelSolverOrchestrator {
 
             // Domain cache removed (was unused/empty implementation)
 
-            // Run solver
-            localSolver.stats.start();
-            boolean solved = localSolver.solveBacktracking(state.localBoard, state.localPieces,
-                                                          state.pieceUsed, state.totalPieces);
+            // Run solver. Previously called solveBacktracking() directly, which
+            // skipped initializeManagers / initializeDomains / initializeSymmetryBreaking /
+            // initializePlacementStrategies — the resulting solver had null
+            // helpers and always returned false. solve() wires everything.
+            boolean solved = localSolver.solve(state.localBoard, state.localPieces);
 
             // Handle result
             if (solved) {

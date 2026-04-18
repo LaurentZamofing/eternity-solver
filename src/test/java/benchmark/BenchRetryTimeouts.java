@@ -31,7 +31,7 @@ public final class BenchRetryTimeouts {
         { 9, 9, 17L },
         { 9, 9, 42L },
     };
-    private static final long PER_RUN_TIMEOUT_MS = 1_800_000; // 30 min
+    private static final long PER_RUN_TIMEOUT_MS = 3_600_000; // 60 min
 
     public static void main(String[] args) {
         System.out.printf("%-6s %-5s %-13s %-10s %-10s %-20s%n",

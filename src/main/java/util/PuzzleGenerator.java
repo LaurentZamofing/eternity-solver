@@ -44,45 +44,46 @@ public final class PuzzleGenerator {
      *         has to backtrack
      */
     public static Map<Integer, Piece> generate(int size, int numColours, long seed) {
-        if (size < 2) throw new IllegalArgumentException("size must be >= 2, got " + size);
+        return generate(size, size, numColours, seed);
+    }
+
+    /**
+     * Creates a solvable {@code rows × cols} puzzle — allows non-square
+     * grids (e.g. 7×8, 8×9) for stress benches beyond the square sizes.
+     */
+    public static Map<Integer, Piece> generate(int rows, int cols, int numColours, long seed) {
+        if (rows < 2 || cols < 2) throw new IllegalArgumentException("dimensions must be >= 2, got " + rows + "×" + cols);
         if (numColours < 1) throw new IllegalArgumentException("numColours must be >= 1, got " + numColours);
 
         Random rng = new Random(seed);
 
-        // Inner horizontal lines: between row r and r+1, for cols 0..size-1.
-        // innerH[r][c] = colour of the edge separating cell (r,c) and (r+1,c).
-        int[][] innerH = new int[size - 1][size];
-        for (int r = 0; r < size - 1; r++) {
-            for (int c = 0; c < size; c++) {
-                innerH[r][c] = 1 + rng.nextInt(numColours); // avoid 0 — reserved for borders
+        int[][] innerH = new int[rows - 1][cols];
+        for (int r = 0; r < rows - 1; r++) {
+            for (int c = 0; c < cols; c++) {
+                innerH[r][c] = 1 + rng.nextInt(numColours);
             }
         }
-        // Inner vertical lines: between col c and c+1, for rows 0..size-1.
-        int[][] innerV = new int[size][size - 1];
-        for (int r = 0; r < size; r++) {
-            for (int c = 0; c < size - 1; c++) {
+        int[][] innerV = new int[rows][cols - 1];
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols - 1; c++) {
                 innerV[r][c] = 1 + rng.nextInt(numColours);
             }
         }
 
-        // Build cell pieces. For cell (r,c): N=above, E=right, S=below, W=left.
-        // Border edges are 0.
-        int[][] northEdge = new int[size][size];
-        int[][] eastEdge  = new int[size][size];
-        int[][] southEdge = new int[size][size];
-        int[][] westEdge  = new int[size][size];
-        for (int r = 0; r < size; r++) {
-            for (int c = 0; c < size; c++) {
-                northEdge[r][c] = (r == 0)        ? 0 : innerH[r - 1][c];
-                southEdge[r][c] = (r == size - 1) ? 0 : innerH[r][c];
-                westEdge[r][c]  = (c == 0)        ? 0 : innerV[r][c - 1];
-                eastEdge[r][c]  = (c == size - 1) ? 0 : innerV[r][c];
+        int[][] northEdge = new int[rows][cols];
+        int[][] eastEdge  = new int[rows][cols];
+        int[][] southEdge = new int[rows][cols];
+        int[][] westEdge  = new int[rows][cols];
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                northEdge[r][c] = (r == 0)         ? 0 : innerH[r - 1][c];
+                southEdge[r][c] = (r == rows - 1)  ? 0 : innerH[r][c];
+                westEdge[r][c]  = (c == 0)         ? 0 : innerV[r][c - 1];
+                eastEdge[r][c]  = (c == cols - 1)  ? 0 : innerV[r][c];
             }
         }
 
-        // Shuffle cell order into piece IDs so the solver doesn't get the
-        // original grid layout trivially in-order.
-        int n = size * size;
+        int n = rows * cols;
         Integer[] ids = new Integer[n];
         for (int i = 0; i < n; i++) ids[i] = i + 1;
         for (int i = n - 1; i > 0; i--) {
@@ -92,8 +93,8 @@ public final class PuzzleGenerator {
 
         Map<Integer, Piece> out = new HashMap<>(n);
         int k = 0;
-        for (int r = 0; r < size; r++) {
-            for (int c = 0; c < size; c++) {
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
                 int[] edges = { northEdge[r][c], eastEdge[r][c], southEdge[r][c], westEdge[r][c] };
                 int pieceId = ids[k++];
                 out.put(pieceId, new Piece(pieceId, edges));

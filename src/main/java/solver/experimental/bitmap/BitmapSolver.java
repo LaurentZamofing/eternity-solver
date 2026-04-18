@@ -97,11 +97,12 @@ public final class BitmapSolver implements Solver {
             int pieceId = PiecesCatalog.pieceIdOf(nextPidRot);
             state.commitPlacement(depth, cell, nextPidRot);
 
-            // Remove all pidRots of this pieceId from every other cell.
-            removePieceFromOthers(state, catalog, cell, pieceId);
+            // Remove all pidRots of this pieceId from every other cell; also
+            // detects dead-end if any other cell's domain becomes empty.
+            boolean pieceRemoveOk = removePieceFromOthers(state, catalog, cell, pieceId);
 
             // Forward checking on neighbours.
-            if (!fc.apply(state, cell, nextPidRot) || state.anyDomainEmptyExcept(cell)) {
+            if (!pieceRemoveOk || !fc.apply(state, cell, nextPidRot)) {
                 // Dead-end — rollback placement, try next value at same depth.
                 state.rollbackPlacement(depth);
                 continue;
@@ -136,52 +137,38 @@ public final class BitmapSolver implements Solver {
         }
     }
 
-    /** MRV: pick the cell with the smallest non-empty domain. Returns -1 if none empty. */
+    /** MRV: pick the non-placed cell with the smallest non-empty domain.
+     *  Uses the incremental {@link SearchState#domainSize} cache — O(cells). */
     private int pickCell(SearchState state) {
         int best = -1;
         int bestSize = Integer.MAX_VALUE;
         int n = state.catalog.numCells;
+        boolean[] placed = state.isCellPlaced;
+        int[] size = state.domainSize;
         for (int c = 0; c < n; c++) {
-            // Skip cells already committed (domain collapsed to singleton during commit).
-            // A cell is "placed" when its domain has cardinality == 1 AND we descended on it.
-            // Track via stateHash? Simpler: track emptyCount + walk depths.
-            // Quicker: check if any depth d <= current has cellAtDepth[d] == c.
-            // But that's O(depth) per cell. Instead, mark placed cells by clearing all
-            // bits except the committed pidRot's — cardinality is 1 after commit.
-            long[] dom = state.domain[c];
-            int card = PiecesCatalog.cardinality(dom);
-            if (card == 0) return c; // dead-end surfaced via MRV; caller should have caught earlier
-            if (card == 1 && isPlaced(state, c)) continue;
+            if (placed[c]) continue;
+            int card = size[c];
+            if (card == 0) return c; // dead-end surfaced via MRV
             if (card < bestSize) {
                 bestSize = card;
                 best = c;
-                if (card == 1) return c; // singletons first-win
+                if (card == 1) return c; // can't do better than a singleton
             }
         }
         return best;
     }
 
-    private boolean isPlaced(SearchState state, int cell) {
-        // A cell is "placed" if cellAtDepth[d] == cell for some d < currentDepth.
-        // We approximate: emptyCount decrements on commit, so placed cells
-        // are those we committed. Without an auxiliary bitset, walk:
-        int[] depths = state.cellAtDepth;
-        int placed = state.catalog.numCells - state.emptyCount;
-        for (int d = 0; d < placed; d++) {
-            if (depths[d] == cell) return true;
-        }
-        return false;
-    }
-
-    private void removePieceFromOthers(SearchState state, PiecesCatalog cat, int keepCell, int pieceId) {
-        // Clear bits pieceId*4 .. pieceId*4+3 from every cell except keepCell.
+    /** Removes the 4 bits representing pieceId × 4 rotations from every cell
+     *  except {@code keepCell}. Returns {@code false} (dead-end) if any
+     *  non-placed cell's domain becomes empty. Uses the cached
+     *  {@link SearchState#domainSize} instead of summing words. */
+    private boolean removePieceFromOthers(SearchState state, PiecesCatalog cat, int keepCell, int pieceId) {
         int base = pieceId * 4;
         int word = base >>> 6;
         long pieceMask = ~(0xFL << (base & 63));
-        // If the 4 bits straddle two words (shouldn't happen since 4 bits align
-        // to a nibble), handle defensively.
         int n = cat.numCells;
-        int words = cat.words;
+        boolean[] placed = state.isCellPlaced;
+        int[] size = state.domainSize;
         for (int c = 0; c < n; c++) {
             if (c == keepCell) continue;
             long[] dom = state.domain[c];
@@ -189,7 +176,9 @@ public final class BitmapSolver implements Solver {
             long nw = old & pieceMask;
             if (nw != old) {
                 state.writeWord(c, word, nw);
+                if (!placed[c] && size[c] == 0) return false;
             }
         }
+        return true;
     }
 }

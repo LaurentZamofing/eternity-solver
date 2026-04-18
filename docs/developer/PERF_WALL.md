@@ -56,3 +56,39 @@ path.
 
 See `.github/perf-baseline-grid.json` for the full JSON dump (timestamps, per-seed
 times). Re-run via `java benchmark.BenchmarkGrid` with the standard classpath.
+
+---
+
+## Bitmap solver P1 results (2026-04-18 soir)
+
+`BitmapSolver` (ULTRA_PLAN P1 skeleton) vs `EternitySolver` on the same
+generated puzzles (see `.github/bitmap-p1-bench.log`):
+
+| Size | Seed | ref ms | bitmap ms | Speedup |
+|------|------|--------|-----------|---------|
+| 3×3 | 1 | 447 | 2 | **223×** |
+| 3×3 | 17 | 24 | <1 | – |
+| 3×3 | 42 | 25 | <1 | – |
+| 4×4 | 1 | 69 | <1 | – |
+| 4×4 | 17 | 49 | <1 | – |
+| 4×4 | 42 | 45 | <1 | – |
+| 5×5 | 1 | 513 | 3 | **171×** |
+| 5×5 | 17 | 2 457 | 5 | **491×** |
+| 5×5 | 42 | 168 | <1 | – |
+| **6×6** | 1 | 23 552 | **79** | **298×** |
+| **6×6** | 17 | 46 995 | **227** | **207×** |
+| **6×6** | 42 | 59 856 | **493** | **121×** |
+| 7×7 | 1 | 60 000 (timeout) | **4 646** | ≥ 12.9× |
+| 7×7 | 17 | 60 006 (timeout) | 61 992 (timeout) | – |
+| 7×7 | 42 | 60 003 (timeout) | **12 705** | ≥ 4.7× |
+
+### Consequences
+
+- **P1 gate (6×6 <5 s)** massively achieved: avg ~266 ms on 3 seeds → **×18 margin**.
+- **P2 gate (7×7 <60 s)** 2/3 already achieved without nogood/restart.
+- Seed 17 at 7×7 times out even in bitmap — this is where Phase P2 (Zobrist nogoods + Luby restart) should bite.
+- The bitmap rewrite alone gave ~120-500× on 5-6×5-6 because:
+  1. No HashMap allocation in hot loop (JFR 22 % → 0 % for bitmap allocations).
+  2. Trail-based undo O(Δ) per backtrack vs full recompute.
+  3. `AND`-mask filtering over `long[]` is vector-friendly.
+  4. MRV via cached `domainSize[]` array (O(cells), no Long.bitCount per step).

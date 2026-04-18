@@ -124,7 +124,7 @@ Score = (impact × confiance) / coût. I/C/C sur 1-5.
 | 🔶 | BB2 | Scaling 16×16 (pools, int[], JFR, GC tuning) — scripts JFR documentés dans `SCRIPTS.md § JFR`. Bench 8×8 utilisable via `FullSolveBenchmark.solve8x8Generated`. | partiel (outillage en place) |
 | 🔶 | BB3 | Profil contention WorkStealingExecutor — fix `solveParallel` livré ; commande JFR lock-wait documentée dans `SCRIPTS.md`. | partiel (fix livré, profil à exécuter) |
 | 🔶 | BB4 | Heuristique "most-constraining variable" — design pinned dans `solver/experimental/mcv/README.md`. Implémentation + bench laissés à une session dédiée. | design documenté |
-| ✅ | BB5 | Mutation testing PITest — profil `-P pit` ajouté dans pom.xml (target solver core classes, JUnit5, mutation threshold 30 %). Run via `mvn -P pit org.pitest:pitest-maven:mutationCoverage`. | `pending-commit` |
+| ✅ | BB5 | Mutation testing PITest — profil `-P pit`, narrow scope (6 leaf classes, exclusions DiagnosticTest). **Baseline mesurée 2026-04-18 : 153 mutations en 12 s, 62 % killed, 73 % test strength**. Gate 55 %. | `b467130` + `293a300` + `pending-commit` |
 
 **Légende** : ✅ fait · 🔶 partiel · 🔨 en cours · 🟢 green-lit · ⏳ pending
 

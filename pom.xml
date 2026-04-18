@@ -495,28 +495,45 @@
                             </dependency>
                         </dependencies>
                         <configuration>
+                            <!--
+                              Narrow scope: only the small, fast-to-test leaf
+                              classes. A full solver.* scan ran >30 min with 0%
+                              CPU in early experiments — the DLX + long
+                              benchmark tests dominate each mutation's tests
+                              run. This scope finishes in a couple of minutes.
+                            -->
                             <targetClasses>
-                                <param>solver.DomainManager</param>
-                                <param>solver.ConstraintPropagator</param>
-                                <param>solver.SymmetryBreakingManager</param>
-                                <param>solver.EternitySolverBuilder</param>
                                 <param>solver.timeout.TimeoutChecker</param>
+                                <param>solver.EternitySolverBuilder</param>
                                 <param>solver.validation.PlacementValidator</param>
+                                <param>model.Piece</param>
+                                <param>util.DebugHelper</param>
+                                <param>util.PuzzleGenerator</param>
                             </targetClasses>
                             <targetTests>
-                                <param>solver.*</param>
-                                <param>util.*</param>
+                                <param>solver.timeout.TimeoutCheckerTest</param>
+                                <param>solver.EternitySolverBuilderTest</param>
+                                <param>solver.validation.PlacementValidatorTest</param>
+                                <param>model.PieceTest</param>
+                                <param>util.DebugHelperTest</param>
+                                <param>util.PuzzleGeneratorTest</param>
                             </targetTests>
+                            <excludedTestClasses>
+                                <param>*IntegrationTest</param>
+                                <param>*DiagnosticTest</param>
+                            </excludedTestClasses>
                             <testPlugin>junit5</testPlugin>
                             <outputFormats>
                                 <outputFormat>HTML</outputFormat>
                             </outputFormats>
-                            <timeoutConstant>10000</timeoutConstant>
+                            <timeoutConstant>5000</timeoutConstant>
                             <threads>4</threads>
-                            <!-- Fail the build if mutation score drops below this
-                                 threshold. Start conservative (30%) and bump as
-                                 tests strengthen. -->
-                            <mutationThreshold>30</mutationThreshold>
+                            <!-- Fail the build if mutation score drops below
+                                 this threshold. 2026-04-18 baseline on the
+                                 narrow target set: 62% killed / 73% test
+                                 strength in 12s. Gate set to 55% to catch
+                                 regressions while leaving ~7pt margin. -->
+                            <mutationThreshold>55</mutationThreshold>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -3,6 +3,19 @@
 > Réécrit 2026-04-18 après analyse JFR + bilan session de hardening.
 > Le plan précédent (détail QW/M/BB) est archivé en bas du document.
 
+> **Mise à jour 2026-04-18 (soir)** : Phase A mesurée (wall 6×6→7×7 ~×5),
+> Phase B pivoted (micro-opts non-mesurables), Phase D design pinned.
+> **Direction confirmée : rewrite bitmap ground-up.** Voir :
+> - `docs/developer/ULTRA_PLAN.md` — blueprint complet (11 sections, data
+>   representation, heuristics, estimations).
+> - `/Users/laurentzamofing/.claude/plans/bubbly-waddling-wirth.md` — plan
+>   d'exécution concret avec P1-P5, phases gates, fichiers critiques, corrections
+>   baked in (trail-undo, Zobrist incrémental, WORDS paramétrisé, border
+>   segregation, JMH methodology).
+>
+> **Le plan A→D ci-dessous reste utile comme historique** mais est **superseded
+> par les phases P1-P5 du nouveau plan** pour tout nouveau travail.
+
 ## 1. État actuel (honnête)
 
 **Ce qui marche** :

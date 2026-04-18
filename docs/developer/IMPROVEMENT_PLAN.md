@@ -123,8 +123,8 @@ Score = (impact × confiance) / coût. I/C/C sur 1-5.
 | ✅ | BB1 | POC DLX livré avec **no-go** mesuré : primary-only DLX timeout sur 4×4 easy (>10min vs AC-3 sub-seconde). Code conservé dans `solver/experimental/dlx/` pour prochaine itération éventuelle (DLX+FC ou secondary-columns). | `6e63859` + `ab56553` |
 | 🔶 | BB2 | Scaling 16×16 (pools, int[], JFR, GC tuning) — scripts JFR documentés dans `SCRIPTS.md § JFR`. Bench 8×8 utilisable via `FullSolveBenchmark.solve8x8Generated`. | partiel (outillage en place) |
 | 🔶 | BB3 | Profil contention WorkStealingExecutor — fix `solveParallel` livré ; commande JFR lock-wait documentée dans `SCRIPTS.md`. | partiel (fix livré, profil à exécuter) |
-| 🔶 | BB4 | Heuristique "most-constraining variable" — design pinned dans `solver/experimental/mcv/README.md`. Implémentation + bench laissés à une session dédiée. | design documenté |
-| ✅ | BB5 | Mutation testing PITest — profil `-P pit`, narrow scope (6 leaf classes, exclusions DiagnosticTest). **Baseline mesurée 2026-04-18 : 153 mutations en 12 s, 62 % killed, 73 % test strength**. Gate 55 %. | `b467130` + `293a300` + `pending-commit` |
+| 🔶 | BB4 | Heuristique "most-constraining variable" — **scorer standalone livré** dans `solver/experimental/mcv/MCVCellSelector.java` (pressure = borders + non-empty neighbours), 8 tests, findMostConstraining. Wiring dans `EternitySolver` deferred (flag + bench compare). | `293a300` |
+| ✅ | BB5 | Mutation testing PITest — profil `-P pit`, narrow scope (6 leaf classes, exclusions DiagnosticTest). **Itéré 2 fois : 62 % → 63 % killed, no-coverage 22 → 14, DebugHelper line 68 → 92 %**. Gate 55 %. | `b467130` + `52cd3bf` + `1009ff8` |
 
 **Légende** : ✅ fait · 🔶 partiel · 🔨 en cours · 🟢 green-lit · ⏳ pending
 
@@ -132,7 +132,30 @@ Score = (impact × confiance) / coût. I/C/C sur 1-5.
 
 - **QW** : 7/7 ✅
 - **Medium** : **9/10 ✅**, 1 ⏳ (M7 conditionnel JFR)
-- **Big bets** : 2 ✅ (BB1 no-go mesuré, BB5 config PITest), 3 🔶 (BB2/BB3/BB4 outillage/design en place), 0 ⏳
+- **Big bets** : **2 ✅** (BB1 no-go mesuré, BB5 PITest gate 55 %), **3 🔶** (BB2/BB3 outillage en place, BB4 scorer livré), **0 ⏳**
+
+### Mesures clés de la session
+
+| Métrique | Baseline | Final | Δ |
+|----------|----------|-------|---|
+| Tests | 1484 | **1551** | **+67** |
+| Skipped | 12 | **6** | −6 |
+| LINE coverage | 25 % | **43 %** | **+18 pts** |
+| BRANCH coverage | 24 % | **42 %** | **+18 pts** |
+| Mutation score | n/a | **63 %** killed | nouveau gate 55 % |
+| JaCoCo gate | 20/18 | **35/30** | +15/+12 pts |
+| LOC supprimés | — | **~500 LOC** dead code | — |
+| MD docs obsolètes | — | **−200 KB** (20 fichiers) | — |
+
+### Ce qu'il reste de vraiment ouvert
+
+| Item | Blocage | Quand démarrer |
+|------|---------|----------------|
+| **M7** pool `ArrayList<ValidPlacement>` | Attend un profil JFR — optimiser sans preuve = risque de régression. | Après une capture `java -XX:StartFlightRecording...` sur un solve 8×8 montrant alloc > 20 % CPU. |
+| **BB2** scaling 16×16 | Même condition. Outillage + bench 8×8 en place. | Après le profil JFR (pareil que M7). |
+| **BB3** contention parallèle | Le fix est livré. Profil `jdk.JavaMonitorWait` à capturer. | Quand on veut pousser `solveParallel` à 4/8 threads. |
+| **BB4** MCV wiring | Scorer livré, intégration `EternitySolver` non-faite. | Session ~2h : setter + A/B bench MRV vs MCV. |
+| Mutation score 63 → 70 %+ | 14 no-coverage + ~14 survived restantes (stdout `println/print/flush`). | ~1h avec capture stdout pour killer les stream mutations. |
 
 ---
 
@@ -306,16 +329,35 @@ acff823 (idem : introduit l'interface Solver)
 f4f8389 feat(solver): expose setMRVIndexEnabled on EternitySolver + test solver/output
 ```
 
-**Total session (suite)** : 18 commits après la baseline, suite 1520/1520 verte, coverage LINE **43%** / BRANCH **42%** (gates bumped 24/22 → 35/30), **2 @Disabled** restants tous documentés (CLIIntegrationTest subprocess slow-tests).
+**Total session (suite)** : **31 commits** après la baseline, suite **1551/1551** verte, coverage LINE **43%** / BRANCH **42%** (gates 35/30), **2 @Disabled** restants (CLI subprocess slow-tests + 1 DLX 4×4 no-go documenté), **mutation score global 63 %** (gate PIT 55 %).
 
 ### Commits suite après session close-out initial
 
 ```
-(M5, M6, QW7, dead-code cleanup, puzzle generator)
+(Wave 2 — M5, M6, QW7, dead-code, puzzle generator)
 e39a615 refactor(state): dedupe writeSection boilerplate in SaveStateIO
 b2dfd8e chore(pmd): surface violations in CI logs (printFailingErrors=true)
 5ec56aa feat(bench): PuzzleGenerator + 5×5/6×6/8×8 JMH benchmarks
 a385442 chore(cleanup): remove dead code (5 items, -295 LOC)
+06b38fb docs: update IMPROVEMENT_PLAN with cleanup + unblock tasks
+
+(Wave 3 — M4, binary-save removal, parallel fix)
+b2856aa feat(solver): EternitySolverBuilder + retirer binary-save
+68c1947 fix(parallel): worker threads now call solve() instead of solveBacktracking()
+fb3ecb6 chore(ci): bump JaCoCo gate LINE 24%→35%, BRANCH 22%→30%
+014a929 docs: refresh IMPROVEMENT_PLAN status markers
+
+(Wave 4 — DLX POC)
+6e63859 feat(dlx): DancingLinksMatrix + AlgorithmX core
+ab56553 feat(dlx): Eternity adapter + DancingLinksSolver — no-go
+f14d3bb docs: close BB1 with no-go status
+
+(Wave 5 — ResponseHelper coverage, BB5 PITest, BB4 MCV)
+b484824 chore(tests): +ResponseHelperTest, @Deprecated resetGlobalState
+b467130 feat: BB5 PITest profile, BB2/BB3 JFR tooling, BB4 MCV design
+293a300 feat(mcv): standalone MCVCellSelector + tests
+52cd3bf chore(pit): bump mutation gate 30→55 (baseline 62% killed)
+1009ff8 test(debug): +7 targeted tests on DebugHelper interactive path
 ```
 
 ### Tasks d'unblock créées

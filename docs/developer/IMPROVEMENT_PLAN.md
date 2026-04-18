@@ -99,7 +99,7 @@ Score = (impact × confiance) / coût. I/C/C sur 1-5.
 | ✅ | QW4 | Extract `Piece.isTopLeftFittable(rot)` | `8651d2e` |
 | ✅ | QW5 | Tests PlacementValidator/DebugPlacementLogger/TimeoutChecker | `e105353` |
 | ✅ | QW6 | Baseline JMH publiée (`.github/perf-baseline.json`) | déjà à jour |
-| 🔶 | QW7 | PMD : `printFailingErrors=true` (335 violations surfaced ; strict gate reporté à ruleset custom) | `pending-commit` |
+| ✅ | QW7 | PMD `printFailingErrors=true` (335 violations visibles en CI ; strict-gate ruleset reporté à cleanup dédié) | `b2dfd8e` |
 
 ### Medium (½ journée)
 
@@ -107,26 +107,32 @@ Score = (impact × confiance) / coût. I/C/C sur 1-5.
 |:-:|---|--------|---------|
 | ✅ | M1 | AC-3 undo-stack O(Δ) | `acff823` |
 | ✅ | M2 | Interface `Solver` | `acff823` |
-| ⏳ | M3 | Bench MRV PQ 6×6/8×8 — setter `setMRVIndexEnabled` exposé, puzzle 6×6 à créer | `f4f8389` (setter) |
-| ⏳ | M4 | `EternitySolverBuilder` fluent | pending |
-| 🔶 | M5 | Dé-staticiser flags — `useBinaryFormat` gardé (testé+utilisé), `stepByStepEnabled` pending | — |
+| ✅ | M3 | Bench MRV PQ 6×6/8×8 — `PuzzleGenerator` + benchmarks 5×5/6×6/8×8 dans `FullSolveBenchmark` | `f4f8389` + `5ec56aa` |
+| ✅ | M4 | `EternitySolverBuilder` fluent (9 setters communs, factory `EternitySolver.builder()`) | `b2856aa` |
+| ✅ | M5 | Dé-staticisation : `DebugHelper` instance-based (DEFAULT singleton, API deprecated), `useBinaryFormat` supprimé | `5ec56aa` + `b2856aa` |
 | ✅ | M6 | Template `SaveStateIO.writeSection` | `e39a615` |
-| ⏳ | M7 | Pool `ArrayList<ValidPlacement>` | pending (dépend JFR profil M2-BB2) |
-| ✅ | M8 | JaCoCo gate 20/18 → 24/22 (cible 30/25 plus tard) | `7d12778` |
+| ⏳ | M7 | Pool `ArrayList<ValidPlacement>` — dépend d'un profil JFR (BB2). Non prioritaire tant que 4×4 est rapide. | pending |
+| ✅ | M8 | JaCoCo gate 20/18 → 24/22 → **35/30** | `7d12778` + `fb3ecb6` |
 | ✅ | M9 | Split SymmetryBreakingBugTrackingTest | `27acd09` |
-| ⏳ | M10 | Spring Boot profil `solver-only` | pending |
+| ⏳ | M10 | Spring Boot profil `solver-only` — optionnel (monitoring déjà isolé de la CLI core) | pending |
 
 ### Big bets (> 1 jour) — green-lit 2026-04-18
 
 | ✔ | # | Action | État |
 |:-:|---|--------|------|
-| 🟢 | BB1 | POC DLX (Dancing Links) | go, démarre après C3/C4 |
-| 🟢 | BB2 | Scaling 16×16 (pools, int[], JFR, GC tuning) | go |
-| 🟢 | BB3 | Profil contention WorkStealingExecutor | go (lié au fix `solveParallel` @Disabled) |
-| ⏳ | BB4 | Heuristique "most-constraining variable" | optionnel, après bench MRV |
-| ⏳ | BB5 | Mutation testing PITest | après coverage > 30 % |
+| 🔨 | BB1 | POC DLX (Dancing Links) | **en cours** — tasks #37..#42 créées (estim. 5h) |
+| ⏳ | BB2 | Scaling 16×16 (pools, int[], JFR, GC tuning) | démarre après bench 8×8 avec outillage JFR |
+| 🔶 | BB3 | Profil contention WorkStealingExecutor | fix `solveParallel` livré (`68c1947`), profil JFR à suivre |
+| ⏳ | BB4 | Heuristique "most-constraining variable" | optionnel |
+| ⏳ | BB5 | Mutation testing PITest | coverage 43% >= 30% ✅, peut démarrer |
 
-**Légende** : ✅ fait · 🔶 partiel · 🟢 green-lit · ⏳ pending
+**Légende** : ✅ fait · 🔶 partiel · 🔨 en cours · 🟢 green-lit · ⏳ pending
+
+### Récap global
+
+- **QW** : 7/7 ✅
+- **Medium** : 8/10 ✅, 2 ⏳ (M7 attend JFR, M10 non-prioritaire)
+- **Big bets** : 1 🔨 en cours (BB1), 1 🔶 (BB3), 3 ⏳
 
 ---
 

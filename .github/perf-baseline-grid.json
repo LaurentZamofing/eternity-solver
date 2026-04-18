@@ -1,0 +1,107 @@
+{
+  "timestamp": 1776540479691,
+  "description": "Phase-A baseline: solve times 3×3 → 8×8 with generated puzzles",
+  "curated": {
+    "example_3x3": solved=true in 430ms,
+    "example_4x4_easy": solved=true in 74ms,
+    "example_4x4_hardV3": solved=true in 85ms
+  },
+  "generated": {
+    "size_3": {
+      "seed_1": {
+        "solved": true,
+        "elapsed_ms": 17
+      },
+      "seed_17": {
+        "solved": true,
+        "elapsed_ms": 20
+      },
+      "seed_42": {
+        "solved": true,
+        "elapsed_ms": 20
+      },
+      "seeds_solved": 3,
+      "avg_ms_solved": 19
+    },
+    "size_4": {
+      "seed_1": {
+        "solved": true,
+        "elapsed_ms": 40
+      },
+      "seed_17": {
+        "solved": true,
+        "elapsed_ms": 38
+      },
+      "seed_42": {
+        "solved": true,
+        "elapsed_ms": 29
+      },
+      "seeds_solved": 3,
+      "avg_ms_solved": 35
+    },
+    "size_5": {
+      "seed_1": {
+        "solved": true,
+        "elapsed_ms": 404
+      },
+      "seed_17": {
+        "solved": true,
+        "elapsed_ms": 2555
+      },
+      "seed_42": {
+        "solved": true,
+        "elapsed_ms": 131
+      },
+      "seeds_solved": 3,
+      "avg_ms_solved": 1030
+    },
+    "size_6": {
+      "seed_1": {
+        "solved": true,
+        "elapsed_ms": 18544
+      },
+      "seed_17": {
+        "solved": true,
+        "elapsed_ms": 31995
+      },
+      "seed_42": {
+        "solved": false,
+        "elapsed_ms": 120003
+      },
+      "seeds_solved": 2,
+      "avg_ms_solved": 25269
+    },
+    "size_7": {
+      "seed_1": {
+        "solved": false,
+        "elapsed_ms": 120003
+      },
+      "seed_17": {
+        "solved": false,
+        "elapsed_ms": 120004
+      },
+      "seed_42": {
+        "solved": false,
+        "elapsed_ms": 120004
+      },
+      "seeds_solved": 0,
+      "avg_ms_solved": null
+    },
+    "size_8": {
+      "seed_1": {
+        "solved": false,
+        "elapsed_ms": 120004
+      },
+      "seed_17": {
+        "solved": false,
+        "elapsed_ms": 120005
+      },
+      "seed_42": {
+        "solved": false,
+        "elapsed_ms": 120004
+      },
+      "seeds_solved": 0,
+      "avg_ms_solved": null
+    }
+  }
+}

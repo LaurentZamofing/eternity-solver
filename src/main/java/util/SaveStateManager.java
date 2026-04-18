@@ -5,7 +5,6 @@ import util.SolverLogger;
 import model.Board;
 import model.Piece;
 import model.Placement;
-import util.state.BinarySaveManager;
 import util.state.SaveFileManager;
 import util.state.SaveStateIO;
 import util.state.SaveStateSerializer;
@@ -29,7 +28,6 @@ import java.util.Set;
  * - {@link SaveStateIO} - Save/load operations
  * - {@link SaveStateSerializer} - Serialization logic
  * - {@link SaveFileManager} - File discovery and management
- * - {@link BinarySaveManager} - Binary format handling
  *
  * This facade provides a simplified API while the actual work is done by
  * specialized classes following Single Responsibility Principle.
@@ -42,28 +40,10 @@ public class SaveStateManager {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
     private static final int MAX_BACKUP_SAVES = 10; // Keep the last 10 saves
     private static final int SAVE_LEVEL_INTERVAL = 1; // Save each level (each new piece placed)
-    private static boolean useBinaryFormat = false; // Enable/disable binary save format
-
-    /**
-     * Enable binary format for faster save/load operations
-     */
-    public static void enableBinaryFormat() {
-        useBinaryFormat = true;
-    }
-
-    /**
-     * Disable binary format and use text format
-     */
-    public static void disableBinaryFormat() {
-        useBinaryFormat = false;
-    }
-
-    /**
-     * Check if binary format is enabled
-     */
-    public static boolean isBinaryFormatEnabled() {
-        return useBinaryFormat;
-    }
+    // Binary save toggles (enableBinaryFormat / disableBinaryFormat /
+    // isBinaryFormatEnabled) were removed 2026-04-18 — feature was never wired
+    // to the CLI and only exercised by tests. BinarySaveManager remains a
+    // standalone utility for callers that need direct access.
 
     /**
      * Gets the subdirectory for a puzzle configuration
@@ -170,21 +150,6 @@ public class SaveStateManager {
             SaveStateIO.writeToFile(currentFile, puzzleName, board, state.depth,
                                    placementOrder, unusedIds, progressPercentage,
                                    elapsedTimeMs, numFixedPieces, initialFixedPieces, allPieces);
-
-            // Save in binary format if enabled
-            if (useBinaryFormat) {
-                String binaryFile = puzzleDir + "current_" + timestamp + ".bin";
-                try {
-                    int maxPieceId = allPieces.keySet().stream().max(Integer::compareTo).orElse(0);
-                    boolean[] pieceUsed = new boolean[maxPieceId + 1];
-                    for (int i = 1; i <= maxPieceId; i++) {
-                        pieceUsed[i] = !unusedIds.contains(i);
-                    }
-                    BinarySaveManager.saveBinary(binaryFile, board, allPieces, pieceUsed, maxPieceId);
-                } catch (IOException e) {
-                    SolverLogger.warn("Failed to save binary format: " + e.getMessage());
-                }
-            }
 
             // Cleanup old current saves
             cleanupOldCurrentSaves(puzzleDir, currentFile);

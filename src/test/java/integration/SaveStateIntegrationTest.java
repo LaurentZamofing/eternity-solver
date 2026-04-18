@@ -3,7 +3,6 @@ package integration;
 import model.Board;
 import model.Piece;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.Disabled;
 import solver.EternitySolver;
 import util.SaveStateManager;
 import util.state.SaveStateIO;
@@ -51,9 +50,6 @@ class SaveStateIntegrationTest {
     @Order(1)
     @DisplayName("Should save and load state in text format")
     void testTextFormatSaveLoad() throws Exception {
-        // Arrange
-        SaveStateManager.disableBinaryFormat();
-
         // Place some pieces
         Piece piece1 = testPieces.get(1);
         testBoard.place(0, 0, piece1, 0);
@@ -86,80 +82,7 @@ class SaveStateIntegrationTest {
     }
 
     @Test
-    @Disabled("Binary save-format path in SaveStateManager.enableBinaryFormat() is unused in production; re-enable when the feature lands or delete. Tracked in IMPROVEMENT_PLAN.md.")
     @Order(2)
-    @DisplayName("Should save and load state in binary format")
-    void testBinaryFormatSaveLoad() throws Exception {
-        // Arrange
-        SaveStateManager.enableBinaryFormat();
-
-        testBoard.place(0, 0, testPieces.get(1), 0);
-        testBoard.place(0, 1, testPieces.get(2), 1);
-        testBoard.place(1, 0, testPieces.get(3), 2);
-
-        List<SaveStateManager.PlacementInfo> placements = Arrays.asList(
-            new SaveStateManager.PlacementInfo(0, 0, 1, 0),
-            new SaveStateManager.PlacementInfo(0, 1, 2, 1),
-            new SaveStateManager.PlacementInfo(1, 0, 3, 2)
-        );
-
-        // Act - Save in binary
-        SaveStateIO.saveCurrentState(
-            TEST_PUZZLE, testBoard, 3, 0,
-            placements, Collections.emptyList(), 2000L
-        );
-
-        // Load
-        File saveFile = SaveStateManager.findCurrentSave(TEST_PUZZLE);
-        assertNotNull(saveFile, "Binary save file should exist");
-        assertTrue(saveFile.getName().endsWith(".bin"), "Should be binary format");
-
-        SaveStateManager.SaveState loaded = SaveStateIO.loadSaveState(saveFile.getAbsolutePath());
-
-        // Assert
-        assertNotNull(loaded, "Binary loaded state should not be null");
-        assertEquals(3, loaded.depth, "Depth should match");
-        assertEquals(3, loaded.placementOrder.size(), "Binary placement count should match");
-    }
-
-    @Test
-    @Disabled("saveCurrentState() writes under getPuzzleSubDir(), not saves/<puzzle>/; the test's path assumption is stale. Fix path lookup or delete. Tracked in IMPROVEMENT_PLAN.md.")
-    @Order(3)
-    @DisplayName("Should preserve milestone saves")
-    void testMilestonePreservation() throws Exception {
-        // Arrange - Create multiple saves at different depths
-        for (int depth = 1; depth <= 5; depth++) {
-            List<SaveStateManager.PlacementInfo> placements = new ArrayList<>();
-            for (int i = 0; i < depth; i++) {
-                placements.add(new SaveStateManager.PlacementInfo(0, i % 3, i + 1, 0));
-            }
-
-            SaveStateIO.saveCurrentState(
-                TEST_PUZZLE, testBoard, depth, 0,
-                placements, Collections.emptyList(), depth * 1000L
-            );
-
-            // Small delay to ensure different timestamps
-            Thread.sleep(10);
-        }
-
-        // Act - Find all saves
-        File saveDir = new File("saves/" + TEST_PUZZLE + "/");
-        File[] saves = saveDir.listFiles((dir, name) ->
-            name.startsWith(TEST_PUZZLE + "_") && !name.contains("_current")
-        );
-
-        // Assert - Multiple milestone saves should exist
-        assertNotNull(saves, "Save directory should exist");
-        assertTrue(saves.length >= 1, "Should have milestone saves");
-
-        // Current save should be latest
-        File currentSave = SaveStateManager.findCurrentSave(TEST_PUZZLE);
-        assertNotNull(currentSave, "Current save should exist");
-    }
-
-    @Test
-    @Order(4)
     @DisplayName("Should correctly resume solving from saved state")
     void testResumeFromSave() throws Exception {
         // Arrange - Save state at depth 2

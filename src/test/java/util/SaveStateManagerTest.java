@@ -30,55 +30,12 @@ class SaveStateManagerTest {
     void setUp() {
         testBoard = new Board(3, 3);
         testPieces = createTestPieces();
-
-        // Reset binary format to default
-        SaveStateManager.disableBinaryFormat();
     }
 
     @AfterEach
     void tearDown() {
         // Cleanup test saves
         cleanupTestSaves();
-    }
-
-    // ==================== Binary Format Tests ====================
-
-    @Test
-    @DisplayName("Should disable binary format by default")
-    void testBinaryFormatDefaultDisabled() {
-        SaveStateManager.disableBinaryFormat();
-        assertFalse(SaveStateManager.isBinaryFormatEnabled(),
-                   "Binary format should be disabled by default");
-    }
-
-    @Test
-    @DisplayName("Should enable binary format")
-    void testEnableBinaryFormat() {
-        SaveStateManager.enableBinaryFormat();
-        assertTrue(SaveStateManager.isBinaryFormatEnabled(),
-                  "Binary format should be enabled");
-    }
-
-    @Test
-    @DisplayName("Should disable binary format")
-    void testDisableBinaryFormat() {
-        SaveStateManager.enableBinaryFormat();
-        SaveStateManager.disableBinaryFormat();
-        assertFalse(SaveStateManager.isBinaryFormatEnabled(),
-                   "Binary format should be disabled");
-    }
-
-    @Test
-    @DisplayName("Should toggle binary format multiple times")
-    void testToggleBinaryFormat() {
-        SaveStateManager.enableBinaryFormat();
-        assertTrue(SaveStateManager.isBinaryFormatEnabled());
-
-        SaveStateManager.disableBinaryFormat();
-        assertFalse(SaveStateManager.isBinaryFormatEnabled());
-
-        SaveStateManager.enableBinaryFormat();
-        assertTrue(SaveStateManager.isBinaryFormatEnabled());
     }
 
     // ==================== PlacementInfo Tests ====================

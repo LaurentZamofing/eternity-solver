@@ -29,6 +29,12 @@ import java.util.Random;
  */
 public class EternitySolver implements Solver {
 
+    /** Returns a fluent builder for configuring a new solver instance. */
+    public static EternitySolverBuilder builder() {
+        return new EternitySolverBuilder();
+    }
+
+
     /** Type alias for backward compatibility - delegates to StatisticsManager. */
     public static class Statistics extends StatisticsManager { }
 

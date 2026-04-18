@@ -470,5 +470,57 @@
                 </plugins>
             </build>
         </profile>
+
+        <!--
+          Mutation testing profile (BB5).
+          Run with: mvn -P pit org.pitest:pitest-maven:mutationCoverage
+          Output:   target/pit-reports/<timestamp>/index.html
+          Scope is kept narrow (solver.* only) so the report runs in a
+          few minutes even on a local laptop. Broaden once baseline
+          coverage is trusted.
+        -->
+        <profile>
+            <id>pit</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <version>1.17.4</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.pitest</groupId>
+                                <artifactId>pitest-junit5-plugin</artifactId>
+                                <version>1.2.3</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <targetClasses>
+                                <param>solver.DomainManager</param>
+                                <param>solver.ConstraintPropagator</param>
+                                <param>solver.SymmetryBreakingManager</param>
+                                <param>solver.EternitySolverBuilder</param>
+                                <param>solver.timeout.TimeoutChecker</param>
+                                <param>solver.validation.PlacementValidator</param>
+                            </targetClasses>
+                            <targetTests>
+                                <param>solver.*</param>
+                                <param>util.*</param>
+                            </targetTests>
+                            <testPlugin>junit5</testPlugin>
+                            <outputFormats>
+                                <outputFormat>HTML</outputFormat>
+                            </outputFormats>
+                            <timeoutConstant>10000</timeoutConstant>
+                            <threads>4</threads>
+                            <!-- Fail the build if mutation score drops below this
+                                 threshold. Start conservative (30%) and bump as
+                                 tests strengthen. -->
+                            <mutationThreshold>30</mutationThreshold>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

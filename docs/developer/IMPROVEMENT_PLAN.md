@@ -111,28 +111,28 @@ Score = (impact × confiance) / coût. I/C/C sur 1-5.
 | ✅ | M4 | `EternitySolverBuilder` fluent (9 setters communs, factory `EternitySolver.builder()`) | `b2856aa` |
 | ✅ | M5 | Dé-staticisation : `DebugHelper` instance-based (DEFAULT singleton, API deprecated), `useBinaryFormat` supprimé | `5ec56aa` + `b2856aa` |
 | ✅ | M6 | Template `SaveStateIO.writeSection` | `e39a615` |
-| ⏳ | M7 | Pool `ArrayList<ValidPlacement>` — dépend d'un profil JFR (BB2). Non prioritaire tant que 4×4 est rapide. | pending |
+| ⏳ | M7 | Pool `ArrayList<ValidPlacement>` — reporté jusqu'à un profil JFR (cf. `SCRIPTS.md § JFR`). Optimiser sans preuve = risque de régression. | pending (conditionnel) |
 | ✅ | M8 | JaCoCo gate 20/18 → 24/22 → **35/30** | `7d12778` + `fb3ecb6` |
 | ✅ | M9 | Split SymmetryBreakingBugTrackingTest | `27acd09` |
-| ⏳ | M10 | Spring Boot profil `solver-only` — optionnel (monitoring déjà isolé de la CLI core) | pending |
+| ✅ | M10 | Spring Boot profil `solver-only` — **déjà résolu structurellement** : `MonitoringApplication` est un entry-point Spring Boot indépendant, jamais démarré par `app/Main*.java`. Les runs solver sont toujours "solver-only" par défaut. | noop (déjà OK) |
 
 ### Big bets (> 1 jour) — green-lit 2026-04-18
 
 | ✔ | # | Action | État |
 |:-:|---|--------|------|
 | ✅ | BB1 | POC DLX livré avec **no-go** mesuré : primary-only DLX timeout sur 4×4 easy (>10min vs AC-3 sub-seconde). Code conservé dans `solver/experimental/dlx/` pour prochaine itération éventuelle (DLX+FC ou secondary-columns). | `6e63859` + `ab56553` |
-| ⏳ | BB2 | Scaling 16×16 (pools, int[], JFR, GC tuning) | démarre après bench 8×8 avec outillage JFR |
-| 🔶 | BB3 | Profil contention WorkStealingExecutor | fix `solveParallel` livré (`68c1947`), profil JFR à suivre |
-| ⏳ | BB4 | Heuristique "most-constraining variable" | optionnel |
-| ⏳ | BB5 | Mutation testing PITest | coverage 43% >= 30% ✅, peut démarrer |
+| 🔶 | BB2 | Scaling 16×16 (pools, int[], JFR, GC tuning) — scripts JFR documentés dans `SCRIPTS.md § JFR`. Bench 8×8 utilisable via `FullSolveBenchmark.solve8x8Generated`. | partiel (outillage en place) |
+| 🔶 | BB3 | Profil contention WorkStealingExecutor — fix `solveParallel` livré ; commande JFR lock-wait documentée dans `SCRIPTS.md`. | partiel (fix livré, profil à exécuter) |
+| 🔶 | BB4 | Heuristique "most-constraining variable" — design pinned dans `solver/experimental/mcv/README.md`. Implémentation + bench laissés à une session dédiée. | design documenté |
+| ✅ | BB5 | Mutation testing PITest — profil `-P pit` ajouté dans pom.xml (target solver core classes, JUnit5, mutation threshold 30 %). Run via `mvn -P pit org.pitest:pitest-maven:mutationCoverage`. | `pending-commit` |
 
 **Légende** : ✅ fait · 🔶 partiel · 🔨 en cours · 🟢 green-lit · ⏳ pending
 
 ### Récap global
 
 - **QW** : 7/7 ✅
-- **Medium** : 8/10 ✅, 2 ⏳ (M7 attend JFR, M10 non-prioritaire)
-- **Big bets** : 1 ✅ (BB1 no-go documenté), 1 🔶 (BB3 fix livré, profil JFR à suivre), 3 ⏳
+- **Medium** : **9/10 ✅**, 1 ⏳ (M7 conditionnel JFR)
+- **Big bets** : 2 ✅ (BB1 no-go mesuré, BB5 config PITest), 3 🔶 (BB2/BB3/BB4 outillage/design en place), 0 ⏳
 
 ---
 

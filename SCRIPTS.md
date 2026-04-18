@@ -298,3 +298,52 @@ curl http://localhost:8080/api/metrics
 **Arrêt** : `./stop-all.sh`
 
 🎉 **Bonne résolution !**
+
+---
+
+## 🔬 Profiling & Benchmarks
+
+### JMH benchmarks
+
+```bash
+# Compile first
+mvn -q compile
+
+# Run FullSolveBenchmark (3×3, 4×4 hard, 5×5/6×6/8×8 generated)
+mvn exec:java \
+  -Dexec.mainClass=benchmark.FullSolveBenchmark \
+  -Dexec.classpathScope=compile
+
+# Run AC3PropagationBenchmark (micro-level AC-3)
+mvn exec:java \
+  -Dexec.mainClass=benchmark.AC3PropagationBenchmark \
+  -Dexec.classpathScope=compile
+```
+
+### Java Flight Recorder (JFR) — BB2 / BB3 profiling
+
+```bash
+# Record a solve under JFR — heap alloc + lock contention
+java -XX:StartFlightRecording=filename=solve.jfr,duration=60s,settings=profile \
+     -cp target/classes:target/dependency/* \
+     app.MainCLI -v example_4x4_hard_v3
+
+# Open in JDK Mission Control (jmc) or use jfr CLI:
+jfr print --events 'jdk.JavaMonitorWait,jdk.ObjectAllocationInNewTLAB' solve.jfr | head -200
+```
+
+Use cases:
+- **BB2** (scaling 16×16): look at top `ObjectAllocationInNewTLAB` — if `Placement` / `ArrayList<ValidPlacement>` appear >20% → pool them (M7).
+- **BB3** (parallel contention): look at `JavaMonitorWait` — identify locks on `SaveStateIO` / `RecordManager` in the solve-hot-path.
+
+### Mutation testing (PITest, BB5)
+
+```bash
+# Run against solver core classes (~2-5 min locally)
+mvn -P pit org.pitest:pitest-maven:mutationCoverage
+
+# Open the HTML report
+open target/pit-reports/$(ls target/pit-reports | tail -1)/index.html
+```
+
+Current gate: 30% mutation score on `solver.*`. Raise after tests strengthen.

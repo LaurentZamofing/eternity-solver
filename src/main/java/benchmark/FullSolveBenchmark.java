@@ -20,6 +20,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import solver.EternitySolver;
 import util.PuzzleFactory;
+import util.PuzzleGenerator;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -51,11 +52,20 @@ public class FullSolveBenchmark {
 
     private Map<Integer, Piece> pieces3x3;
     private Map<Integer, Piece> pieces4x4Hard;
+    private Map<Integer, Piece> pieces5x5;
+    private Map<Integer, Piece> pieces6x6;
+    private Map<Integer, Piece> pieces8x8;
 
     @Setup(Level.Trial)
     public void loadPuzzles() {
         pieces3x3 = PuzzleFactory.createExample3x3();
         pieces4x4Hard = PuzzleFactory.createExample4x4HardV3();
+        // Generated puzzles for scaling bench — deterministic via seed so
+        // results are reproducible across runs. Colour palette grows with
+        // size to keep the search non-trivial (more colours = harder).
+        pieces5x5 = PuzzleGenerator.generate(5, 5, 5L);
+        pieces6x6 = PuzzleGenerator.generate(6, 6, 6L);
+        pieces8x8 = PuzzleGenerator.generate(8, 7, 8L);
     }
 
     @Benchmark
@@ -80,6 +90,50 @@ public class FullSolveBenchmark {
         solver.setVerbose(false);
         solver.setMaxExecutionTime(30_000);
         return solver.solve(board, pieces4x4Hard);
+    }
+
+    /** Generated 5×5 — smooth scaling curve between 4×4 and 6×6. */
+    @Benchmark
+    public boolean solve5x5Generated() {
+        Board board = new Board(5, 5);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(60_000);
+        return solver.solve(board, pieces5x5);
+    }
+
+    /** Generated 6×6 — the expected crossover where MRV priority-queue
+     *  index starts to beat the linear scan (M3 in IMPROVEMENT_PLAN.md). */
+    @Benchmark
+    public boolean solve6x6Generated() {
+        Board board = new Board(6, 6);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(120_000);
+        return solver.solve(board, pieces6x6);
+    }
+
+    /** Generated 6×6 with MRV priority-queue index ON — pair this with
+     *  solve6x6Generated to measure the PQ speedup in JMH output. */
+    @Benchmark
+    public boolean solve6x6GeneratedWithMRVIndex() {
+        Board board = new Board(6, 6);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(120_000);
+        solver.setMRVIndexEnabled(true);
+        return solver.solve(board, pieces6x6);
+    }
+
+    /** Generated 8×8 — stress test approaching the 16×16 target. Large
+     *  search space, used to validate Chantier 5 BB2 scaling work. */
+    @Benchmark
+    public boolean solve8x8Generated() {
+        Board board = new Board(8, 8);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(300_000);
+        return solver.solve(board, pieces8x8);
     }
 
     /**

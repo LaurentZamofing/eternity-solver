@@ -5,47 +5,45 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 /**
- * Helper class for debug functionality.
- * Provides utilities like step-by-step execution with user pauses.
+ * Step-by-step debug pauses.
+ *
+ * <p>Instance-based (2026-04-18, M5): tests / parallel solvers can own
+ * their own helper instead of sharing mutable static state. A shared
+ * {@link #DEFAULT} singleton is kept for production callers that used
+ * the previous static API unchanged.</p>
  */
 public class DebugHelper {
 
-    private static boolean stepByStepEnabled = false;
-    private static final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+    /** Convenience singleton for production callers; tests may build their own. */
+    public static final DebugHelper DEFAULT = new DebugHelper();
 
-    /**
-     * Enable or disable step-by-step mode.
-     *
-     * @param enabled true to enable step-by-step mode
-     */
-    public static void setStepByStepMode(boolean enabled) {
-        stepByStepEnabled = enabled;
+    private boolean stepByStepEnabled = false;
+    private final BufferedReader reader;
+
+    public DebugHelper() {
+        this(new BufferedReader(new InputStreamReader(System.in)));
     }
 
-    /**
-     * Check if step-by-step mode is enabled.
-     *
-     * @return true if step-by-step mode is enabled
-     */
-    public static boolean isStepByStepEnabled() {
+    /** Visible for tests: inject a fake reader to simulate user input. */
+    DebugHelper(BufferedReader reader) {
+        this.reader = reader;
+    }
+
+    /** Enable or disable step-by-step mode on this instance. */
+    public void setStepByStep(boolean enabled) {
+        this.stepByStepEnabled = enabled;
+    }
+
+    public boolean isStepByStep() {
         return stepByStepEnabled;
     }
 
-    /**
-     * Pause and wait for user input before continuing.
-     * Only pauses if step-by-step mode is enabled.
-     *
-     * Displays a prompt asking the user to press Enter to continue.
-     * User can also type 'q' or 'quit' to disable step-by-step mode.
-     */
-    public static void waitForUserInput() {
-        if (!stepByStepEnabled) {
-            return;
-        }
+    /** Pause and wait for the user to press ENTER. Only pauses when step-by-step
+     *  is enabled AND an interactive console is available — otherwise disables
+     *  itself (prevents JVM blocking in CI/forked tests). */
+    public void pause() {
+        if (!stepByStepEnabled) return;
 
-        // If stdin is not attached to an interactive console (CI, mvn test, piped
-        // input), readLine() would block the entire JVM forever. Skip the pause
-        // and disable step-by-step mode so subsequent calls also short-circuit.
         if (System.console() == null) {
             stepByStepEnabled = false;
             SolverLogger.warn("Step-by-step mode disabled: no interactive console (headless/test run).");
@@ -66,23 +64,34 @@ public class DebugHelper {
             System.out.println();
         } catch (IOException e) {
             SolverLogger.warn("Failed to read user input: " + e.getMessage());
-            stepByStepEnabled = false; // Disable if we can't read input
+            stepByStepEnabled = false;
         }
     }
 
-    /**
-     * Pause with a custom message.
-     *
-     * @param message custom message to display before the pause prompt
-     */
-    public static void waitForUserInput(String message) {
-        if (!stepByStepEnabled) {
-            return;
-        }
-
+    public void pause(String message) {
+        if (!stepByStepEnabled) return;
         if (message != null && !message.isEmpty()) {
             SolverLogger.info(message);
         }
-        waitForUserInput();
+        pause();
     }
+
+    // ─── Backwards-compat static API ────────────────────────────────────
+    // Delegates to DEFAULT so existing callers don't break during migration.
+
+    /** @deprecated Use {@link #DEFAULT}.{@code setStepByStep(boolean)} or a local instance. */
+    @Deprecated
+    public static void setStepByStepMode(boolean enabled) { DEFAULT.setStepByStep(enabled); }
+
+    /** @deprecated Use {@link #DEFAULT}.{@code isStepByStep()} or a local instance. */
+    @Deprecated
+    public static boolean isStepByStepEnabled() { return DEFAULT.isStepByStep(); }
+
+    /** @deprecated Use {@link #DEFAULT}.{@code pause()} or a local instance. */
+    @Deprecated
+    public static void waitForUserInput() { DEFAULT.pause(); }
+
+    /** @deprecated Use {@link #DEFAULT}.{@code pause(String)} or a local instance. */
+    @Deprecated
+    public static void waitForUserInput(String message) { DEFAULT.pause(message); }
 }

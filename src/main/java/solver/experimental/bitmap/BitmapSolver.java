@@ -34,6 +34,7 @@ public final class BitmapSolver implements Solver {
     private int restartUnit = 128; // Luby multiplier in dead-ends
     private long randomSeed = 0xEA7E811E2L;
     private AtomicBoolean cancellation; // optional: set by parent portfolio to abort early
+    private NogoodStore externalNogoods; // optional: shared across portfolio workers
 
     // Best partial — max depth reached at any point during the search.
     // Kept as two parallel arrays (cell → pidRot) sized numCells; snapshot on
@@ -65,6 +66,11 @@ public final class BitmapSolver implements Solver {
     /** Shared cancellation flag — the solver polls this in the deadline check
      *  and aborts (returns {@code false}) when another portfolio worker wins. */
     public void setCancellation(AtomicBoolean flag) { this.cancellation = flag; }
+
+    /** Inject a shared {@link NogoodStore} (typically a {@link SharedNogoodStore})
+     *  so that dead-ends discovered by one worker are visible to all others.
+     *  If {@code null}, the solver falls back to a thread-local {@link NogoodCache}. */
+    public void setExternalNogoods(NogoodStore store) { this.externalNogoods = store; }
 
     /** Max depth ever reached during the most recent {@link #solve} call —
      *  equal to the number of pieces in the best partial assignment seen. */
@@ -116,7 +122,9 @@ public final class BitmapSolver implements Solver {
         int trailCapacity = catalog.numCells * catalog.numCells * catalog.words * 2 + 1024;
         SearchState state = new SearchState(catalog, trailCapacity);
         ForwardChecker fc = new ForwardChecker(catalog);
-        NogoodCache nogoods = useNogoods ? new NogoodCache(nogoodBits) : null;
+        NogoodStore nogoods = useNogoods
+            ? (externalNogoods != null ? externalNogoods : new NogoodCache(nogoodBits))
+            : null;
         LubyRestart luby = useRestart ? new LubyRestart() : null;
         SplittableRandom random = useRestart ? new SplittableRandom(randomSeed) : null;
 

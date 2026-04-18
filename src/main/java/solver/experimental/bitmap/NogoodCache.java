@@ -17,7 +17,7 @@ package solver.experimental.bitmap;
  * <p>Not thread-safe. For the parallel solver (P3), either shard (one
  * table per bucket range with a short lock) or use a concurrent variant.</p>
  */
-public final class NogoodCache {
+public final class NogoodCache implements NogoodStore {
 
     private final long[] table;
     private final int mask;

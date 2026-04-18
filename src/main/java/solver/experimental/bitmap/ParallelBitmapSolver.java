@@ -36,6 +36,7 @@ public final class ParallelBitmapSolver implements Solver {
 
     private int threads = Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors()));
     private long maxExecutionTimeMs = 60_000;
+    private boolean shareNogoods = true;
     private final List<BitmapSolver> lastWorkers = new ArrayList<>();
     private volatile int lastBestDepth = 0;
 
@@ -44,6 +45,10 @@ public final class ParallelBitmapSolver implements Solver {
     public void setThreads(int n) { this.threads = Math.max(1, n); }
 
     public void setMaxExecutionTime(long ms) { this.maxExecutionTimeMs = ms; }
+
+    /** Share a single {@link SharedNogoodStore} across all workers so
+     *  dead-ends discovered by one are visible to all. Default: true. */
+    public void setShareNogoods(boolean on) { this.shareNogoods = on; }
 
     @Override
     public boolean solve(Board board, Map<Integer, Piece> pieces) {
@@ -72,11 +77,13 @@ public final class ParallelBitmapSolver implements Solver {
 
         lastWorkers.clear();
         lastBestDepth = 0;
+        SharedNogoodStore shared = shareNogoods ? new SharedNogoodStore() : null;
         for (int i = 0; i < n; i++) {
             final int idx = i;
             BitmapSolver solver = configFor(idx);
             solver.setMaxExecutionTime(maxExecutionTimeMs);
             solver.setCancellation(foundFlag);
+            if (shared != null) solver.setExternalNogoods(shared);
             lastWorkers.add(solver);
             pool.submit(() -> {
                 Board local = new Board(rows, cols);

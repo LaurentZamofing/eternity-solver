@@ -35,11 +35,14 @@ public class ConstraintPropagator {
     private final DomainManager domainManager;
     private final Statistics stats;
     private boolean useAC3 = true;
+    private int expectedCapacity = 64; // initial hint; setMaxPieceId() grows it
 
     // Reusable buffers for AC-3 domain filtering (double-buffered).
     // Each solver thread owns its own ConstraintPropagator, so no synchronization needed.
-    private final HashMap<Integer, List<ValidPlacement>> bufferA = new HashMap<>();
-    private final HashMap<Integer, List<ValidPlacement>> bufferB = new HashMap<>();
+    // Pre-sized with {@link #expectedCapacity} to skip the HashMap rehash
+    // that showed as ~18 % Object[] allocations in the Phase-A JFR capture.
+    private final HashMap<Integer, List<ValidPlacement>> bufferA = new HashMap<>(128);
+    private final HashMap<Integer, List<ValidPlacement>> bufferB = new HashMap<>(128);
 
     /** Creates propagator with domain manager and statistics tracker for AC-3 constraint propagation. */
     public ConstraintPropagator(DomainManager domainManager, Statistics stats) {

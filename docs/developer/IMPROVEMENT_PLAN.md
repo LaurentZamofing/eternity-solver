@@ -300,7 +300,27 @@ acff823 (idem : introduit l'interface Solver)
 f4f8389 feat(solver): expose setMRVIndexEnabled on EternitySolver + test solver/output
 ```
 
-**Total session** : 8 commits après la baseline, suite 1512/1512 verte, coverage LINE 25% / BRANCH 24% (gates 24/22), 4 @Disabled restants tous documentés.
+**Total session (suite)** : 14 commits après la baseline, suite 1522/1522 verte, coverage LINE 25% / BRANCH 24% (gates 24/22), 4 @Disabled restants tous documentés.
+
+### Commits suite après session close-out initial
+
+```
+(M5, M6, QW7, dead-code cleanup, puzzle generator)
+e39a615 refactor(state): dedupe writeSection boilerplate in SaveStateIO
+b2dfd8e chore(pmd): surface violations in CI logs (printFailingErrors=true)
+5ec56aa feat(bench): PuzzleGenerator + 5×5/6×6/8×8 JMH benchmarks
+a385442 chore(cleanup): remove dead code (5 items, -295 LOC)
+```
+
+### Tasks d'unblock créées
+
+| # | Débloque | Description |
+|---|----------|-------------|
+| #32 | M3 bench MRV PQ | Créer `createExample6x6` + data file (ou utiliser `PuzzleGenerator.generate(6)` — déjà fait dans les benchmarks) |
+| #33 | M4 | EternitySolverBuilder fluent |
+| #34 | 2 @Disabled + BB3 | Fix `solveParallel()` bug (retourne false sur 2×2 solvable) |
+| #35 | 2 @Disabled | Décider binary-save format (garder/wire CLI/supprimer) |
+| #36 | (fait) | ✅ Dead code + TODO audit → commit `a385442` |
 
 ### Prochaines actions (après session courante)
 

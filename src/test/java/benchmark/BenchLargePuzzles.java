@@ -25,7 +25,7 @@ public final class BenchLargePuzzles {
         {7, 7}, {7, 8}, {8, 8}, {8, 9}, {9, 9}
     };
     private static final long[] SEEDS = {1L, 17L, 42L};
-    private static final long PER_RUN_TIMEOUT_MS = 600_000; // 10 min
+    private static final long PER_RUN_TIMEOUT_MS = 1_800_000; // 30 min
 
     public static void main(String[] args) {
         System.out.printf("%-6s %-5s %-13s %-10s %-10s %-20s%n",

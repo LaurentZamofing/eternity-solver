@@ -73,6 +73,19 @@ class AC3CorrectnessTest {
         verifyCompleteValidSolution(board);
     }
 
+    @Test
+    void solveGenerated5x5ProducesValidSolution() {
+        Board board = new Board(5, 5);
+        EternitySolver solver = new EternitySolver();
+        solver.setVerbose(false);
+        solver.setMaxExecutionTime(40_000);
+
+        boolean solved = solver.solve(board, util.PuzzleGenerator.generate(5, 5, 5L));
+
+        assertTrue(solved, "generated 5x5 puzzle must solve");
+        verifyCompleteValidSolution(board);
+    }
+
     private void verifyCompleteValidSolution(Board board) {
         int rows = board.getRows();
         int cols = board.getCols();

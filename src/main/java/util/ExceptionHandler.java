@@ -125,44 +125,6 @@ public final class ExceptionHandler {
     }
 
     /**
-     * Execute cleanup operation, suppressing any exceptions.
-     * Logs exceptions at debug level but doesn't throw.
-     *
-     * Use this in finally blocks or shutdown hooks where you want to
-     * ensure cleanup runs but don't want to mask the original exception.
-     *
-     * @param cleanup the cleanup operation to execute
-     * @param logger the logger to use for error logging
-     * @param description description of what is being cleaned up
-     */
-    public static void safeCleanup(
-            RunnableWithException cleanup,
-            Logger logger,
-            String description) {
-        try {
-            cleanup.run();
-        } catch (Exception e) {
-            logger.debug("Error during cleanup of {}: {}", description, e.getMessage());
-        }
-    }
-
-    /**
-     * Wrap a checked exception into a RuntimeException with context.
-     *
-     * @param e the checked exception
-     * @param messageTemplate the context message template
-     * @param messageArgs arguments for the message
-     * @return a RuntimeException wrapping the original exception
-     */
-    public static RuntimeException wrapChecked(
-            Exception e,
-            String messageTemplate,
-            Object... messageArgs) {
-        String message = String.format(messageTemplate.replace("{}", "%s"), messageArgs);
-        return new RuntimeException(message, e);
-    }
-
-    /**
      * Helper to append exception message to message args array.
      */
     private static Object[] appendArgs(Object[] args, Object lastArg) {

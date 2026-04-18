@@ -59,31 +59,6 @@ public final class ResponseHelper {
     }
 
     /**
-     * Create a service unavailable response.
-     *
-     * @param <T> Body type
-     * @return ResponseEntity with 503 SERVICE_UNAVAILABLE status
-     */
-    public static <T> ResponseEntity<T> serviceUnavailable() {
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-    }
-
-    /**
-     * Create a successful response with a message map.
-     * Useful for simple success messages.
-     *
-     * @param message Success message
-     * @return ResponseEntity with 200 OK and message body
-     */
-    public static ResponseEntity<Map<String, Object>> okWithMessage(String message) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", message);
-        response.put("timestamp", LocalDateTime.now().toString());
-        return ResponseEntity.ok(response);
-    }
-
-    /**
      * Create an error response with a message map.
      * Useful for error messages with consistent format.
      *
@@ -97,20 +72,6 @@ public final class ResponseHelper {
         response.put("message", message);
         response.put("timestamp", LocalDateTime.now().toString());
         return ResponseEntity.status(status).body(response);
-    }
-
-    /**
-     * Create a success response with custom data.
-     *
-     * @param data Data map to include in response
-     * @return ResponseEntity with 200 OK and data body
-     */
-    public static ResponseEntity<Map<String, Object>> okWithData(Map<String, Object> data) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("timestamp", LocalDateTime.now().toString());
-        response.putAll(data);
-        return ResponseEntity.ok(response);
     }
 
     /**

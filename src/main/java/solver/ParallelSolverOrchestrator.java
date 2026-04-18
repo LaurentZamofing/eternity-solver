@@ -227,15 +227,18 @@ public class ParallelSolverOrchestrator {
             return; // Not enough corner pieces
         }
 
-        // Place corner piece for this thread
+        // Place corner piece for this thread. Use actual board dimensions
+        // rather than the previous hard-coded 15 — that worked on 16×16
+        // alone and silently skipped diversification on any other size.
         Integer cornerPieceId = cornerPieces.get(threadId);
+        int maxR = state.localBoard.getRows() - 1;
+        int maxC = state.localBoard.getCols() - 1;
         int cornerRow = -1, cornerCol = -1;
-
         switch (threadId) {
-            case 0: cornerRow = 0; cornerCol = 0; break;
-            case 1: cornerRow = 0; cornerCol = 15; break;
-            case 2: cornerRow = 15; cornerCol = 0; break;
-            case 3: cornerRow = 15; cornerCol = 15; break;
+            case 0: cornerRow = 0;    cornerCol = 0;    break;
+            case 1: cornerRow = 0;    cornerCol = maxC; break;
+            case 2: cornerRow = maxR; cornerCol = 0;    break;
+            case 3: cornerRow = maxR; cornerCol = maxC; break;
         }
 
         Piece cornerPiece = state.localPieces.get(cornerPieceId);
@@ -243,10 +246,10 @@ public class ParallelSolverOrchestrator {
             int[] rotEdges = cornerPiece.edgesRotated(rot);
             boolean valid = false;
 
-            if (cornerRow == 0 && cornerCol == 0 && rotEdges[0] == 0 && rotEdges[3] == 0) valid = true;
-            if (cornerRow == 0 && cornerCol == 15 && rotEdges[0] == 0 && rotEdges[1] == 0) valid = true;
-            if (cornerRow == 15 && cornerCol == 0 && rotEdges[2] == 0 && rotEdges[3] == 0) valid = true;
-            if (cornerRow == 15 && cornerCol == 15 && rotEdges[2] == 0 && rotEdges[1] == 0) valid = true;
+            if (cornerRow == 0    && cornerCol == 0    && rotEdges[0] == 0 && rotEdges[3] == 0) valid = true;
+            if (cornerRow == 0    && cornerCol == maxC && rotEdges[0] == 0 && rotEdges[1] == 0) valid = true;
+            if (cornerRow == maxR && cornerCol == 0    && rotEdges[2] == 0 && rotEdges[3] == 0) valid = true;
+            if (cornerRow == maxR && cornerCol == maxC && rotEdges[2] == 0 && rotEdges[1] == 0) valid = true;
 
             if (valid) {
                 state.localBoard.place(cornerRow, cornerCol, cornerPiece, rot);

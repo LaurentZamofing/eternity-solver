@@ -172,3 +172,46 @@ others abort via shared `AtomicBoolean`.
 - **Nogood sharing across workers** (sharded cache): deferred until
   measurements show thread-local caches are the bottleneck. Current 4 ×
   32 MB = 128 MB footprint is fine for local dev.
+
+---
+
+## Large-puzzle reference corpus (2026-04-19 00:47)
+
+`BenchLargePuzzles` with 10-min per-run budget, `ParallelBitmapSolver`
+4 workers (with shared nogood store enabled from commit 7f57050).
+Every TIMEOUT row reports best-partial-depth + edges matched, so
+future optimisations can be measured even on unsolved cases.
+
+| Dim | Seed | Time | Status | Best | Partial edges | fp |
+|-----|------|------|--------|------|---------------|----|
+| 7×7 | 1 | 6 976 | SOLVED | 49/49 | 72/84 | 5ebce9d037bc720c |
+| 7×7 | 17 | 42 624 | SOLVED | 49/49 | 72/84 | 26d03d08fba6bd24 |
+| 7×7 | 42 | 10 709 | SOLVED | 49/49 | 72/84 | 67a8815a5113003c |
+| 7×8 | 1 | 816 | SOLVED | 56/56 | 83/97 | 8a04ac26ecbf8ca8 |
+| 7×8 | 17 | 5 360 | SOLVED | 56/56 | 83/97 | 505e761da18830e4 |
+| 7×8 | 42 | 3 038 | SOLVED | 56/56 | 83/97 | 425226af308bda40 |
+| 8×8 | 1 | 57 963 | SOLVED | 64/64 | 96/112 | 78d51fbf4f834028 |
+| 8×8 | 17 | 453 805 | SOLVED | 64/64 | 96/112 | 9337a1e1a352cf2a |
+| 8×8 | 42 | 601 506 | TIMEOUT | **60/64** | **99/112 (88 %)** | — |
+| 8×9 | 1 | 235 423 | SOLVED | 72/72 | 110/127 | 6d5ce6520c48b6a8 |
+| 8×9 | 17 | 601 511 | TIMEOUT | **66/72** | **110/127 (87 %)** | — |
+| 8×9 | 42 | 601 508 | TIMEOUT | **66/72** | **110/127 (87 %)** | — |
+| 9×9 | 1 | 601 002 | TIMEOUT | **77/81** | **132/144 (92 %)** | — |
+| 9×9 | 17 | 601 004 | TIMEOUT | **76/81** | **128/144 (89 %)** | — |
+| 9×9 | 42 | 601 005 | TIMEOUT | **75/81** | **127/144 (88 %)** | — |
+
+### Summary
+
+- **Solved 9/15** at 10-min budget (all 7×7, all 7×8, 2/3 8×8, 1/3 8×9, 0/3 9×9).
+- **First 8×8 seed=17 and 8×9 seed=1 ever solved** in this repo.
+- **TIMEOUT cases cluster** at 75-95 % of pieces placed — the portfolio
+  consistently gets deep into the search but the final few placements
+  form a combinatorial wall.
+- All **fingerprints stable** across re-runs — the portfolio is
+  reproducible per seed despite thread scheduling variance.
+
+### Next bench
+
+`BenchRetryTimeouts` re-runs the 6 TIMEOUT cases with 60 min budget
+(bumped from 30 min — 9×9 tail-end is exponential in the last few
+pieces). Commits d-98efe68; launched 2026-04-19 01:02, ETA ~07:00.

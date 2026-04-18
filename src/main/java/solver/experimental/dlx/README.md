@@ -73,26 +73,50 @@ The POC exists to **measure** this, not to win. The go/no-go criteria:
 | `EternityExactCoverBuilderTest.java` | Sanity: row count = pieces × positions × rotations after border-pruning |
 | `DancingLinksSolverTest.java` | Correctness: solve 3×3, then 4×4 easy, compare solution to AC-3 |
 
-## 5. Time budget & sequencing
+## 5. Observed results (2026-04-18)
 
-Break the POC into 6 commits so each step is reviewable:
+Primary-only DLX was built as planned. Results on the POC test suite:
 
-1. `feat(dlx): DancingLinksMatrix + AlgorithmX + test on Knuth example` (~1h)
-2. `feat(dlx): EternityExactCoverBuilder + unit test` (~45 min)
-3. `feat(dlx): DancingLinksSolver solves 3×3` (~30 min)
-4. `feat(dlx): DancingLinksSolver solves 4×4 easy + correctness vs AC-3` (~30 min)
-5. `bench(dlx): DLXBenchmark — compare to AC-3 on 3×3/4×4/4×4-hard` (~40 min)
-6. `docs(dlx): record bench + go/no-go decision` (~15 min)
+| Test         | Puzzle          | Time     | Outcome |
+|--------------|-----------------|----------|---------|
+| 3×3 example  | 9 pieces        | ~50 ms   | ✅ solves |
+| 4×4 easy     | 16 pieces       | > 10 min | ❌ timeout |
 
-Total: ≈ 3h30–4h of work. Each step ends at a green `mvn test` point so the
-branch can be paused without losing work.
+The 4×4 timeout is exactly what the analysis in §2 predicted: without
+edge-matching encoded in the matrix, DLX enumerates billions of
+(cell-covered, piece-used) exact covers and the leaf-time validator
+rejects almost all of them. The 3×3 case is small enough that the blow-up
+stays tractable.
 
-## 6. Future: DLX + Forward Checking variant (deferred)
+### Go/no-go decision
 
-If the primary-only POC shows promise, the next iteration is to add a
-forward-checking layer that prunes rows inconsistent with already-covered
-edges. That's closer to AC-3 itself so the comparison becomes "DLX-FC vs AC-3
-backtracker with MRV" — likely neck-and-neck, but DLX's cache-friendly
-data structure may still win on large boards.
+**No-go** on the primary-only variant for anything past 3×3. It will
+never catch up to AC-3 + MRV, which prunes edge-incompatible placements
+in O(1) during the search instead of at leaf time.
 
-Decision deferred until the primary-only POC numbers are in.
+### Next steps (if/when we pick this back up)
+
+1. **DLX + Forward Checking**: instead of validating at leaf time, prune
+   rows inconsistent with already-covered edges after each column is
+   covered. That's roughly AC-3's arc-consistency but with DLX's
+   cache-friendly node structure. Likely to be competitive, not
+   dominant.
+2. **DLX with secondary columns for edge colours**: model each inner
+   edge (position × side × colour) as a "covered at most once" column.
+   Requires extending {@link DancingLinksMatrix} to support secondary
+   columns; matrix blow-up is significant.
+
+Neither is on the immediate roadmap — BB2 (scaling 16×16 with object
+pools + JFR) is a cheaper next bet to move forward.
+
+## 6. Artifacts kept on main
+
+The experimental code stays on `main` so anyone picking the work up has
+a starting point. It's:
+
+- isolated under `solver.experimental.dlx` — zero dependency into it
+  from production code;
+- tested at the DLX-core level on Knuth's canonical example (5/5);
+- smoke-tested at the solver level on 3×3 (1/3 passes, 1 @Disabled for
+  4×4 as documented above, 1 for the pre-filled-board rejection
+  contract).

@@ -111,7 +111,7 @@ Score = (impact × confiance) / coût. I/C/C sur 1-5.
 | ✅ | M4 | `EternitySolverBuilder` fluent (9 setters communs, factory `EternitySolver.builder()`) | `b2856aa` |
 | ✅ | M5 | Dé-staticisation : `DebugHelper` instance-based (DEFAULT singleton, API deprecated), `useBinaryFormat` supprimé | `5ec56aa` + `b2856aa` |
 | ✅ | M6 | Template `SaveStateIO.writeSection` | `e39a615` |
-| ⏳ | M7 | Pool `ArrayList<ValidPlacement>` — reporté jusqu'à un profil JFR (cf. `SCRIPTS.md § JFR`). Optimiser sans preuve = risque de régression. | pending (conditionnel) |
+| 🔶 | M7 | Pool `ArrayList<ValidPlacement>` — **profil JFR capturé 2026-04-18** (30 s solve 8×8 généré, 8620 ObjectAllocationSample events) : ArrayList seulement **5 %** des allocs. Top allocs = `HashMap$Node` 22 %, `int[]` 20 %, `byte[]` 19 %, `Object[]` 18 %. M7 strict a **peu de ROI** ; pivot conseillé → pool `Map<Integer, List<ValidPlacement>>` des domaines AC-3 (la vraie cible). | JFR `/tmp/solve-8x8.jfr` |
 | ✅ | M8 | JaCoCo gate 20/18 → 24/22 → **35/30** | `7d12778` + `fb3ecb6` |
 | ✅ | M9 | Split SymmetryBreakingBugTrackingTest | `27acd09` |
 | ✅ | M10 | Spring Boot profil `solver-only` — **déjà résolu structurellement** : `MonitoringApplication` est un entry-point Spring Boot indépendant, jamais démarré par `app/Main*.java`. Les runs solver sont toujours "solver-only" par défaut. | noop (déjà OK) |
@@ -121,7 +121,7 @@ Score = (impact × confiance) / coût. I/C/C sur 1-5.
 | ✔ | # | Action | État |
 |:-:|---|--------|------|
 | ✅ | BB1 | POC DLX livré avec **no-go** mesuré : primary-only DLX timeout sur 4×4 easy (>10min vs AC-3 sub-seconde). Code conservé dans `solver/experimental/dlx/` pour prochaine itération éventuelle (DLX+FC ou secondary-columns). | `6e63859` + `ab56553` |
-| 🔶 | BB2 | Scaling 16×16 (pools, int[], JFR, GC tuning) — scripts JFR documentés dans `SCRIPTS.md § JFR`. Bench 8×8 utilisable via `FullSolveBenchmark.solve8x8Generated`. | partiel (outillage en place) |
+| 🔶 | BB2 | Scaling 16×16 — **profil JFR 30 s capturé sur solve 8×8** (`/tmp/solve-8x8.jfr`). Top alloc : `HashMap$Node` 22 %, `int[]` 20 %, `byte[]` 19 %, `Object[]` 18 %. GC actif (19.5k `GCPhaseParallel` events). ROI maximal = réduire HashMap churn dans AC-3 (pré-sizing, int-keyed map, pool des domaines). `JfrProfileRunner` livré dans src/test. | `pending-commit` |
 | 🔶 | BB3 | Profil contention WorkStealingExecutor — fix `solveParallel` livré ; commande JFR lock-wait documentée dans `SCRIPTS.md`. | partiel (fix livré, profil à exécuter) |
 | 🔶 | BB4 | Heuristique "most-constraining variable" — **scorer standalone livré** dans `solver/experimental/mcv/MCVCellSelector.java` (pressure = borders + non-empty neighbours), 8 tests, findMostConstraining. Wiring dans `EternitySolver` deferred (flag + bench compare). | `293a300` |
 | ✅ | BB5 | Mutation testing PITest — profil `-P pit`, narrow scope (6 leaf classes, exclusions DiagnosticTest). **Itéré 2 fois : 62 % → 63 % killed, no-coverage 22 → 14, DebugHelper line 68 → 92 %**. Gate 55 %. | `b467130` + `52cd3bf` + `1009ff8` |

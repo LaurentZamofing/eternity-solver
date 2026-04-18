@@ -4,6 +4,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -140,5 +145,54 @@ class DebugHelperTest {
         assertDoesNotThrow(() -> h.pause("checkpoint"));
         assertDoesNotThrow(() -> h.pause(""));     // empty → skip logger.info
         assertDoesNotThrow(() -> h.pause(null));   // null → skip logger.info
+    }
+
+    /** Test-only subclass that pretends the console is NOT interactive. */
+    private static final class NoConsole extends DebugHelper {
+        NoConsole(BufferedReader r) { super(r); }
+        @Override boolean hasInteractiveConsole() { return false; }
+    }
+
+    @Test
+    @DisplayName("headless short-circuit logs the warning via SolverLogger.warn")
+    void headlessLogsWarn() {
+        Logger root = (Logger) LoggerFactory.getLogger("EternitySolver");
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        root.addAppender(appender);
+        try {
+            // Use a fake console-less helper with a dummy reader so we don't
+            // touch System.in (which can block in some surefire forks).
+            DebugHelper h = new NoConsole(new BufferedReader(new StringReader("")));
+            h.setStepByStep(true);
+            h.pause();
+            assertFalse(h.isStepByStep(), "pause() should flip step-by-step off when headless");
+        } finally {
+            root.detachAppender(appender);
+        }
+        boolean loggedWarn = appender.list.stream()
+            .anyMatch(e -> e.getFormattedMessage().contains("Step-by-step mode disabled")
+                        && e.getLevel().toString().equals("WARN"));
+        assertTrue(loggedWarn, "short-circuit must log a WARN via SolverLogger.warn");
+    }
+
+    @Test
+    @DisplayName("'quit' input also logs info about disabling")
+    void quitLogsInfo() {
+        Logger root = (Logger) LoggerFactory.getLogger("EternitySolver");
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        root.addAppender(appender);
+        try {
+            DebugHelper h = new FakeConsole(new BufferedReader(new StringReader("q\n")));
+            h.setStepByStep(true);
+            h.pause();
+        } finally {
+            root.detachAppender(appender);
+        }
+        boolean loggedInfo = appender.list.stream()
+            .anyMatch(e -> e.getFormattedMessage().contains("Step-by-step mode disabled")
+                        && e.getLevel().toString().equals("INFO"));
+        assertTrue(loggedInfo, "'q' input should log an INFO via SolverLogger.info");
     }
 }

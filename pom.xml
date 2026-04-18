@@ -528,12 +528,11 @@
                             </outputFormats>
                             <timeoutConstant>5000</timeoutConstant>
                             <threads>4</threads>
-                            <!-- Fail the build if mutation score drops below
-                                 this threshold. 2026-04-18 baseline on the
-                                 narrow target set: 62% killed / 73% test
-                                 strength in 12s. Gate set to 55% to catch
-                                 regressions while leaving ~7pt margin. -->
-                            <mutationThreshold>55</mutationThreshold>
+                            <!-- 2026-04-18 baseline 62 % → iter 2 63 % → iter 3 65 %
+                                 (after log-assertion tests in DebugHelperTest).
+                                 Gate 58 % keeps ~7pt margin above the measured
+                                 score; raise as no-coverage mutations are killed. -->
+                            <mutationThreshold>58</mutationThreshold>
                         </configuration>
                     </plugin>
                 </plugins>

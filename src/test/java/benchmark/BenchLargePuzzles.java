@@ -28,20 +28,22 @@ public final class BenchLargePuzzles {
     private static final long PER_RUN_TIMEOUT_MS = 600_000; // 10 min
 
     public static void main(String[] args) {
-        System.out.printf("%-6s %-5s %-13s %-8s %-20s%n",
-            "dim", "seed", "time_ms", "status", "solution_fp");
+        System.out.printf("%-6s %-5s %-13s %-10s %-10s %-20s%n",
+            "dim", "seed", "time_ms", "status", "best", "info");
         for (int[] dim : DIMS) {
             int rows = dim[0];
             int cols = dim[1];
+            int total = rows * cols;
+            int maxEdges = (rows - 1) * cols + rows * (cols - 1);
             int palette = Math.max(4, Math.max(rows, cols) - 1);
             for (long seed : SEEDS) {
                 Map<Integer, Piece> pieces = PuzzleGenerator.generate(rows, cols, palette, seed);
                 Board b = new Board(rows, cols);
+                ParallelBitmapSolver solver = new ParallelBitmapSolver();
+                solver.setMaxExecutionTime(PER_RUN_TIMEOUT_MS);
                 long t = System.nanoTime();
                 boolean ok;
                 try {
-                    ParallelBitmapSolver solver = new ParallelBitmapSolver();
-                    solver.setMaxExecutionTime(PER_RUN_TIMEOUT_MS);
                     ok = solver.solve(b, new HashMap<>(pieces));
                 } catch (Throwable e) {
                     ok = false;
@@ -49,22 +51,30 @@ public final class BenchLargePuzzles {
                 long ms = (System.nanoTime() - t) / 1_000_000L;
 
                 String status;
-                String fp = "-";
+                String bestStr;
+                String info;
                 if (ok) {
                     String validation = validate(b, pieces);
                     if (validation != null) {
                         status = "INVALID";
-                        fp = validation;
+                        bestStr = total + "/" + total;
+                        info = validation;
                     } else {
                         status = "SOLVED";
-                        fp = String.format("%016x", fingerprint(b));
+                        bestStr = total + "/" + total;
+                        info = "fp=" + String.format("%016x", fingerprint(b));
                     }
                 } else {
                     status = "TIMEOUT";
+                    int best = solver.getBestDepth();
+                    bestStr = best + "/" + total;
+                    // `b` was populated with the best partial by solve() on failure.
+                    int[] score = b.calculateScore();
+                    info = "partial_edges=" + score[0] + "/" + maxEdges;
                 }
 
-                System.out.printf("%-6s %-5d %-13d %-8s %-20s%n",
-                    rows + "x" + cols, seed, ms, status, fp);
+                System.out.printf("%-6s %-5d %-13d %-10s %-10s %-20s%n",
+                    rows + "x" + cols, seed, ms, status, bestStr, info);
             }
         }
     }

@@ -5,7 +5,9 @@ import model.Piece;
 import model.Placement;
 import solver.Solver;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -34,6 +36,8 @@ public final class ParallelBitmapSolver implements Solver {
 
     private int threads = Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors()));
     private long maxExecutionTimeMs = 60_000;
+    private final List<BitmapSolver> lastWorkers = new ArrayList<>();
+    private volatile int lastBestDepth = 0;
 
     public ParallelBitmapSolver() { }
 
@@ -66,13 +70,16 @@ public final class ParallelBitmapSolver implements Solver {
             return t;
         });
 
+        lastWorkers.clear();
+        lastBestDepth = 0;
         for (int i = 0; i < n; i++) {
             final int idx = i;
+            BitmapSolver solver = configFor(idx);
+            solver.setMaxExecutionTime(maxExecutionTimeMs);
+            solver.setCancellation(foundFlag);
+            lastWorkers.add(solver);
             pool.submit(() -> {
                 Board local = new Board(rows, cols);
-                BitmapSolver solver = configFor(idx);
-                solver.setMaxExecutionTime(maxExecutionTimeMs);
-                solver.setCancellation(foundFlag);
                 boolean ok;
                 try {
                     ok = solver.solve(local, new HashMap<>(pieces));
@@ -86,30 +93,54 @@ public final class ParallelBitmapSolver implements Solver {
             });
         }
 
-        boolean signalled = false;
+        boolean solved = false;
         try {
-            signalled = done.await(maxExecutionTimeMs + 1_000, TimeUnit.MILLISECONDS);
+            solved = done.await(maxExecutionTimeMs + 1_000, TimeUnit.MILLISECONDS)
+                  && winningBoard.get() != null;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
             foundFlag.set(true); // ensure all workers abort
             pool.shutdownNow();
-        }
-
-        if (!signalled || !foundFlag.get()) return false;
-
-        Board w = winningBoard.get();
-        if (w == null) return false;
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                if (!w.isEmpty(r, c)) {
-                    Placement p = w.getPlacement(r, c);
-                    board.place(r, c, pieces.get(p.getPieceId()), p.getRotation());
-                }
+            try {
+                pool.awaitTermination(500, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ignore) {
+                Thread.currentThread().interrupt();
             }
         }
-        return true;
+
+        // Track the best partial across workers — useful for the caller when
+        // we time out: they can still inspect how close the portfolio got.
+        int maxDepth = 0;
+        BitmapSolver bestWorker = null;
+        for (BitmapSolver w : lastWorkers) {
+            int d = w.getBestDepth();
+            if (d > maxDepth) { maxDepth = d; bestWorker = w; }
+        }
+        lastBestDepth = maxDepth;
+
+        if (solved) {
+            Board w = winningBoard.get();
+            for (int r = 0; r < rows; r++) {
+                for (int c = 0; c < cols; c++) {
+                    if (!w.isEmpty(r, c)) {
+                        Placement p = w.getPlacement(r, c);
+                        board.place(r, c, pieces.get(p.getPieceId()), p.getRotation());
+                    }
+                }
+            }
+            return true;
+        }
+
+        // Timeout path — write best partial from the deepest worker so the
+        // caller can inspect (e.g. print its partial-edge score).
+        if (bestWorker != null) bestWorker.writeBestTo(board, pieces);
+        return false;
     }
+
+    /** Max depth any worker reached during the last {@link #solve} call —
+     *  equal to the number of pieces in the best partial ever observed. */
+    public int getBestDepth() { return lastBestDepth; }
 
     /** Portfolio configurations — designed to cover complementary strategies.
      *  Worker 0 is the safety net (deterministic P1-style), workers 1+

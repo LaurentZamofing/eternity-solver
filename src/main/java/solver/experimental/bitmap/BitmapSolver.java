@@ -35,6 +35,14 @@ public final class BitmapSolver implements Solver {
     private long randomSeed = 0xEA7E811E2L;
     private AtomicBoolean cancellation; // optional: set by parent portfolio to abort early
 
+    // Best partial — max depth reached at any point during the search.
+    // Kept as two parallel arrays (cell → pidRot) sized numCells; snapshot on
+    // every new-max placement (rare, so the arraycopy cost is negligible).
+    private volatile int bestDepthSeen = 0;
+    private int[] bestCellsAtDepth;
+    private int[] bestPidRotsAtDepth;
+    private int bestCols; // board width, cached so writeBestTo doesn't need the catalog
+
     public BitmapSolver() { }
 
     public void setMaxExecutionTime(long ms) { this.maxExecutionTimeMs = ms; }
@@ -58,6 +66,28 @@ public final class BitmapSolver implements Solver {
      *  and aborts (returns {@code false}) when another portfolio worker wins. */
     public void setCancellation(AtomicBoolean flag) { this.cancellation = flag; }
 
+    /** Max depth ever reached during the most recent {@link #solve} call —
+     *  equal to the number of pieces in the best partial assignment seen. */
+    public int getBestDepth() { return bestDepthSeen; }
+
+    /** Writes the best partial assignment ever reached during the most recent
+     *  {@link #solve} call to {@code b}. Useful when {@link #solve} returned
+     *  {@code false} (timeout / cancellation) but you still want to inspect
+     *  how far the search got. No-op if no placement was ever committed. */
+    public void writeBestTo(Board b, Map<Integer, Piece> pieces) {
+        int depth = bestDepthSeen;
+        if (depth <= 0 || bestCellsAtDepth == null) return;
+        for (int d = 0; d < depth; d++) {
+            int cell = bestCellsAtDepth[d];
+            int pr = bestPidRotsAtDepth[d];
+            int pid = PiecesCatalog.pieceIdOf(pr);
+            int rot = PiecesCatalog.rotationOf(pr);
+            int cr = cell / bestCols;
+            int cc = cell % bestCols;
+            if (b.isEmpty(cr, cc)) b.place(cr, cc, pieces.get(pid), rot);
+        }
+    }
+
     @Override
     public boolean solve(Board board, Map<Integer, Piece> pieces) {
         // POC: requires empty board. Pre-filled boards would need the
@@ -74,6 +104,11 @@ public final class BitmapSolver implements Solver {
                 }
             }
         }
+
+        bestDepthSeen = 0;
+        bestCols = cols;
+        bestCellsAtDepth = new int[rows * cols];
+        bestPidRotsAtDepth = new int[rows * cols];
 
         PiecesCatalog catalog = new PiecesCatalog(rows, cols, pieces, 0xC0FFEEL);
         // Trail capacity: worst-case every placement touches every word of
@@ -168,6 +203,15 @@ public final class BitmapSolver implements Solver {
                 state.rollbackPlacement(depth);
                 deadEndCount++;
                 continue;
+            }
+
+            // Snapshot best partial if this placement extends the max depth
+            // we've ever reached. Rare update → the arraycopy is negligible.
+            int committed = depth + 1;
+            if (committed > bestDepthSeen) {
+                bestDepthSeen = committed;
+                System.arraycopy(state.cellAtDepth, 0, bestCellsAtDepth, 0, committed);
+                System.arraycopy(state.pidRotAtDepth, 0, bestPidRotsAtDepth, 0, committed);
             }
 
             if (state.emptyCount == 0) {

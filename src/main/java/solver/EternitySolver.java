@@ -92,10 +92,16 @@ public class EternitySolver implements Solver {
     Random random = new Random();
     int threadId = -1;
 
-    /** Resets shared search state between puzzle solving sessions. */
+    /**
+     * Resets shared search state between puzzle solving sessions.
+     *
+     * @deprecated This is a no-op: it creates a <em>new</em> {@link SharedSearchState}
+     * and resets that, which does not affect any existing solver. Use
+     * {@link #resetSharedState()} on the solver instance instead. Kept only
+     * for legacy callers; a follow-up should remove them.
+     */
+    @Deprecated
     public static void resetGlobalState() {
-        // Keep for backward compatibility but recommend using instance method
-        // TODO: Migrate callers to use resetSharedState() on instance
         new SharedSearchState().reset();
     }
 

@@ -127,3 +127,48 @@ Defaults: `useNogoods=true`, `useRestart=true`, `restartUnit=128`, seed=0xEA7E81
   actually *motivates* P3.
 - **6×6 still improves** — nogoods help on smaller trees where the hash
   collisions converge faster than on 7×7.
+
+---
+
+## Bitmap solver P3 results — 4-worker portfolio (2026-04-18 23:15)
+
+`ParallelBitmapSolver` runs 4 BitmapSolver workers concurrently with
+diversified configs (1 deterministic P1-style, 3 randomized with different
+seeds × restart units: 128, 256, 1024). First to find a solution wins;
+others abort via shared `AtomicBoolean`.
+
+| Size | Seed | P2 single ms | P3 portfolio ms | Speedup |
+|------|------|--------------|-----------------|---------|
+| 5×5 | 1 | 23 | 28 | 0.8× |
+| 5×5 | 17 | 30 | 14 | 2.1× |
+| 5×5 | 42 | 2 | 8 | 0.3× |
+| 6×6 | 1 | 18 | 59 | 0.3× |
+| 6×6 | 17 | 82 | 53 | 1.5× |
+| 6×6 | 42 | 451 | 121 | 3.7× |
+| **7×7** | **1** | **60 060 (timeout)** | **3 191** | **×18.8** |
+| **7×7** | **17** | **39 808** | **27 281** | **×1.5** |
+| **7×7** | **42** | **36 703** | **8 208** | **×4.5** |
+
+### Consequences — gates
+
+- **P3 gate (7×7 3/3 seeds <60s) ✅ achieved.** Portfolio resolves the P2
+  seed=1 regression (×18.8 speedup) while keeping the P2 gains on seeds 17/42.
+- 7×7 avg: P1 ~38s (2/3 seeds solved) → P3 **~13s (3/3 seeds solved)**.
+- **Small-board penalty is real but acceptable.** 5×5 and 6×6 easy cases
+  pay a thread-spawn overhead (~10-40 ms) that dominates when the puzzle
+  solves in <100 ms single-thread. Choose `ParallelBitmapSolver` only
+  when the single-thread time is expected to exceed ~500 ms.
+- **P3 validates the portfolio strategy hypothesis:** restart + randomization
+  is a *complement* to deterministic search, not a replacement. The
+  deterministic worker catches happy-path puzzles; the randomized workers
+  catch pathological branches.
+
+### Next targets
+
+- **8×8 generated**: not yet benchmarked. Extrapolating from 7×7 (~8-30 s
+  on 4 threads) with ×25 per size step → expect 8×8 in the 200-750 s
+  range on current hardware. P4 (CP-SAT fallback) remains the honest
+  path for sub-60s 8×8.
+- **Nogood sharing across workers** (sharded cache): deferred until
+  measurements show thread-local caches are the bottleneck. Current 4 ×
+  32 MB = 128 MB footprint is fine for local dev.

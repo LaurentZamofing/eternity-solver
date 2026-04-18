@@ -6,6 +6,7 @@ import solver.Solver;
 
 import java.util.Map;
 import java.util.SplittableRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Bitmap-backed iterative DFS solver — P1 skeleton from ULTRA_PLAN.md.
@@ -32,6 +33,7 @@ public final class BitmapSolver implements Solver {
     private boolean useRestart = true;
     private int restartUnit = 128; // Luby multiplier in dead-ends
     private long randomSeed = 0xEA7E811E2L;
+    private AtomicBoolean cancellation; // optional: set by parent portfolio to abort early
 
     public BitmapSolver() { }
 
@@ -51,6 +53,10 @@ public final class BitmapSolver implements Solver {
 
     /** Seed for the randomized MRV tiebreaker (only matters if restart is on). */
     public void setRandomSeed(long seed) { this.randomSeed = seed; }
+
+    /** Shared cancellation flag — the solver polls this in the deadline check
+     *  and aborts (returns {@code false}) when another portfolio worker wins. */
+    public void setCancellation(AtomicBoolean flag) { this.cancellation = flag; }
 
     @Override
     public boolean solve(Board board, Map<Integer, Piece> pieces) {
@@ -95,8 +101,12 @@ public final class BitmapSolver implements Solver {
         depthCell[depth] = currentCell;
         cursorAtDepth[depth] = 0;
 
+        AtomicBoolean cancelFlag = this.cancellation;
         while (true) {
-            if ((depth & 0x3F) == 0 && System.currentTimeMillis() > deadline) return false;
+            if ((depth & 0x3F) == 0) {
+                if (System.currentTimeMillis() > deadline) return false;
+                if (cancelFlag != null && cancelFlag.get()) return false;
+            }
 
             // Luby restart — wipe the current search tree, keep the nogood cache.
             if (useRestart && deadEndCount >= restartThreshold) {

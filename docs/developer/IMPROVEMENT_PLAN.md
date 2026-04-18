@@ -300,7 +300,7 @@ acff823 (idem : introduit l'interface Solver)
 f4f8389 feat(solver): expose setMRVIndexEnabled on EternitySolver + test solver/output
 ```
 
-**Total session (suite)** : 14 commits après la baseline, suite 1522/1522 verte, coverage LINE 25% / BRANCH 24% (gates 24/22), 4 @Disabled restants tous documentés.
+**Total session (suite)** : 18 commits après la baseline, suite 1520/1520 verte, coverage LINE **43%** / BRANCH **42%** (gates bumped 24/22 → 35/30), **2 @Disabled** restants tous documentés (CLIIntegrationTest subprocess slow-tests).
 
 ### Commits suite après session close-out initial
 

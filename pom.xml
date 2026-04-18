@@ -346,9 +346,10 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
-                            <!-- Non-regression floor, kept ~1pt under current coverage.
-                                 2026-04-18 measurement: LINE 25%, BRANCH 24%. Raise as
-                                 Chantier 4 tests land (target 30% LINE, 25% BRANCH). -->
+                            <!-- Non-regression floor. 2026-04-18: coverage jumped from
+                                 LINE 25% → 43%, BRANCH 24% → 42% after all the tests
+                                 added during C1/C2/C3/C4. Gate bumped to 35/30, keeps
+                                 ~8pts margin for CI noise/JDK variance. -->
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>
@@ -356,12 +357,12 @@
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.24</minimum>
+                                            <minimum>0.35</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.22</minimum>
+                                            <minimum>0.30</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

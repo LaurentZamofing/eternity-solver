@@ -92,3 +92,38 @@ generated puzzles (see `.github/bitmap-p1-bench.log`):
   2. Trail-based undo O(Δ) per backtrack vs full recompute.
   3. `AND`-mask filtering over `long[]` is vector-friendly.
   4. MRV via cached `domainSize[]` array (O(cells), no Long.bitCount per step).
+
+---
+
+## Bitmap solver P2 results — Zobrist nogoods + Luby restart (2026-04-18 22:50)
+
+P2 integration: open-addressing nogood cache keyed by incremental Zobrist hash,
+Luby restart sequence with randomized MRV tiebreaker (reservoir sampling).
+Defaults: `useNogoods=true`, `useRestart=true`, `restartUnit=128`, seed=0xEA7E811E2L.
+
+| Size | Seed | ref ms | P1 bitmap | P2 bitmap | P2 vs P1 |
+|------|------|--------|-----------|-----------|----------|
+| 6×6 | 1 | 29 338 | 79 | **28** | **×2.8 better** |
+| 6×6 | 17 | 60 008 (timeout) | 227 | **116** | **×2.0 better** |
+| 6×6 | 42 | 60 002 (timeout) | 493 | **357** | **×1.4 better** |
+| 6×6 avg | — | — | 266 | **167** | **×1.6 better** |
+| 7×7 | 1 | 60 000 (timeout) | **4 646** | **60 051 (timeout)** | ❌ **×13 regression** |
+| 7×7 | 17 | 60 002 (timeout) | timeout | **40 722** | ✅ **newly solved** |
+| 7×7 | 42 | 60 003 (timeout) | **12 705** | **40 558** | ❌ **×3 regression** |
+
+### Consequences
+
+- **P2 gate (2/3 seeds on 7×7 <60s)**: still held (seeds 17 & 42), but the
+  subset changed — seed 1 regressed from 4.6s to timeout.
+- **Randomized MRV tiebreaker hurts happy-path seeds**. When the static MRV
+  order happens to hit a productive branch quickly, randomization pushes off it
+  and Luby restart wipes useful work before the accumulated nogoods can amortize.
+- **Restart unit 128 is too aggressive** for 7×7. First restart fires after
+  128 dead-ends — nowhere near enough to build useful nogoods on a 49-cell
+  search tree.
+- **The fix is portfolio, not parameter tuning.** Run P1 (deterministic,
+  no restart) and P2 (randomized, with restart) concurrently on different
+  threads; the first to finish wins. That's phase P3 — the P2 regression
+  actually *motivates* P3.
+- **6×6 still improves** — nogoods help on smaller trees where the hash
+  collisions converge faster than on 7×7.

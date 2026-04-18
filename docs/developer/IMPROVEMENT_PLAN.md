@@ -120,7 +120,7 @@ Score = (impact × confiance) / coût. I/C/C sur 1-5.
 
 | ✔ | # | Action | État |
 |:-:|---|--------|------|
-| 🔨 | BB1 | POC DLX (Dancing Links) | **en cours** — tasks #37..#42 créées (estim. 5h) |
+| ✅ | BB1 | POC DLX livré avec **no-go** mesuré : primary-only DLX timeout sur 4×4 easy (>10min vs AC-3 sub-seconde). Code conservé dans `solver/experimental/dlx/` pour prochaine itération éventuelle (DLX+FC ou secondary-columns). | `6e63859` + `ab56553` |
 | ⏳ | BB2 | Scaling 16×16 (pools, int[], JFR, GC tuning) | démarre après bench 8×8 avec outillage JFR |
 | 🔶 | BB3 | Profil contention WorkStealingExecutor | fix `solveParallel` livré (`68c1947`), profil JFR à suivre |
 | ⏳ | BB4 | Heuristique "most-constraining variable" | optionnel |
@@ -132,7 +132,7 @@ Score = (impact × confiance) / coût. I/C/C sur 1-5.
 
 - **QW** : 7/7 ✅
 - **Medium** : 8/10 ✅, 2 ⏳ (M7 attend JFR, M10 non-prioritaire)
-- **Big bets** : 1 🔨 en cours (BB1), 1 🔶 (BB3), 3 ⏳
+- **Big bets** : 1 ✅ (BB1 no-go documenté), 1 🔶 (BB3 fix livré, profil JFR à suivre), 3 ⏳
 
 ---
 

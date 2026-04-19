@@ -33,7 +33,7 @@ public final class BitmapSolver implements Solver {
     private boolean useRestart = true;
     private int restartUnit = 128; // Luby multiplier in dead-ends
     private long randomSeed = 0xEA7E811E2L;
-    private boolean useFailFirst = true;
+    private boolean useFailFirst = false; // disabled: A/B on hard cases showed 0 gain, -1 piece on 8×8 seed=42
     private boolean useSingletonProp = true;
     private AtomicBoolean cancellation; // optional: set by parent portfolio to abort early
     private NogoodStore externalNogoods; // optional: shared across portfolio workers

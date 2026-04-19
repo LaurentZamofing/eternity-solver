@@ -58,6 +58,13 @@ public class ConstraintPropagator {
         this.useAC3 = enabled;
     }
 
+    /** Exposes current AC-3 enablement for downstream deduplication
+     *  (e.g. PlacementValidator skipping its 1-ply lookahead when AC-3
+     *  will run the equivalent check right after). */
+    public boolean isUseAC3() {
+        return useAC3;
+    }
+
     /** Toggle the global colour-budget frontier check. Default: true. */
     public void setUseColorBudget(boolean enabled) {
         this.useColorBudget = enabled;

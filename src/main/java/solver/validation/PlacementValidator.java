@@ -120,7 +120,11 @@ public class PlacementValidator {
         // Step 3: one-step lookahead — if committing this candidate would
         // empty any neighbour's AC-3 domain, reject before the (more
         // expensive) place + full-AC-3-propagate + rollback cycle.
-        if (usePreCheckLookahead &&
+        //
+        // Skip when AC-3 is enabled: the post-place AC-3 pass catches the
+        // same dead-ends, so the lookahead is pure duplicate work.
+        // Measured ~10-20 % gain on small puzzles (ALGO_IMPROVEMENTS #5).
+        if (usePreCheckLookahead && !constraintPropagator.isUseAC3() &&
             constraintPropagator.wouldCauseDeadEnd(context.board, row, col, edges, context.piecesById)) {
             return ValidationResult.rejected(RejectionReason.AC3_DEAD_END);
         }

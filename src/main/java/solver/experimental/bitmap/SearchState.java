@@ -51,16 +51,10 @@ public final class SearchState {
 
     /** {@code [cell]} — cached {@link Long#bitCount} sum across {@code domain[cell][*]}.
      *  Updated incrementally by {@link #writeWord}. Lets {@code pickCell} be O(cells)
-     *  instead of O(cells × words × bitCount). */
+     *  instead of O(cells × words × bitCount). Rolled back directly from the
+     *  word trail in {@link #rollbackDepth} via bitCount delta — no separate
+     *  size trail is needed. */
     public final int[] domainSize;
-
-    /** Trail of {@code (cell, oldSize)} pairs mirroring the domain trail, so undo
-     *  restores {@link #domainSize} too. Stored as long = {@code (long) cell << 32 | oldSize}. */
-    public final long[] sizeTrail;
-    public int sizeTrailPos;
-
-    /** {@code [depth]} — {@code sizeTrailPos} at begin. Parallel to {@link #trailCheckpoint}. */
-    public final int[] sizeCheckpoint;
 
     /**
      * Builds a fresh state seeded with the catalog's initial domain for each
@@ -88,9 +82,6 @@ public final class SearchState {
         for (int c = 0; c < catalog.numCells; c++) {
             domainSize[c] = PiecesCatalog.cardinality(domain[c]);
         }
-        this.sizeTrail = new long[trailCapacity + 1024];
-        this.sizeTrailPos = 0;
-        this.sizeCheckpoint = new int[catalog.numCells + 1];
     }
 
     /**
@@ -108,40 +99,34 @@ public final class SearchState {
         trail[trailPos + 1] = cur;
         trailPos += 2;
         domain[cell][word] = newValue;
-        // Incremental domain-size update; snapshot the old size on the size trail.
-        int oldSize = domainSize[cell];
+        // Incremental domain-size update. On rollback the inverse delta
+        // is computed from the restored word in rollbackDepth — no separate
+        // size trail needed.
         int delta = Long.bitCount(newValue) - Long.bitCount(cur);
-        if (delta != 0) {
-            sizeTrail[sizeTrailPos++] = ((long) cell << 32) | (oldSize & 0xFFFFFFFFL);
-            domainSize[cell] = oldSize + delta;
-        }
+        if (delta != 0) domainSize[cell] += delta;
     }
 
     /** Opens a new depth level — records the current {@code trailPos}. */
     public void beginDepth(int depth) {
         trailCheckpoint[depth] = trailPos;
-        sizeCheckpoint[depth] = sizeTrailPos;
     }
 
-    /** Rolls back all trail entries recorded since {@code beginDepth(depth)}. */
+    /** Rolls back all trail entries recorded since {@code beginDepth(depth)}.
+     *  Restores {@link #domainSize} inline by computing the bitCount delta
+     *  between the restored word and whatever currently sits in the domain
+     *  — no separate size trail needed. */
     public void rollbackDepth(int depth) {
         int checkpoint = trailCheckpoint[depth];
         while (trailPos > checkpoint) {
             trailPos -= 2;
             long packed = trail[trailPos];
-            long old = trail[trailPos + 1];
+            long oldWord = trail[trailPos + 1];
             int cell = (int) (packed >>> 32);
             int word = (int) packed;
-            domain[cell][word] = old;
-        }
-        // Restore domain sizes in reverse order.
-        int sc = sizeCheckpoint[depth];
-        while (sizeTrailPos > sc) {
-            sizeTrailPos--;
-            long packed = sizeTrail[sizeTrailPos];
-            int cell = (int) (packed >>> 32);
-            int old = (int) packed;
-            domainSize[cell] = old;
+            long currentWord = domain[cell][word];
+            int delta = Long.bitCount(oldWord) - Long.bitCount(currentWord);
+            if (delta != 0) domainSize[cell] += delta;
+            domain[cell][word] = oldWord;
         }
     }
 

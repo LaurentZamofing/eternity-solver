@@ -92,6 +92,12 @@ public class EternitySolver implements Solver {
     Random random = new Random();
     int threadId = -1;
 
+    // Zobrist nogood support — opt-in. Both must be set (via
+    // setNogoodSupport) for the nogood pipeline in MRVPlacementStrategy
+    // to fire; otherwise the solver behaves as before.
+    private ZobristHasher zobrist;
+    private solver.experimental.bitmap.NogoodStore nogoods;
+
     /**
      * Resets shared search state between puzzle solving sessions.
      *
@@ -113,6 +119,14 @@ public class EternitySolver implements Solver {
     /** Gets shared search state for this solver instance. */
     public SharedSearchState getSharedState() {
         return sharedState;
+    }
+
+    /** Enables nogood-based dead-end caching. Pass both a {@link ZobristHasher}
+     *  sized for the current board/piece set and a {@link solver.experimental.bitmap.NogoodStore}
+     *  (shared or thread-local). Call before {@link #solve}. */
+    public void setNogoodSupport(ZobristHasher z, solver.experimental.bitmap.NogoodStore store) {
+        this.zobrist = z;
+        this.nogoods = store;
     }
 
     /** Sets shared search state (useful for sharing state across multiple solvers). */
@@ -345,11 +359,13 @@ public class EternitySolver implements Solver {
 
     /** Delegates to {@link BacktrackingSolver#solve} */
     public boolean solveBacktracking(Board board, Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
-        return new BacktrackingSolver(
+        BacktrackingSolver bt = new BacktrackingSolver(
             this, stats, sharedState.getSolutionFound(), configBuilder.build(),
             recordManager, autoSaveManager, singletonStrategy, mrvStrategy,
             threadId, randomSeed, startTimeMs
-        ).solve(board, piecesById, pieceUsed, totalPieces);
+        );
+        if (zobrist != null && nogoods != null) bt.setNogoodSupport(zobrist, nogoods);
+        return bt.solve(board, piecesById, pieceUsed, totalPieces);
     }
 
     /** Delegates to {@link HistoricalSolver#solveWithHistory} */

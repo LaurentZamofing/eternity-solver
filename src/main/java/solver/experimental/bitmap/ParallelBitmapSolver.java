@@ -37,6 +37,7 @@ public final class ParallelBitmapSolver implements Solver {
     private int threads = Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors()));
     private long maxExecutionTimeMs = 60_000;
     private boolean shareNogoods = true;
+    private Boolean useFailFirstOverride; // null = inherit BitmapSolver default
     private final List<BitmapSolver> lastWorkers = new ArrayList<>();
     private volatile int lastBestDepth = 0;
 
@@ -49,6 +50,10 @@ public final class ParallelBitmapSolver implements Solver {
     /** Share a single {@link SharedNogoodStore} across all workers so
      *  dead-ends discovered by one are visible to all. Default: true. */
     public void setShareNogoods(boolean on) { this.shareNogoods = on; }
+
+    /** Override {@link BitmapSolver#setUseFailFirst} for every portfolio
+     *  worker. {@code null} leaves the BitmapSolver default in place. */
+    public void setUseFailFirst(boolean on) { this.useFailFirstOverride = on; }
 
     @Override
     public boolean solve(Board board, Map<Integer, Piece> pieces) {
@@ -84,6 +89,7 @@ public final class ParallelBitmapSolver implements Solver {
             solver.setMaxExecutionTime(maxExecutionTimeMs);
             solver.setCancellation(foundFlag);
             if (shared != null) solver.setExternalNogoods(shared);
+            if (useFailFirstOverride != null) solver.setUseFailFirst(useFailFirstOverride);
             lastWorkers.add(solver);
             pool.submit(() -> {
                 Board local = new Board(rows, cols);

@@ -26,7 +26,7 @@ public final class EternitySolverBuilder {
     private boolean mrvIndexEnabled = false;
     private boolean lexFlag = true;
     private boolean rotationFlag = true;
-    private boolean useNogoods = false; // known false-positive bug; opt-in only
+    private boolean useNogoods = true;
     private String sortOrder;
     private String puzzleName;
     private String threadLabel;

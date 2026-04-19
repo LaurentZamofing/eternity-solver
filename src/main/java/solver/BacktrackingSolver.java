@@ -278,6 +278,22 @@ public class BacktrackingSolver {
         );
         context.zobrist = this.zobrist;
         context.nogoods = this.nogoods;
+        // Recompute stateHash from the current board because this solve() is
+        // called recursively — each call creates a fresh context whose default
+        // 0 would desynchronise the incremental XOR tracking maintained by
+        // the placement strategies.
+        if (this.zobrist != null && this.nogoods != null) {
+            long h = 0L;
+            for (int r = 0; r < board.getRows(); r++) {
+                for (int c = 0; c < board.getCols(); c++) {
+                    if (!board.isEmpty(r, c)) {
+                        model.Placement p = board.getPlacement(r, c);
+                        h ^= this.zobrist.keyOf(r, c, p.getPieceId(), p.getRotation());
+                    }
+                }
+            }
+            context.stateHash = h;
+        }
 
         // STEP 1: Try singleton placement strategy first (most constrained)
         if (singletonStrategy.tryPlacement(context, solver)) {

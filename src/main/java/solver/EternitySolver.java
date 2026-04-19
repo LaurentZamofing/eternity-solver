@@ -98,10 +98,10 @@ public class EternitySolver implements Solver {
     // setNogoodSupport(null, null) or setUseNogoods(false) to disable.
     private ZobristHasher zobrist;
     private solver.experimental.bitmap.NogoodStore nogoods;
-    // Default OFF — nogood integration still has a false-positive bug that
-    // breaks 4×4 hard + generated 5×5 correctness tests. Enable explicitly
-    // via setUseNogoods(true) for benches; leave disabled for correctness.
-    private boolean useNogoods = false;
+    // Default ON — nogoods + incremental Zobrist hash with context-rehash
+    // on every BacktrackingSolver.solve() entry (so the per-recursion fresh
+    // context inherits the hash of the current board).
+    private boolean useNogoods = true;
     private int nogoodBits = 22; // 2^22 slots = 32 MB
 
     /**

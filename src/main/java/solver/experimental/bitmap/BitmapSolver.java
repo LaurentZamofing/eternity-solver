@@ -47,6 +47,7 @@ public final class BitmapSolver implements Solver {
     // Kept as two parallel arrays (cell → pidRot) sized numCells; snapshot on
     // every new-max placement (rare, so the arraycopy cost is negligible).
     private volatile int bestDepthSeen = 0;
+    private volatile long timeToBestDepthMs = 0L; // wall-time from solve() start when bestDepthSeen last increased
     private int[] bestCellsAtDepth;
     private int[] bestPidRotsAtDepth;
     private int bestCols; // board width, cached so writeBestTo doesn't need the catalog
@@ -91,6 +92,11 @@ public final class BitmapSolver implements Solver {
      *  equal to the number of pieces in the best partial assignment seen. */
     public int getBestDepth() { return bestDepthSeen; }
 
+    /** Wall-time (ms since solve() start) at which {@link #getBestDepth}
+     *  was last set. Lets callers distinguish "reached max depth quickly
+     *  then stalled" from "reached max depth just before timeout". */
+    public long getTimeToBestDepthMs() { return timeToBestDepthMs; }
+
     /** Writes the best partial assignment ever reached during the most recent
      *  {@link #solve} call to {@code b}. Useful when {@link #solve} returned
      *  {@code false} (timeout / cancellation) but you still want to inspect
@@ -127,6 +133,8 @@ public final class BitmapSolver implements Solver {
         }
 
         bestDepthSeen = 0;
+        timeToBestDepthMs = 0L;
+        long solveStartMs = System.currentTimeMillis();
         bestCols = cols;
         bestCellsAtDepth = new int[rows * cols];
         bestPidRotsAtDepth = new int[rows * cols];
@@ -247,6 +255,7 @@ public final class BitmapSolver implements Solver {
             int committed = depth + 1;
             if (committed > bestDepthSeen) {
                 bestDepthSeen = committed;
+                timeToBestDepthMs = System.currentTimeMillis() - solveStartMs;
                 System.arraycopy(state.cellAtDepth, 0, bestCellsAtDepth, 0, committed);
                 System.arraycopy(state.pidRotAtDepth, 0, bestPidRotsAtDepth, 0, committed);
             }

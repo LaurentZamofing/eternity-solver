@@ -40,6 +40,7 @@ public final class ParallelBitmapSolver implements Solver {
     private Boolean useFailFirstOverride; // null = inherit BitmapSolver default
     private final List<BitmapSolver> lastWorkers = new ArrayList<>();
     private volatile int lastBestDepth = 0;
+    private volatile long lastTimeToBestMs = 0L;
 
     public ParallelBitmapSolver() { }
 
@@ -82,6 +83,7 @@ public final class ParallelBitmapSolver implements Solver {
 
         lastWorkers.clear();
         lastBestDepth = 0;
+        lastTimeToBestMs = 0L;
         SharedNogoodStore shared = shareNogoods ? new SharedNogoodStore() : null;
         for (int i = 0; i < n; i++) {
             final int idx = i;
@@ -125,12 +127,25 @@ public final class ParallelBitmapSolver implements Solver {
         // Track the best partial across workers — useful for the caller when
         // we time out: they can still inspect how close the portfolio got.
         int maxDepth = 0;
+        long timeToBest = 0L;
         BitmapSolver bestWorker = null;
         for (BitmapSolver w : lastWorkers) {
             int d = w.getBestDepth();
-            if (d > maxDepth) { maxDepth = d; bestWorker = w; }
+            if (d > maxDepth) {
+                maxDepth = d;
+                timeToBest = w.getTimeToBestDepthMs();
+                bestWorker = w;
+            } else if (d == maxDepth && d > 0) {
+                // Multiple workers tied on depth — take the earliest.
+                long t = w.getTimeToBestDepthMs();
+                if (t > 0 && (timeToBest == 0 || t < timeToBest)) {
+                    timeToBest = t;
+                    bestWorker = w;
+                }
+            }
         }
         lastBestDepth = maxDepth;
+        lastTimeToBestMs = timeToBest;
 
         if (solved) {
             Board w = winningBoard.get();
@@ -154,6 +169,11 @@ public final class ParallelBitmapSolver implements Solver {
     /** Max depth any worker reached during the last {@link #solve} call —
      *  equal to the number of pieces in the best partial ever observed. */
     public int getBestDepth() { return lastBestDepth; }
+
+    /** Wall-time from the last {@link #solve} start at which any worker
+     *  first reached the final {@link #getBestDepth}. Lets A/B benches
+     *  distinguish "faster to same record" from "higher record". */
+    public long getTimeToBestMs() { return lastTimeToBestMs; }
 
     /** Portfolio configurations — designed to cover complementary strategies.
      *  Worker 0 is the safety net (deterministic P1-style), workers 1+

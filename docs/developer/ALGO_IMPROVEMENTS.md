@@ -5,19 +5,30 @@ Per-algorithm audit lives in
 document tracks the **execution** of each proposed optimisation, with
 one row per optim and a measured gain line.
 
-## Baseline
+## Baseline — robust measurement (2026-04-19 22:30)
 
-Reference bench: `benchmark.BenchMainSolverAblation`, config
-`default (pieceId asc, features ON)`, 60 s per-run timeout, 3 seeds.
+Reference bench: `benchmark.BenchMainSolverRobust` — JIT warmup (5
+solves), 5 seeds, 3 repeats per (config, size, seed) = 15 samples per
+row. Config `default (pieceId + features ON)`, 30 s per-run timeout.
+Commit 4e37e73. The baseline is **after commit `4e37e73`** (which
+includes #5 — lookahead skipped when AC-3 on).
 
-| Size | Avg ms | Solved |
-|------|-------:|-------:|
-| 5×5 | 816 | 3/3 |
-| 6×6 | 16 843 | 2/3 |
+| Config | 5×5 median | 5×5 min | 6×6 median | 6×6 solved |
+|--------|-----------:|--------:|-----------:|-----------:|
+| **default (features ON)** | **264 ms** | 183 | **9 964 ms** | **9/15** |
+| LCV ON | 294 | 56 | 30 000 (timeout) | 6/15 |
+| features OFF | 587 | 227 | 30 000 | 0/15 |
+| LCV + features OFF | 1019 | 77 | 30 000 | 3/15 |
 
-Each improvement re-runs this bench and records the new avg/solved in
-the "Measured gain" column. The goal is **cumulative** — every row
-builds on the previous state of the tree, not a frozen baseline.
+**Net gain from the ultraplan features block**:
+- 5×5: features OFF median 587 → features ON median 264 ⇒ **×2.2**
+- 6×6: features OFF 0/15 solved → features ON 9/15 ⇒ **critical**
+- pre-ultraplan baseline (commit e83babe) 6×6 mean ≈ 25 s (2/3 at 120 s) →
+  current median 10 s at 30 s budget ⇒ **~×2.5 faster median**
+
+Each future improvement re-runs this bench and records the new
+median/solved in the "Measured gain" column. Cumulative delta — each
+row builds on the previous tree state.
 
 ## Roadmap
 

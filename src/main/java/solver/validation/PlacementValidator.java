@@ -54,6 +54,7 @@ public class PlacementValidator {
     private final SymmetryBreakingManager symmetryBreakingManager;
     private final ConstraintPropagator constraintPropagator;
     private final DomainManager domainManager;
+    private boolean usePreCheckLookahead = true;
 
     /**
      * Creates a placement validator.
@@ -77,6 +78,14 @@ public class PlacementValidator {
      */
     public DomainManager getDomainManager() {
         return domainManager;
+    }
+
+    /** Toggle the pre-placement one-step lookahead. Default: true. Uses
+     *  {@link ConstraintPropagator#wouldCauseDeadEnd} to prove that
+     *  committing the candidate would empty at least one neighbour's
+     *  domain — cheaper than place + AC-3 + rollback. */
+    public void setUsePreCheckLookahead(boolean enabled) {
+        this.usePreCheckLookahead = enabled;
     }
 
     /**
@@ -106,6 +115,14 @@ public class PlacementValidator {
             !symmetryBreakingManager.isPlacementAllowed(context.board, row, col, pieceId,
                                                        rotation, context.piecesById)) {
             return ValidationResult.rejected(RejectionReason.SYMMETRY_BREAKING);
+        }
+
+        // Step 3: one-step lookahead — if committing this candidate would
+        // empty any neighbour's AC-3 domain, reject before the (more
+        // expensive) place + full-AC-3-propagate + rollback cycle.
+        if (usePreCheckLookahead &&
+            constraintPropagator.wouldCauseDeadEnd(context.board, row, col, edges, context.piecesById)) {
+            return ValidationResult.rejected(RejectionReason.AC3_DEAD_END);
         }
 
         // All pre-placement constraints satisfied
@@ -179,6 +196,10 @@ public class PlacementValidator {
         EDGE_MISMATCH,
 
         /** Placement violates symmetry breaking rules */
-        SYMMETRY_BREAKING
+        SYMMETRY_BREAKING,
+
+        /** Committing this placement would empty at least one neighbour's
+         *  domain (one-step lookahead via {@link ConstraintPropagator#wouldCauseDeadEnd}). */
+        AC3_DEAD_END
     }
 }

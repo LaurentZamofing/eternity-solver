@@ -67,6 +67,17 @@ public class ConstraintPropagator {
                                 Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (!useAC3 || !domainManager.isAC3Initialized()) return true;
 
+        // Global colour-budget early-exit: arithmetic necessary condition on
+        // (demand[c] <= supply[c]) for every interior colour. Runs before
+        // the AC-3 queue loop so we can short-circuit without doing any
+        // domain work when the budget is already dead.
+        if (useColorBudget) {
+            if (colorBudget == null) colorBudget = new ColorBudgetTracker(piecesById);
+            if (!colorBudget.check(board, piecesById, pieceUsed, totalPieces)) {
+                return false;
+            }
+        }
+
         // Open an undo-stack frame so every setDomain call is recorded and
         // can be rolled back cheaply on dead-end/backtrack in restoreAC3Domains.
         domainManager.beginFrame();
@@ -205,16 +216,6 @@ public class ConstraintPropagator {
 
                 domainManager.setDomain(cellRow, cellCol, availableDomain);
                 enqueueEmptyNeighbors(board, cellRow, cellCol, queue, inQueue);
-            }
-        }
-
-        // Global colour-budget frontier check — dead-branch detection via an
-        // arithmetic necessary condition (demand[c] <= supply[c] for every
-        // interior colour c). Fires before we try any more placements.
-        if (useColorBudget) {
-            if (colorBudget == null) colorBudget = new ColorBudgetTracker(piecesById);
-            if (!colorBudget.check(board, piecesById, pieceUsed, totalPieces)) {
-                return false;
             }
         }
 

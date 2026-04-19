@@ -34,7 +34,7 @@ public final class BitmapSolver implements Solver {
     private int restartUnit = 128; // Luby multiplier in dead-ends
     private long randomSeed = 0xEA7E811E2L;
     private boolean useFailFirst = false; // disabled: A/B on hard cases showed 0 gain, -1 piece on 8×8 seed=42
-    private boolean useSingletonProp = true;
+    private boolean useSingletonProp = false; // disabled: A/B showed t_best 0.9x slower + -1 piece regression
     private AtomicBoolean cancellation; // optional: set by parent portfolio to abort early
     private NogoodStore externalNogoods; // optional: shared across portfolio workers
 
@@ -169,8 +169,15 @@ public final class BitmapSolver implements Solver {
         cursorAtDepth[depth] = 0;
 
         AtomicBoolean cancelFlag = this.cancellation;
+        // Iteration counter — we poll the deadline / cancellation every
+        // DEADLINE_POLL_INTERVAL iterations, independent of `depth`. The
+        // earlier depth-only poll (`depth & 0x3F == 0`) could starve for
+        // minutes when the search oscillates between depths that never
+        // reach a 64-multiple — e.g. thrashing between 70 and 78 on a
+        // 9×9 puzzle would miss the 64 / 128 boundaries entirely.
+        long iter = 0;
         while (true) {
-            if ((depth & 0x3F) == 0) {
+            if ((iter++ & 0xFFFFL) == 0L) {
                 if (System.currentTimeMillis() > deadline) return false;
                 if (cancelFlag != null && cancelFlag.get()) return false;
             }

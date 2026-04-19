@@ -244,3 +244,28 @@ tail-end and all three 9×9 seeds. These 5 rows are the test corpus for
 the next wave of optimisations — any change that solves even one of
 them (or pushes best-partial by more than the +0-2 pieces we got from
 6× budget) is a real algorithmic win, not time.
+
+---
+
+## Shared nogood store A/B (2026-04-19 09:23)
+
+`BenchSharedNogoods` — same 3 hardest TIMEOUTs run with
+`setShareNogoods(false)` vs `setShareNogoods(true)`, 30 min each side.
+
+| Case | Shared OFF best | Shared ON best | Δ |
+|------|----------------:|---------------:|--:|
+| 8×8 seed=42 | 62/64 | 62/64 | **0** |
+| 8×9 seed=17 | 66/72 | 67/72 | +1 |
+| 9×9 seed=1 | 77/81 | 77/81 | **0** |
+
+### Verdict
+
+- **Shared nogood store does not break any wall.** +1 piece on one case,
+  noise on the other two. The 4 portfolio workers explore sufficiently
+  different regions that their Zobrist hashes rarely overlap enough to
+  amortise through a shared cache.
+- **Cost is minimal** (per-shard `synchronized`, contention low), so
+  keeping it on by default doesn't hurt. But it's not a win either —
+  the algorithmic wall is downstream.
+- Next A/B target: fail-first heuristic (commit 4015f5c) on the same
+  three cases, then AC-3 worklist.

@@ -33,8 +33,14 @@ public final class BitmapSolver implements Solver {
     private boolean useRestart = true;
     private int restartUnit = 128; // Luby multiplier in dead-ends
     private long randomSeed = 0xEA7E811E2L;
+    private boolean useFailFirst = true;
     private AtomicBoolean cancellation; // optional: set by parent portfolio to abort early
     private NogoodStore externalNogoods; // optional: shared across portfolio workers
+
+    // Fail-first heuristic: per-cell dead-end counter. Used as MRV tiebreaker
+    // so "hot" cells (repeatedly failing) are picked over quiet ones — shifts
+    // the search toward the combinatorially hard regions earlier.
+    private int[] cellFailWeight;
 
     // Best partial — max depth reached at any point during the search.
     // Kept as two parallel arrays (cell → pidRot) sized numCells; snapshot on
@@ -71,6 +77,9 @@ public final class BitmapSolver implements Solver {
      *  so that dead-ends discovered by one worker are visible to all others.
      *  If {@code null}, the solver falls back to a thread-local {@link NogoodCache}. */
     public void setExternalNogoods(NogoodStore store) { this.externalNogoods = store; }
+
+    /** Toggle the fail-first (constraint-weighting) MRV tiebreaker. Default: true. */
+    public void setUseFailFirst(boolean on) { this.useFailFirst = on; }
 
     /** Max depth ever reached during the most recent {@link #solve} call —
      *  equal to the number of pieces in the best partial assignment seen. */
@@ -115,6 +124,7 @@ public final class BitmapSolver implements Solver {
         bestCols = cols;
         bestCellsAtDepth = new int[rows * cols];
         bestPidRotsAtDepth = new int[rows * cols];
+        cellFailWeight = useFailFirst ? new int[rows * cols] : null;
 
         PiecesCatalog catalog = new PiecesCatalog(rows, cols, pieces, 0xC0FFEEL);
         // Trail capacity: worst-case every placement touches every word of
@@ -176,6 +186,7 @@ public final class BitmapSolver implements Solver {
             if (nextPidRot < 0) {
                 // Cell exhausted → partial assignment 0..depth-1 is proven dead.
                 if (nogoods != null && depth > 0) nogoods.add(state.stateHash);
+                if (cellFailWeight != null) cellFailWeight[depthCell[depth]]++;
                 state.rollbackDepth(depth);
                 if (depth == 0) return false;
                 depth--;
@@ -200,6 +211,7 @@ public final class BitmapSolver implements Solver {
             // Forward checking on neighbours.
             if (!pieceRemoveOk || !fc.apply(state, cell, nextPidRot)) {
                 // Dead-end — rollback placement, try next value at same depth.
+                if (cellFailWeight != null) cellFailWeight[cell]++;
                 state.rollbackPlacement(depth);
                 deadEndCount++;
                 continue;
@@ -208,6 +220,7 @@ public final class BitmapSolver implements Solver {
             // Nogood lookup — if this partial assignment has been proven dead
             // in an earlier branch (or restart), skip it.
             if (nogoods != null && nogoods.contains(state.stateHash)) {
+                if (cellFailWeight != null) cellFailWeight[cell]++;
                 state.rollbackPlacement(depth);
                 deadEndCount++;
                 continue;
@@ -251,14 +264,16 @@ public final class BitmapSolver implements Solver {
         }
     }
 
-    /** MRV: pick the non-placed cell with the smallest non-empty domain.
-     *  Uses the incremental {@link SearchState#domainSize} cache — O(cells). */
+    /** MRV + fail-first: pick the non-placed cell with the smallest non-empty
+     *  domain, breaking ties by highest {@link #cellFailWeight}. */
     private int pickCell(SearchState state) {
         int best = -1;
         int bestSize = Integer.MAX_VALUE;
+        int bestWeight = -1;
         int n = state.catalog.numCells;
         boolean[] placed = state.isCellPlaced;
         int[] size = state.domainSize;
+        int[] weight = cellFailWeight;
         for (int c = 0; c < n; c++) {
             if (placed[c]) continue;
             int card = size[c];
@@ -266,32 +281,39 @@ public final class BitmapSolver implements Solver {
             if (card < bestSize) {
                 bestSize = card;
                 best = c;
+                bestWeight = weight != null ? weight[c] : 0;
                 if (card == 1) return c; // can't do better than a singleton
+            } else if (card == bestSize && weight != null && weight[c] > bestWeight) {
+                best = c;
+                bestWeight = weight[c];
             }
         }
         return best;
     }
 
-    /** MRV with reservoir sampling over ties. Different restarts with different
-     *  random seeds produce different first cells when multiple candidates tie
-     *  on minimum domain size — the diversification required for Luby restart. */
+    /** MRV + fail-first, with randomised tiebreak among cells that share the
+     *  same (domain-size, weight) — preserves portfolio diversification. */
     private int pickCellRandomized(SearchState state, SplittableRandom rng) {
         int best = -1;
         int bestSize = Integer.MAX_VALUE;
+        int bestWeight = -1;
         int tieCount = 0;
         int n = state.catalog.numCells;
         boolean[] placed = state.isCellPlaced;
         int[] size = state.domainSize;
+        int[] weight = cellFailWeight;
         for (int c = 0; c < n; c++) {
             if (placed[c]) continue;
             int card = size[c];
             if (card == 0) return c;
-            if (card < bestSize) {
+            int w = weight != null ? weight[c] : 0;
+            if (card < bestSize || (card == bestSize && w > bestWeight)) {
                 bestSize = card;
+                bestWeight = w;
                 best = c;
                 tieCount = 1;
                 if (card == 1) return c;
-            } else if (card == bestSize) {
+            } else if (card == bestSize && w == bestWeight) {
                 tieCount++;
                 if (rng.nextInt(tieCount) == 0) best = c;
             }

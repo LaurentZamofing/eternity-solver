@@ -269,3 +269,28 @@ them (or pushes best-partial by more than the +0-2 pieces we got from
   the algorithmic wall is downstream.
 - Next A/B target: fail-first heuristic (commit 4015f5c) on the same
   three cases, then AC-3 worklist.
+
+---
+
+## Fail-first A/B result (2026-04-19 12:30)
+
+`BenchFailFirst` — 30-min budget per side, 3 hardest TIMEOUT cases.
+
+| Case | OFF best | ON best | Δ |
+|------|---------:|--------:|--:|
+| 8×8 seed=42 | 62/64 | **61/64** | **−1** (regression) |
+| 8×9 seed=17 | 66/72 | 66/72 | 0 |
+| 9×9 seed=1 | 77/81 | 77/81 | 0 |
+
+### Verdict
+
+Fail-first is a dead end on this problem. "Pick the cell that fails
+most often first" pushes the search into denser branches that, on
+Eternity-style puzzles, have no reachable solution anyway. The −1
+piece on 8×8 seed=42 confirms the regression signal.
+
+Default reverted to `useFailFirst=false` (commit cb220df). Code and
+setter kept for future experiments.
+
+Next A/B target: singleton propagation (commit 5f4e97b) with 60-min
+budget + time-to-best instrumentation (commit 27da17f).

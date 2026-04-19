@@ -114,12 +114,18 @@ public class MRVPlacementStrategy implements PlacementStrategy {
         // Build list of available pieces
         List<Integer> snapshot = context.getUnusedPieces();
 
-        // Sort pieces according to sortOrder configuration
-        // Note: We use piece ID order (not difficulty) to ensure ascending/descending works correctly
+        // Sort pieces: prefer LCV difficulty score (fail-fast — most constrained
+        // first, so we dead-end early instead of deep in the tree). Fall back to
+        // pieceId order when the LCV tables haven't been populated (fixtures /
+        // fast-path tests). `sortOrder == "descending"` kept as a manual
+        // override for benchmarks / A/B diffs.
         if ("descending".equals(sortOrder)) {
-            snapshot.sort(Collections.reverseOrder());  // Descending: highest ID first
+            snapshot.sort(Collections.reverseOrder());
+        } else if (valueOrderer != null && valueOrderer.isInitialized()) {
+            snapshot.sort(Comparator.comparingInt(valueOrderer::getDifficultyScore)
+                                    .thenComparingInt(Integer::intValue));
         } else {
-            Collections.sort(snapshot);  // Ascending: lowest ID first (default)
+            Collections.sort(snapshot);
         }
 
         // Register depth options for progress tracking (first 5 depths only)

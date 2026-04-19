@@ -42,8 +42,12 @@ public class MRVPlacementStrategy implements PlacementStrategy {
 
     // Precomputed piece ordering by LCV difficulty score — built once on
     // first call when sortOrder="lcv", reused for every recursion level.
-    // Avoids per-call sort O(n log n) + boxing.
+    // Avoids per-call sort O(n log n) + boxing. lcvOrderedPieceIds is
+    // ascending (most constrained first); mcvOrderedPieceIds is the
+    // reverse (least constrained first — A/B test for whether the
+    // original LCV direction is the right one for this puzzle type).
     private int[] lcvOrderedPieceIds;
+    private int[] mcvOrderedPieceIds;
     private boolean debugBacktracking = false;
     private boolean debugShowBoard = false;
     private DebugPlacementLogger debugLogger;
@@ -165,6 +169,19 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 lcvOrderedPieceIds = buildLcvOrder(context.piecesById.keySet(), valueOrderer);
             }
             snapshot = filterByOrder(snapshot, lcvOrderedPieceIds);
+        } else if ("mcv".equalsIgnoreCase(sortOrder)
+                   && valueOrderer != null && valueOrderer.isInitialized()) {
+            if (mcvOrderedPieceIds == null) {
+                int[] reversed = buildLcvOrder(context.piecesById.keySet(), valueOrderer).clone();
+                // Reverse in place — most-constraining-value last, least-constraining first.
+                for (int i = 0, j = reversed.length - 1; i < j; i++, j--) {
+                    int tmp = reversed[i];
+                    reversed[i] = reversed[j];
+                    reversed[j] = tmp;
+                }
+                mcvOrderedPieceIds = reversed;
+            }
+            snapshot = filterByOrder(snapshot, mcvOrderedPieceIds);
         } else {
             Collections.sort(snapshot);
         }

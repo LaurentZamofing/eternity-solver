@@ -26,11 +26,11 @@ public final class BenchMainSolverAblation {
     public static void main(String[] args) {
         System.out.printf("%-28s %-4s %-10s %-10s %-4s%n",
             "config", "size", "avg_ms", "avg_solved", "cnt");
-        runConfig("all-on (baseline)", b -> {});
-        runConfig("colorBudget OFF",   b -> b.useColorBudget(false));
-        runConfig("lookahead OFF",     b -> b.usePreCheckLookahead(false));
-        runConfig("nogoods OFF",       b -> b.useNogoods(false));
-        runConfig("all OFF",           b -> b.useColorBudget(false).usePreCheckLookahead(false).useNogoods(false));
+        // Default now = ascending pieceId (no LCV). Opt-in LCV via sortOrder="lcv".
+        runConfig("default (pieceId asc)", b -> {});
+        runConfig("LCV ON (precomputed)", b -> b.sortOrder("lcv"));
+        runConfig("LCV + features OFF", b -> b.sortOrder("lcv").useColorBudget(false).usePreCheckLookahead(false).useNogoods(false));
+        runConfig("pieceId + features OFF", b -> b.useColorBudget(false).usePreCheckLookahead(false).useNogoods(false));
     }
 
     private static void runConfig(String label, Consumer<solver.EternitySolverBuilder> tuner) {

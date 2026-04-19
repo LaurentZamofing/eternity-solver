@@ -39,6 +39,11 @@ public class MRVPlacementStrategy implements PlacementStrategy {
     private final TimeoutChecker timeoutChecker;
     private final LeastConstrainingValueOrderer valueOrderer;
     private String sortOrder = "ascending"; // Default sort order
+
+    // Precomputed piece ordering by LCV difficulty score — built once on
+    // first call when sortOrder="lcv", reused for every recursion level.
+    // Avoids per-call sort O(n log n) + boxing.
+    private int[] lcvOrderedPieceIds;
     private boolean debugBacktracking = false;
     private boolean debugShowBoard = false;
     private DebugPlacementLogger debugLogger;
@@ -73,6 +78,34 @@ public class MRVPlacementStrategy implements PlacementStrategy {
      *  experimental flags (e.g. pre-commit lookahead) on it. */
     public PlacementValidator getValidator() {
         return validator;
+    }
+
+    /** Sorts all piece IDs by ascending LCV difficulty (most constrained first)
+     *  once — caller caches the result. */
+    private static int[] buildLcvOrder(java.util.Set<Integer> pieceIds, LeastConstrainingValueOrderer orderer) {
+        Integer[] boxed = pieceIds.toArray(new Integer[0]);
+        java.util.Arrays.sort(boxed, Comparator.comparingInt(orderer::getDifficultyScore)
+                                              .thenComparingInt(Integer::intValue));
+        int[] out = new int[boxed.length];
+        for (int i = 0; i < boxed.length; i++) out[i] = boxed[i];
+        return out;
+    }
+
+    /** Filters {@code snapshot} to contain only the subset of piece IDs in
+     *  the pre-sorted {@code orderedIds} that are still in the original
+     *  snapshot (i.e. not yet placed). Keeps the LCV order. O(n). */
+    private static List<Integer> filterByOrder(List<Integer> snapshot, int[] orderedIds) {
+        if (snapshot.isEmpty()) return snapshot;
+        // Use a bitset-like lookup keyed on pieceId.
+        int maxId = 0;
+        for (int pid : snapshot) if (pid > maxId) maxId = pid;
+        boolean[] inSnapshot = new boolean[maxId + 1];
+        for (int pid : snapshot) inSnapshot[pid] = true;
+        List<Integer> out = new ArrayList<>(snapshot.size());
+        for (int pid : orderedIds) {
+            if (pid <= maxId && inSnapshot[pid]) out.add(pid);
+        }
+        return out;
     }
 
     /**
@@ -120,16 +153,18 @@ public class MRVPlacementStrategy implements PlacementStrategy {
         // Build list of available pieces
         List<Integer> snapshot = context.getUnusedPieces();
 
-        // Sort pieces: prefer LCV difficulty score (fail-fast — most constrained
-        // first, so we dead-end early instead of deep in the tree). Fall back to
-        // pieceId order when the LCV tables haven't been populated (fixtures /
-        // fast-path tests). `sortOrder == "descending"` kept as a manual
-        // override for benchmarks / A/B diffs.
+        // Sort pieces by ID (default ascending, optional descending, optional
+        // LCV-difficulty via sortOrder="lcv"). LCV builds a precomputed
+        // int[] ordering on first call so subsequent calls just iterate it
+        // — no per-call boxing/sort overhead.
         if ("descending".equals(sortOrder)) {
             snapshot.sort(Collections.reverseOrder());
-        } else if (valueOrderer != null && valueOrderer.isInitialized()) {
-            snapshot.sort(Comparator.comparingInt(valueOrderer::getDifficultyScore)
-                                    .thenComparingInt(Integer::intValue));
+        } else if ("lcv".equalsIgnoreCase(sortOrder)
+                   && valueOrderer != null && valueOrderer.isInitialized()) {
+            if (lcvOrderedPieceIds == null) {
+                lcvOrderedPieceIds = buildLcvOrder(context.piecesById.keySet(), valueOrderer);
+            }
+            snapshot = filterByOrder(snapshot, lcvOrderedPieceIds);
         } else {
             Collections.sort(snapshot);
         }

@@ -26,6 +26,7 @@ public final class EternitySolverBuilder {
     private boolean mrvIndexEnabled = false;
     private boolean lexFlag = true;
     private boolean rotationFlag = true;
+    private boolean useNogoods = false; // known false-positive bug; opt-in only
     private String sortOrder;
     private String puzzleName;
     private String threadLabel;
@@ -36,6 +37,7 @@ public final class EternitySolverBuilder {
     public EternitySolverBuilder maxExecutionTime(long ms) { this.maxExecutionTimeMs = ms; return this; }
     public EternitySolverBuilder useAC3(boolean on) { this.useAC3 = on; return this; }
     public EternitySolverBuilder mrvIndexEnabled(boolean on) { this.mrvIndexEnabled = on; return this; }
+    public EternitySolverBuilder useNogoods(boolean on) { this.useNogoods = on; return this; }
 
     /** Toggle both symmetry-breaking flags in one call. */
     public EternitySolverBuilder symmetryBreakingFlags(boolean lex, boolean rotation) {
@@ -55,6 +57,7 @@ public final class EternitySolverBuilder {
         solver.setMaxExecutionTime(maxExecutionTimeMs);
         solver.setUseAC3(useAC3);
         solver.setMRVIndexEnabled(mrvIndexEnabled);
+        solver.setUseNogoods(useNogoods);
         solver.setSymmetryBreakingFlags(lexFlag, rotationFlag);
         if (sortOrder != null) solver.setSortOrder(sortOrder);
         if (puzzleName != null) solver.setPuzzleName(puzzleName);

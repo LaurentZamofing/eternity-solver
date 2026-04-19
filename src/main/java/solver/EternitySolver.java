@@ -92,11 +92,17 @@ public class EternitySolver implements Solver {
     Random random = new Random();
     int threadId = -1;
 
-    // Zobrist nogood support — opt-in. Both must be set (via
-    // setNogoodSupport) for the nogood pipeline in MRVPlacementStrategy
-    // to fire; otherwise the solver behaves as before.
+    // Zobrist nogood support. `useNogoods` enables lazy init on first
+    // solve() call — the hasher and cache are built from the board+pieces
+    // so we can't pre-allocate them at construction. Set both to null via
+    // setNogoodSupport(null, null) or setUseNogoods(false) to disable.
     private ZobristHasher zobrist;
     private solver.experimental.bitmap.NogoodStore nogoods;
+    // Default OFF — nogood integration still has a false-positive bug that
+    // breaks 4×4 hard + generated 5×5 correctness tests. Enable explicitly
+    // via setUseNogoods(true) for benches; leave disabled for correctness.
+    private boolean useNogoods = false;
+    private int nogoodBits = 22; // 2^22 slots = 32 MB
 
     /**
      * Resets shared search state between puzzle solving sessions.
@@ -128,6 +134,12 @@ public class EternitySolver implements Solver {
         this.zobrist = z;
         this.nogoods = store;
     }
+
+    /** Toggle automatic (lazy) nogood init inside solve(). Default true. */
+    public void setUseNogoods(boolean enabled) { this.useNogoods = enabled; }
+
+    /** Override the log2 size of the auto-allocated NogoodCache. Default 22. */
+    public void setNogoodBits(int bits) { this.nogoodBits = bits; }
 
     /** Sets shared search state (useful for sharing state across multiple solvers). */
     public void setSharedState(SharedSearchState sharedState) {
@@ -407,6 +419,14 @@ public class EternitySolver implements Solver {
         initializeSymmetryBreaking(board);
         initializeDomains(board, pieces, pieceUsed, totalPieces);
         initializePlacementStrategies();
+
+        // Lazy-init Zobrist nogoods if requested and not set externally.
+        if (useNogoods && (zobrist == null || nogoods == null)) {
+            int maxPid = 0;
+            for (int pid : pieces.keySet()) if (pid > maxPid) maxPid = pid;
+            zobrist = new ZobristHasher(board.getRows(), board.getCols(), maxPid, 0xC0FFEE00L);
+            nogoods = new solver.experimental.bitmap.NogoodCache(nogoodBits);
+        }
 
         boolean solved = solveBacktracking(board, pieces, pieceUsed, totalPieces);
 

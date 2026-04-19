@@ -114,9 +114,15 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
             return false;
         }
 
-        // Place the singleton
+        // Place the singleton. Update the incremental Zobrist hash so the
+        // MRV strategy's nogood pipeline sees a consistent state.
+        long singletonKey = 0L;
+        if (context.zobrist != null && context.nogoods != null) {
+            singletonKey = context.zobrist.keyOf(r, c, pid, rot);
+        }
         context.board.place(r, c, piece, rot);
         context.pieceUsed.set(pid);
+        if (singletonKey != 0L) context.stateHash ^= singletonKey;
         solver.setLastPlaced(r, c);
         solver.incrementStepCount();
         context.stats.placements++;
@@ -132,7 +138,9 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
             if (verbose) {
                 SolverLogger.info("✗ AC-3 dead-end detected for singleton: ID=" + pid + " at (" + r + ", " + c + ")");
             }
-            // Backtrack immediately
+            // Backtrack immediately — XOR out the singleton key to keep the
+            // nogood hash in sync with the board state.
+            if (singletonKey != 0L) context.stateHash ^= singletonKey;
             context.pieceUsed.clear(pid);
             context.board.remove(r, c);
             solver.removePlacement(r, c);
@@ -164,6 +172,7 @@ public class SingletonPlacementStrategy implements PlacementStrategy {
             // No pause here - will pause after backtrack
         }
 
+        if (singletonKey != 0L) context.stateHash ^= singletonKey;
         context.pieceUsed.clear(pid);
         context.board.remove(r, c);
         solver.removePlacement(r, c);

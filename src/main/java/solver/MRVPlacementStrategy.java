@@ -172,9 +172,22 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 context.stats.placements++;
                 outputStrategy.logConstraintsSatisfied();
 
+                // Pre-commit nogood lookup: XOR the tentative key into the hash
+                // and, if this exact partial assignment has been proven dead
+                // before, skip without ever touching the board.
+                long tentativeKey = 0L;
+                if (context.zobrist != null && context.nogoods != null) {
+                    tentativeKey = context.zobrist.keyOf(r, c, pid, rot);
+                    long tentativeHash = context.stateHash ^ tentativeKey;
+                    if (context.nogoods.contains(tentativeHash)) {
+                        continue; // proven dead in a previous branch
+                    }
+                }
+
                 // Place piece
                 context.board.place(r, c, piece, rot);
                 context.pieceUsed.set(pid);
+                if (tentativeKey != 0L) context.stateHash ^= tentativeKey;
                 solver.setLastPlaced(r, c);
                 solver.incrementStepCount();
                 solver.recordPlacement(r, c, pid, rot);
@@ -204,6 +217,7 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                     context.stats.deadEndsDetected++;
 
                     // Backtrack
+                    if (tentativeKey != 0L) context.stateHash ^= tentativeKey;
                     context.pieceUsed.clear(pid);
                     context.board.remove(r, c);
                     solver.removePlacement(r, c);
@@ -236,10 +250,17 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                     return true;
                 }
 
-                // Backtrack (recursion returned false = dead-end deeper in tree)
+                // Backtrack (recursion returned false = dead-end deeper in tree).
+                // Record the current (committed) partial assignment as a nogood
+                // before undoing — any future search path that reaches the
+                // same placement set can now prove itself dead via the cache.
                 context.stats.backtracks++;
                 outputStrategy.logBacktrack(pid, r, c, (int) context.stats.backtracks);
 
+                if (context.nogoods != null) {
+                    context.nogoods.add(context.stateHash);
+                }
+                if (tentativeKey != 0L) context.stateHash ^= tentativeKey;
                 context.pieceUsed.clear(pid);
                 context.board.remove(r, c);
                 solver.removePlacement(r, c);

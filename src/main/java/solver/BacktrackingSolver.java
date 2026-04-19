@@ -73,6 +73,11 @@ public class BacktrackingSolver {
     // Persistence (injectable for tests; defaults to on-disk SaveManager)
     private SaveStore saveStore = SaveManager.defaultStore();
 
+    // Optional nogood support — if both are set, MRVPlacementStrategy will
+    // skip partial assignments whose Zobrist hash is in the nogood store.
+    private ZobristHasher zobrist;
+    private solver.experimental.bitmap.NogoodStore nogoods;
+
     // Timing
     private final long startTimeMs;
 
@@ -143,6 +148,13 @@ public class BacktrackingSolver {
     }
 
     /** Overrides the persistence backend. Call before {@link #solve} — typically only in tests. */
+    /** Enables nogood-based dead-end caching in MRVPlacementStrategy.
+     *  Both parameters must be non-null to take effect. */
+    public void setNogoodSupport(ZobristHasher z, solver.experimental.bitmap.NogoodStore store) {
+        this.zobrist = z;
+        this.nogoods = store;
+    }
+
     public void setSaveStore(SaveStore saveStore) {
         if (saveStore == null) throw new IllegalArgumentException("saveStore cannot be null");
         this.saveStore = saveStore;
@@ -264,6 +276,8 @@ public class BacktrackingSolver {
             board, piecesById, pieceUsed, totalPieces, stats, config.getNumFixedPieces(),
             startTimeMs, config.getMaxExecutionTimeMs()
         );
+        context.zobrist = this.zobrist;
+        context.nogoods = this.nogoods;
 
         // STEP 1: Try singleton placement strategy first (most constrained)
         if (singletonStrategy.tryPlacement(context, solver)) {

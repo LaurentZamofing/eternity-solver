@@ -42,6 +42,18 @@ public class BacktrackingContext {
     /** Maximum execution time in milliseconds before timeout */
     public final long maxExecutionTimeMs;
 
+    /** Incremental Zobrist hash of the current partial assignment —
+     *  maintained in O(1) via XOR on every place/remove, used by the
+     *  nogood cache to detect and skip revisited dead-ends. Not final
+     *  by design: the whole point is it mutates with the search. */
+    public long stateHash = 0L;
+
+    /** Optional Zobrist key table. {@code null} disables nogood hashing. */
+    public ZobristHasher zobrist;
+
+    /** Optional nogood store (shared across workers or thread-local). */
+    public solver.experimental.bitmap.NogoodStore nogoods;
+
     /**
      * Creates a new backtracking context.
      *

@@ -210,8 +210,37 @@ future optimisations can be measured even on unsolved cases.
 - All **fingerprints stable** across re-runs — the portfolio is
   reproducible per seed despite thread scheduling variance.
 
-### Next bench
+### Retry with 60-min budget (2026-04-19 06:27)
 
-`BenchRetryTimeouts` re-runs the 6 TIMEOUT cases with 60 min budget
-(bumped from 30 min — 9×9 tail-end is exponential in the last few
-pieces). Commits d-98efe68; launched 2026-04-19 01:02, ETA ~07:00.
+`BenchRetryTimeouts` re-ran the 6 TIMEOUT cases with a 60-min per-run
+budget. Net effect:
+
+| Dim | Seed | 10 min result | 60 min result | Δ |
+|-----|------|---------------|---------------|---|
+| 8×8 | 42 | TIMEOUT 60/64 (88 %) | TIMEOUT **62/64** (93 %) | +2 pieces, +6 edges |
+| 8×9 | 17 | TIMEOUT 66/72 (87 %) | TIMEOUT **67/72** (88 %) | +1 piece, +2 edges |
+| 8×9 | 42 | TIMEOUT 66/72 (87 %) | **SOLVED 25 min** | ✅ |
+| 9×9 | 1 | TIMEOUT 77/81 (92 %) | TIMEOUT **77/81** (92 %) | **0** |
+| 9×9 | 17 | TIMEOUT 76/81 (89 %) | TIMEOUT **76/81** (90 %) | +1 edge |
+| 9×9 | 42 | TIMEOUT 75/81 (88 %) | TIMEOUT **76/81** (90 %) | +1 piece, +2 edges |
+
+### Conclusions
+
+- **6× more time bought 1 extra SOLVED** (8×9 seed=42). The budget
+  elasticity is minimal on this regime.
+- **9×9 seed=1 literally plateaued** — same best partial after 10 and
+  60 min. The portfolio is fully stuck in dead branches.
+- **Budget alone won't move the needle further.** The next wins
+  require algorithmic changes: stronger propagation (AC-3 worklist
+  replacing forward-checking), smarter value ordering (LCV), constraint
+  weighting / VSIDS-style variable ordering, shared-nogood validation
+  via A/B bench (ParallelBitmapSolver.setShareNogoods), or a different
+  search topology (CP-SAT fallback — Phase P4).
+
+### Full corpus status (2026-04-19 06:27)
+
+10/15 seeds solved at 60-min budget; 5 TIMEOUTs clustered on 8×8/8×9
+tail-end and all three 9×9 seeds. These 5 rows are the test corpus for
+the next wave of optimisations — any change that solves even one of
+them (or pushes best-partial by more than the +0-2 pieces we got from
+6× budget) is a real algorithmic win, not time.

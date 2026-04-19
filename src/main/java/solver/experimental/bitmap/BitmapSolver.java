@@ -34,6 +34,7 @@ public final class BitmapSolver implements Solver {
     private int restartUnit = 128; // Luby multiplier in dead-ends
     private long randomSeed = 0xEA7E811E2L;
     private boolean useFailFirst = true;
+    private boolean useSingletonProp = true;
     private AtomicBoolean cancellation; // optional: set by parent portfolio to abort early
     private NogoodStore externalNogoods; // optional: shared across portfolio workers
 
@@ -80,6 +81,11 @@ public final class BitmapSolver implements Solver {
 
     /** Toggle the fail-first (constraint-weighting) MRV tiebreaker. Default: true. */
     public void setUseFailFirst(boolean on) { this.useFailFirst = on; }
+
+    /** Toggle singleton propagation — after forward-checking, iteratively
+     *  treat any neighbour reduced to 1 pidRot as if it were placed, so
+     *  the cascade catches more dead-ends early (cheap AC-3 approximation). */
+    public void setUseSingletonProp(boolean on) { this.useSingletonProp = on; }
 
     /** Max depth ever reached during the most recent {@link #solve} call —
      *  equal to the number of pieces in the best partial assignment seen. */
@@ -217,6 +223,16 @@ public final class BitmapSolver implements Solver {
                 continue;
             }
 
+            // Singleton propagation — iteratively run FC from any neighbour
+            // that got reduced to a single pidRot, catching cascading
+            // implications early (cheap AC-3 approximation).
+            if (useSingletonProp && !propagateSingletons(state, fc, catalog, cell)) {
+                if (cellFailWeight != null) cellFailWeight[cell]++;
+                state.rollbackPlacement(depth);
+                deadEndCount++;
+                continue;
+            }
+
             // Nogood lookup — if this partial assignment has been proven dead
             // in an earlier branch (or restart), skip it.
             if (nogoods != null && nogoods.contains(state.stateHash)) {
@@ -262,6 +278,56 @@ public final class BitmapSolver implements Solver {
             depthCell[depth] = nextCell;
             cursorAtDepth[depth] = 0;
         }
+    }
+
+    // Re-usable buffers for singleton propagation BFS. Sized at first use.
+    private int[] sgQueue;
+    private boolean[] sgInQueue;
+
+    /** BFS: starting from a just-placed cell, repeatedly apply FC from any
+     *  non-placed neighbour whose domain has been reduced to a singleton.
+     *  Returns {@code false} if any cell's domain becomes empty during
+     *  propagation, {@code true} otherwise. */
+    private boolean propagateSingletons(SearchState state, ForwardChecker fc, PiecesCatalog catalog, int startCell) {
+        int n = catalog.numCells;
+        if (sgQueue == null || sgQueue.length < n) {
+            sgQueue = new int[n];
+            sgInQueue = new boolean[n];
+        } else {
+            java.util.Arrays.fill(sgInQueue, 0, n, false);
+        }
+        boolean[] placed = state.isCellPlaced;
+        int[] size = state.domainSize;
+        int cols = catalog.cols, rows = catalog.rows;
+
+        int tail = enqueueNeighbourSingletons(sgQueue, sgInQueue, 0, placed, size, rows, cols, startCell);
+        int head = 0;
+        while (head < tail) {
+            int c = sgQueue[head++];
+            int pr = PiecesCatalog.nextSetBit(state.domain[c], 0);
+            if (pr < 0) return false;
+            if (!fc.apply(state, c, pr)) return false;
+            tail = enqueueNeighbourSingletons(sgQueue, sgInQueue, tail, placed, size, rows, cols, c);
+        }
+        return true;
+    }
+
+    private static int enqueueNeighbourSingletons(int[] q, boolean[] inQ, int tail, boolean[] placed,
+                                                  int[] size, int rows, int cols, int cell) {
+        int r = cell / cols, c = cell % cols;
+        if (r > 0)        tail = maybeEnqueue(q, inQ, tail, placed, size, (r - 1) * cols + c);
+        if (r < rows - 1) tail = maybeEnqueue(q, inQ, tail, placed, size, (r + 1) * cols + c);
+        if (c > 0)        tail = maybeEnqueue(q, inQ, tail, placed, size, r * cols + (c - 1));
+        if (c < cols - 1) tail = maybeEnqueue(q, inQ, tail, placed, size, r * cols + (c + 1));
+        return tail;
+    }
+
+    private static int maybeEnqueue(int[] q, boolean[] inQ, int tail, boolean[] placed, int[] size, int cell) {
+        if (!placed[cell] && size[cell] == 1 && !inQ[cell]) {
+            q[tail++] = cell;
+            inQ[cell] = true;
+        }
+        return tail;
     }
 
     /** MRV + fail-first: pick the non-placed cell with the smallest non-empty

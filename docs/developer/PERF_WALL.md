@@ -294,3 +294,38 @@ setter kept for future experiments.
 
 Next A/B target: singleton propagation (commit 5f4e97b) with 60-min
 budget + time-to-best instrumentation (commit 27da17f).
+
+---
+
+## Main solver ultraplan ablation (2026-04-19 21:40)
+
+After shipping the 5-item ultraplan (color budget, border-first,
+nogoods, lookahead, LCV) on the main `EternitySolver` path,
+`BenchmarkGrid` showed 6×6 regression 25 s → 98 s. Ablation
+(`BenchMainSolverAblation`) isolated the culprit: the LCV sort was
+re-running on every `tryPlacement` call, O(n log n) + Integer boxing
+per cell, per recursion level. Fix in commit `86661f5`:
+precompute the LCV order once, filter-by-order O(n) per call.
+
+| Config | 5×5 | 6×6 |
+|--------|----:|----:|
+| default (pieceId asc) | 816 ms | 16 843 ms (2/3) |
+| LCV ON (precomputed) | **376 ms** | **58 664 ms (1/3)** |
+| LCV + features OFF | 2 150 ms | — |
+
+### Verdict
+
+- **LCV helps on 5×5** once the per-call overhead is eliminated
+  (−54 % vs pieceId). 
+- **LCV hurts on 6×6** even with precomputation — the fail-first
+  ordering itself is the wrong choice for this puzzle structure,
+  not the compute cost. Search dives into denser branches that the
+  other prunings can't save.
+- **Default kept as pieceId ascending**; LCV opt-in via `sortOrder("lcv")`.
+
+All five ultraplan items now behave as opt-in toggles:
+  - `useColorBudget` (default on — measured neutral on 5×5/6×6)
+  - `setStrictBorderFirst` (default off)
+  - `useNogoods` (default on — +33 % on 5×5 confirmed)
+  - `usePreCheckLookahead` (default on — neutral)
+  - `sortOrder("lcv")` (default off — −54 % on 5×5, +3.5× regression on 6×6)

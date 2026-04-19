@@ -35,7 +35,9 @@ public class ConstraintPropagator {
     private final DomainManager domainManager;
     private final Statistics stats;
     private boolean useAC3 = true;
+    private boolean useColorBudget = true;
     private int expectedCapacity = 64; // initial hint; setMaxPieceId() grows it
+    private ColorBudgetTracker colorBudget; // built lazily on first propagation
 
     // Reusable buffers for AC-3 domain filtering (double-buffered).
     // Each solver thread owns its own ConstraintPropagator, so no synchronization needed.
@@ -53,6 +55,11 @@ public class ConstraintPropagator {
     /** Enables or disables AC-3 constraint propagation. */
     public void setUseAC3(boolean enabled) {
         this.useAC3 = enabled;
+    }
+
+    /** Toggle the global colour-budget frontier check. Default: true. */
+    public void setUseColorBudget(boolean enabled) {
+        this.useColorBudget = enabled;
     }
 
     /** Propagates AC-3 constraints after placement at (r,c) by filtering neighbor domains; returns false if dead-end detected (empty domain). */
@@ -198,6 +205,16 @@ public class ConstraintPropagator {
 
                 domainManager.setDomain(cellRow, cellCol, availableDomain);
                 enqueueEmptyNeighbors(board, cellRow, cellCol, queue, inQueue);
+            }
+        }
+
+        // Global colour-budget frontier check — dead-branch detection via an
+        // arithmetic necessary condition (demand[c] <= supply[c] for every
+        // interior colour c). Fires before we try any more placements.
+        if (useColorBudget) {
+            if (colorBudget == null) colorBudget = new ColorBudgetTracker(piecesById);
+            if (!colorBudget.check(board, piecesById, pieceUsed, totalPieces)) {
+                return false;
             }
         }
 

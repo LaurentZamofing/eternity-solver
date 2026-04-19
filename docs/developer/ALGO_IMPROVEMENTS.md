@@ -53,7 +53,7 @@ listed per algo; additional ones added as they become interesting.
 | 13 | Singleton propagation — delete (regression) | 30 min | simplicité | **DONE** | b70accf | dead-code removed (−153 LOC) |
 | 14 | Portfolio — corner-anchor diversification | 4-6 h | ×2-4 | TODO | — | — |
 | 15 | Shared nogoods — CAS lock-free | 1 d | ×2-3 contention | TODO | — | — |
-| 16 | Best partial — edge-match score tracking | 1 h | observabilité | TODO | — | — |
+| 16 | Best partial — edge-match score tracking | 1 h | observabilité | **DONE** | (no-op) | already via `writeBestTo` + `Board.calculateScore()` |
 
 ## Priority bands (ROI-ranked)
 
@@ -81,6 +81,8 @@ listed per algo; additional ones added as they become interesting.
 ## Sprint plan
 
 **Sprint 1 (today)** — P0 + P1 en série: #5 → #13 → #3b → #3c → #8 → #10 → #16
+  Status: #5 ✅ · #13 ✅ · #3b ✅ (commit f583c9d, awaiting bench)
+         · #3c ✅ (commit 46c5175, awaiting bench) · #16 ✅ (no-op)
 **Sprint 2** — P2 prioritisé gain: #14 → #4 → #2
 **Sprint 3** — P3 #1 AC-3 bitset (foundation)
 

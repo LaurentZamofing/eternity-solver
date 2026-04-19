@@ -23,6 +23,7 @@ import java.util.SplittableRandom;
  */
 public final class ZobristHasher {
 
+    private final int rows;
     private final int cols;
     private final int maxPidRot;
     private final long[][] table; // [cellIndex][pidRot]
@@ -31,6 +32,7 @@ public final class ZobristHasher {
      *  piece set going up to {@code maxPieceId}. Seeded deterministically
      *  so the same puzzle always hashes identically. */
     public ZobristHasher(int rows, int cols, int maxPieceId, long seed) {
+        this.rows = rows;
         this.cols = cols;
         this.maxPidRot = (maxPieceId + 1) * 4; // pidRot = pid * 4 + rot; pid in [0..maxPieceId]
         int cells = rows * cols;
@@ -49,10 +51,9 @@ public final class ZobristHasher {
 
     /** Returns the key for a placement; XOR into/out of the state hash. */
     public long keyOf(int row, int col, int pieceId, int rotation) {
-        int cell = row * cols + col;
+        if (row < 0 || row >= rows || col < 0 || col >= cols) return 0L;
         int pidRot = pieceId * 4 + (rotation & 3);
-        if (cell < 0 || cell >= table.length) return 0L;
         if (pidRot < 0 || pidRot >= maxPidRot) return 0L;
-        return table[cell][pidRot];
+        return table[row * cols + col][pidRot];
     }
 }

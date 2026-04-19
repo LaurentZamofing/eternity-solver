@@ -38,6 +38,7 @@ public class ConstraintPropagator {
     private boolean useColorBudget = true;
     private int expectedCapacity = 64; // initial hint; setMaxPieceId() grows it
     private ColorBudgetTracker colorBudget; // built lazily on first propagation
+    private EdgeCompatibilityIndex edgeIndex; // optional O(1) edge-colour compatibility
 
     // Reusable buffers for AC-3 domain filtering (double-buffered).
     // Each solver thread owns its own ConstraintPropagator, so no synchronization needed.
@@ -60,6 +61,13 @@ public class ConstraintPropagator {
     /** Toggle the global colour-budget frontier check. Default: true. */
     public void setUseColorBudget(boolean enabled) {
         this.useColorBudget = enabled;
+    }
+
+    /** Inject the {@link EdgeCompatibilityIndex} so {@link #wouldCauseDeadEnd}
+     *  can short-circuit on piece-level edge compatibility instead of scanning
+     *  every {@code (pieceId, rotation)} pair in the neighbour's domain. */
+    public void setEdgeCompatibilityIndex(EdgeCompatibilityIndex idx) {
+        this.edgeIndex = idx;
     }
 
     /** Propagates AC-3 constraints after placement at (r,c) by filtering neighbor domains; returns false if dead-end detected (empty domain). */
@@ -261,17 +269,40 @@ public class ConstraintPropagator {
 
             int requiredEdge = candidateEdges[candidateSide];
 
-            // Check if any placements would remain valid
+            // Fast path — when the edge-compatibility index is available we
+            // can narrow to pieces that provide {@code requiredEdge} on
+            // {@code nbrSide} in any rotation (O(1) set lookup) and skip any
+            // piece in the domain that isn't in this set. Collapses to a
+            // short-circuit when the compatible set and the domain's pieceIds
+            // are disjoint — the common rare-colour case.
             boolean hasValidPlacement = false;
-            for (List<ValidPlacement> placements : currentDomain.values()) {
-                for (ValidPlacement vp : placements) {
-                    int[] edges = piecesById.get(vp.pieceId).edgesRotated(vp.rotation);
-                    if (edges[nbrSide] == requiredEdge) {
-                        hasValidPlacement = true;
-                        break;
+            if (edgeIndex != null) {
+                Set<Integer> compatible = compatiblePiecesForSide(nbrSide, requiredEdge);
+                if (compatible == null || compatible.isEmpty()) return true;
+                for (Map.Entry<Integer, List<ValidPlacement>> e : currentDomain.entrySet()) {
+                    int pid = e.getKey();
+                    if (!compatible.contains(pid)) continue; // no rotation of this piece matches — skip
+                    for (ValidPlacement vp : e.getValue()) {
+                        int[] edges = piecesById.get(vp.pieceId).edgesRotated(vp.rotation);
+                        if (edges[nbrSide] == requiredEdge) {
+                            hasValidPlacement = true;
+                            break;
+                        }
                     }
+                    if (hasValidPlacement) break;
                 }
-                if (hasValidPlacement) break;
+            } else {
+                // Fallback: scan every (pieceId, rotation) in the domain.
+                for (List<ValidPlacement> placements : currentDomain.values()) {
+                    for (ValidPlacement vp : placements) {
+                        int[] edges = piecesById.get(vp.pieceId).edgesRotated(vp.rotation);
+                        if (edges[nbrSide] == requiredEdge) {
+                            hasValidPlacement = true;
+                            break;
+                        }
+                    }
+                    if (hasValidPlacement) break;
+                }
             }
 
             // If no valid placements remain for this neighbor, it's a dead-end
@@ -281,6 +312,16 @@ public class ConstraintPropagator {
         }
 
         return false;
+    }
+
+    private Set<Integer> compatiblePiecesForSide(int side, int requiredEdge) {
+        return switch (side) {
+            case 0 -> edgeIndex.getNorthCompatible(requiredEdge);
+            case 1 -> edgeIndex.getEastCompatible(requiredEdge);
+            case 2 -> edgeIndex.getSouthCompatible(requiredEdge);
+            case 3 -> edgeIndex.getWestCompatible(requiredEdge);
+            default -> null;
+        };
     }
 
     /** Counts valid placements remaining for neighbor with edge constraint at neighborSide (0=N, 1=E, 2=S, 3=W); used by LCV heuristic to evaluate constraining effect. */

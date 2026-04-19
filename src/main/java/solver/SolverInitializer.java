@@ -171,6 +171,9 @@ public class SolverInitializer {
 
         // Create EdgeCompatibilityIndex for NeighborAnalyzer and PieceOrderingOptimizer
         EdgeCompatibilityIndex edgeIndex = new EdgeCompatibilityIndex(pieces, false);
+        // Inject it into the ConstraintPropagator so wouldCauseDeadEnd can
+        // short-circuit via the piece-level compatibility set.
+        components.constraintPropagator.setEdgeCompatibilityIndex(edgeIndex);
 
         // Initialize NeighborAnalyzer
         components.neighborAnalyzer = new NeighborAnalyzer(components.cellConstraints,

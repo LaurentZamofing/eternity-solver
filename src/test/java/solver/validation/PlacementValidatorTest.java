@@ -39,12 +39,13 @@ class PlacementValidatorTest {
     }
 
     @Test
-    @DisplayName("RejectionReason enum has exactly two values")
+    @DisplayName("RejectionReason enum contract")
     void enumContract() {
         RejectionReason[] values = RejectionReason.values();
-        assertEquals(2, values.length);
+        assertEquals(3, values.length);
         assertNotNull(RejectionReason.valueOf("EDGE_MISMATCH"));
         assertNotNull(RejectionReason.valueOf("SYMMETRY_BREAKING"));
+        assertNotNull(RejectionReason.valueOf("AC3_DEAD_END"));
     }
 
     @Test

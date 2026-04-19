@@ -34,6 +34,7 @@ public class MRVCellSelector implements HeuristicStrategy {
     private final FitChecker fitChecker;
     private final solver.NeighborAnalyzer neighborAnalyzer;
     private boolean prioritizeBorders = false;
+    private boolean strictBorderFirst = false;
     private boolean useAC3 = true;
     private boolean debugBacktracking = false;
     private boolean debugShowAlternatives = false;
@@ -95,6 +96,14 @@ public class MRVCellSelector implements HeuristicStrategy {
      */
     public void setPrioritizeBorders(boolean enabled) {
         this.prioritizeBorders = enabled;
+    }
+
+    /** Enables strict border-first phase: while any border cell is empty,
+     *  interior cells are not considered for MRV selection at all. Much
+     *  stronger than {@link #setPrioritizeBorders} which only uses the
+     *  border as a tiebreaker. Default: false. */
+    public void setStrictBorderFirst(boolean enabled) {
+        this.strictBorderFirst = enabled;
     }
 
     /**
@@ -173,6 +182,20 @@ public class MRVCellSelector implements HeuristicStrategy {
      * <p>Extracted from {@link #findNextCellMRV} for clarity and to enable
      * unit testing of the counting logic in isolation.</p>
      */
+    /** Returns {@code true} iff at least one board-border cell is empty.
+     *  Used by the strict border-first phase to filter interior cells. */
+    private static boolean hasEmptyBorderCell(Board board) {
+        int rows = board.getRows();
+        int cols = board.getCols();
+        for (int c = 0; c < cols; c++) {
+            if (board.isEmpty(0, c) || board.isEmpty(rows - 1, c)) return true;
+        }
+        for (int r = 1; r < rows - 1; r++) {
+            if (board.isEmpty(r, 0) || board.isEmpty(r, cols - 1)) return true;
+        }
+        return false;
+    }
+
     int countValidRotationsAt(Board board, int r, int c,
                               Map<Integer, Piece> piecesById, BitSet pieceUsed, int totalPieces) {
         if (useAC3 && domainManager.isAC3Initialized()) {
@@ -207,6 +230,10 @@ public class MRVCellSelector implements HeuristicStrategy {
         boolean bestIsBorder = false;
         int bestBorderNeighbors = 0; // Track number of border neighbors of best cell
 
+        // Strict border-first phase: while any border cell is empty, we only
+        // consider border cells. Pre-compute once so the inner loop stays tight.
+        boolean borderPhase = strictBorderFirst && hasEmptyBorderCell(board);
+
         // Debug: Track all candidates for detailed logging
         List<CellCandidate> allCandidates = (debugShowAlternatives && !silentMode) ? new ArrayList<>() : null;
         int cellsEvaluated = 0;
@@ -220,6 +247,9 @@ public class MRVCellSelector implements HeuristicStrategy {
                 if (board.isEmpty(r, c)) {
                     // Detect if this is a border cell
                     boolean isBorder = (r == 0 || r == board.getRows() - 1 || c == 0 || c == board.getCols() - 1);
+
+                    // Skip interior cells while we're in the strict border phase.
+                    if (borderPhase && !isBorder) continue;
 
                     // Count valid rotations (AC-3 domain size if available, else compute from scratch)
                     int totalValidRotations = countValidRotationsAt(board, r, c, piecesById, pieceUsed, totalPieces);

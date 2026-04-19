@@ -161,9 +161,24 @@ public class MRVPlacementStrategy implements PlacementStrategy {
         // LCV-difficulty via sortOrder="lcv"). LCV builds a precomputed
         // int[] ordering on first call so subsequent calls just iterate it
         // — no per-call boxing/sort overhead.
+        //
+        // sortOrder="lcv-border" applies LCV only on border/corner cells
+        // where the heuristic has its strongest effect (neighbour domains
+        // are small, each value choice dominates) and falls back to pieceId
+        // for interior cells — an attempt to restore the 5×5 LCV win
+        // without the 6×6 interior regression.
+        boolean isBorderCell = (r == 0 || r == context.board.getRows() - 1
+                               || c == 0 || c == context.board.getCols() - 1);
         if ("descending".equals(sortOrder)) {
             snapshot.sort(Collections.reverseOrder());
         } else if ("lcv".equalsIgnoreCase(sortOrder)
+                   && valueOrderer != null && valueOrderer.isInitialized()) {
+            if (lcvOrderedPieceIds == null) {
+                lcvOrderedPieceIds = buildLcvOrder(context.piecesById.keySet(), valueOrderer);
+            }
+            snapshot = filterByOrder(snapshot, lcvOrderedPieceIds);
+        } else if ("lcv-border".equalsIgnoreCase(sortOrder)
+                   && isBorderCell
                    && valueOrderer != null && valueOrderer.isInitialized()) {
             if (lcvOrderedPieceIds == null) {
                 lcvOrderedPieceIds = buildLcvOrder(context.piecesById.keySet(), valueOrderer);
@@ -182,6 +197,9 @@ public class MRVPlacementStrategy implements PlacementStrategy {
                 mcvOrderedPieceIds = reversed;
             }
             snapshot = filterByOrder(snapshot, mcvOrderedPieceIds);
+        } else if ("lcv-border".equalsIgnoreCase(sortOrder)) {
+            // Interior cell under lcv-border: fall back to pieceId order.
+            Collections.sort(snapshot);
         } else {
             Collections.sort(snapshot);
         }

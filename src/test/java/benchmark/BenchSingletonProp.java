@@ -9,15 +9,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A/B bench for the fail-first MRV tiebreaker
- * ({@link solver.experimental.bitmap.BitmapSolver#setUseFailFirst}).
+ * A/B bench for the singleton propagation enhancement (commit 5f4e97b):
+ * {@link solver.experimental.bitmap.BitmapSolver#setUseSingletonProp}.
  *
- * <p>Runs the 3 hardest TIMEOUT cases with the heuristic off vs on.
- * Either ON breaks a wall that OFF can't — real algorithmic win — or
- * the gain is marginal and we move on to the next candidate (AC-3
- * worklist, LCV, corner-anchor sym breaking, CP-SAT).</p>
+ * <p>Runs the 3 hardest TIMEOUT cases with singleton-prop off vs on,
+ * 60 min each side. Reports best-depth <b>and</b> time-to-best so
+ * "same record reached faster" surfaces as a win.</p>
  */
-public final class BenchFailFirst {
+public final class BenchSingletonProp {
 
     private static final long[][] HARD_CASES = {
         { 8, 8, 42L },
@@ -50,7 +49,6 @@ public final class BenchFailFirst {
             } else if (off.solved && !on.solved) {
                 note = "on_regress";
             } else if (off.bestDepth == on.bestDepth && off.timeToBest > 0 && on.timeToBest > 0) {
-                // Same record — did we reach it faster?
                 note = String.format("t_best %.1fx", (double) off.timeToBest / on.timeToBest);
             } else {
                 note = String.format("best %d→%d", off.bestDepth, on.bestDepth);
@@ -64,11 +62,11 @@ public final class BenchFailFirst {
         }
     }
 
-    private static Result run(int rows, int cols, Map<Integer, Piece> pieces, boolean failFirst) {
+    private static Result run(int rows, int cols, Map<Integer, Piece> pieces, boolean singleton) {
         Board b = new Board(rows, cols);
         ParallelBitmapSolver solver = new ParallelBitmapSolver();
         solver.setMaxExecutionTime(PER_RUN_TIMEOUT_MS);
-        solver.setUseFailFirst(failFirst);
+        solver.setUseSingletonProp(singleton);
         long t = System.nanoTime();
         boolean ok;
         try {

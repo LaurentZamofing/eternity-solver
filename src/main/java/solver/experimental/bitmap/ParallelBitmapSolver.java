@@ -38,6 +38,7 @@ public final class ParallelBitmapSolver implements Solver {
     private long maxExecutionTimeMs = 60_000;
     private boolean shareNogoods = true;
     private Boolean useFailFirstOverride; // null = inherit BitmapSolver default
+    private Boolean useSingletonPropOverride; // null = inherit BitmapSolver default
     private final List<BitmapSolver> lastWorkers = new ArrayList<>();
     private volatile int lastBestDepth = 0;
     private volatile long lastTimeToBestMs = 0L;
@@ -55,6 +56,9 @@ public final class ParallelBitmapSolver implements Solver {
     /** Override {@link BitmapSolver#setUseFailFirst} for every portfolio
      *  worker. {@code null} leaves the BitmapSolver default in place. */
     public void setUseFailFirst(boolean on) { this.useFailFirstOverride = on; }
+
+    /** Override {@link BitmapSolver#setUseSingletonProp} for every worker. */
+    public void setUseSingletonProp(boolean on) { this.useSingletonPropOverride = on; }
 
     @Override
     public boolean solve(Board board, Map<Integer, Piece> pieces) {
@@ -92,6 +96,7 @@ public final class ParallelBitmapSolver implements Solver {
             solver.setCancellation(foundFlag);
             if (shared != null) solver.setExternalNogoods(shared);
             if (useFailFirstOverride != null) solver.setUseFailFirst(useFailFirstOverride);
+            if (useSingletonPropOverride != null) solver.setUseSingletonProp(useSingletonPropOverride);
             lastWorkers.add(solver);
             pool.submit(() -> {
                 Board local = new Board(rows, cols);

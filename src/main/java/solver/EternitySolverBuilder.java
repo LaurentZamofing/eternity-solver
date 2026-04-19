@@ -39,6 +39,12 @@ public final class EternitySolverBuilder {
     public EternitySolverBuilder mrvIndexEnabled(boolean on) { this.mrvIndexEnabled = on; return this; }
     public EternitySolverBuilder useNogoods(boolean on) { this.useNogoods = on; return this; }
 
+    private Boolean useColorBudget;
+    private Boolean usePreCheckLookahead;
+
+    public EternitySolverBuilder useColorBudget(boolean on) { this.useColorBudget = on; return this; }
+    public EternitySolverBuilder usePreCheckLookahead(boolean on) { this.usePreCheckLookahead = on; return this; }
+
     /** Toggle both symmetry-breaking flags in one call. */
     public EternitySolverBuilder symmetryBreakingFlags(boolean lex, boolean rotation) {
         this.lexFlag = lex;
@@ -58,6 +64,8 @@ public final class EternitySolverBuilder {
         solver.setUseAC3(useAC3);
         solver.setMRVIndexEnabled(mrvIndexEnabled);
         solver.setUseNogoods(useNogoods);
+        if (useColorBudget != null) solver.setUseColorBudget(useColorBudget);
+        if (usePreCheckLookahead != null) solver.setUsePreCheckLookahead(usePreCheckLookahead);
         solver.setSymmetryBreakingFlags(lexFlag, rotationFlag);
         if (sortOrder != null) solver.setSortOrder(sortOrder);
         if (puzzleName != null) solver.setPuzzleName(puzzleName);

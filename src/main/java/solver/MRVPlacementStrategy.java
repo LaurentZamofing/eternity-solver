@@ -69,6 +69,12 @@ public class MRVPlacementStrategy implements PlacementStrategy {
         this.sortOrder = sortOrder != null ? sortOrder : "ascending";
     }
 
+    /** Exposes the internal validator so the owning solver can toggle
+     *  experimental flags (e.g. pre-commit lookahead) on it. */
+    public PlacementValidator getValidator() {
+        return validator;
+    }
+
     /**
      * Set debug backtracking mode.
      *

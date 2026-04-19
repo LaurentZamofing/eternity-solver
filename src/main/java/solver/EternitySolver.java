@@ -141,6 +141,17 @@ public class EternitySolver implements Solver {
     /** Override the log2 size of the auto-allocated NogoodCache. Default 22. */
     public void setNogoodBits(int bits) { this.nogoodBits = bits; }
 
+    private Boolean pendingUseColorBudget;
+    private Boolean pendingUsePreCheckLookahead;
+
+    /** Toggle color-budget frontier pruning (forwarded to the
+     *  ConstraintPropagator at the next solve()). Default true. */
+    public void setUseColorBudget(boolean enabled) { this.pendingUseColorBudget = enabled; }
+
+    /** Toggle pre-commit lookahead (forwarded to the PlacementValidator at
+     *  the next solve()). Default true. */
+    public void setUsePreCheckLookahead(boolean enabled) { this.pendingUsePreCheckLookahead = enabled; }
+
     /** Sets shared search state (useful for sharing state across multiple solvers). */
     public void setSharedState(SharedSearchState sharedState) {
         this.sharedState = sharedState;
@@ -419,6 +430,15 @@ public class EternitySolver implements Solver {
         initializeSymmetryBreaking(board);
         initializeDomains(board, pieces, pieceUsed, totalPieces);
         initializePlacementStrategies();
+
+        // Apply pending experimental-flag overrides to the underlying
+        // ConstraintPropagator / PlacementValidator now that they exist.
+        if (pendingUseColorBudget != null && constraintPropagator != null) {
+            constraintPropagator.setUseColorBudget(pendingUseColorBudget);
+        }
+        if (pendingUsePreCheckLookahead != null && mrvStrategy != null) {
+            mrvStrategy.getValidator().setUsePreCheckLookahead(pendingUsePreCheckLookahead);
+        }
 
         // Lazy-init Zobrist nogoods if requested and not set externally.
         if (useNogoods && (zobrist == null || nogoods == null)) {

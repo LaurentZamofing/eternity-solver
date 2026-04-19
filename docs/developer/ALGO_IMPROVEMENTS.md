@@ -36,13 +36,13 @@ Legend: status = TODO · IN PROGRESS · DONE · SKIPPED · WORSE
 Gain = before → after (delta). Only the ROI #1 optim from the audit is
 listed per algo; additional ones added as they become interesting.
 
-| # | Algo / Optim | Effort | Expected | Status | Commit | Measured gain (5×5 / 6×6) |
-|--:|-------------|--------|----------|--------|--------|---------------------------|
+| # | Algo / Optim | Effort | Expected | Status | Commit | Measured gain |
+|--:|-------------|--------|----------|--------|--------|----------------|
 | 1 | AC-3 — bitset domains | 2-3 d | ×3-5 | TODO | — | — |
 | 2 | MRV — priority queue incremental | 4-8 h | ×2 | TODO | — | — |
 | 3 | LCV — dynamic score on domains | 4-6 h | débloque 6×6 | TODO | — | — |
 | 4 | Color budget — incremental supply/demand | 4-6 h | 10-30 % | TODO | — | — |
-| 5 | Pre-commit lookahead — remove when AC-3 on | 30 min | 10-20 % | TODO | — | — |
+| 5 | Pre-commit lookahead — remove when AC-3 on | 30 min | 10-20 % | **DONE** | a22ef17 | noise-level (bench variance > gain) |
 | 6 | Zobrist nogoods — conflict-directed minimal | 2-3 d | ×3-10 | TODO | — | — |
 | 7 | Singleton — event-driven queue | 2-4 h | O(cells)→O(1) | TODO | — | — |
 | 8 | EdgeCompatIndex — BitSet replace HashSet | 2-3 h | ×5-10 lookup | TODO | — | — |
@@ -50,7 +50,7 @@ listed per algo; additional ones added as they become interesting.
 | 10 | Trail undo — unify domainSize trail | 2 h | marginal | TODO | — | — |
 | 11 | FC bitmap — full AC-3 cascade | 1-2 d | catche 2-hop | TODO | — | — |
 | 12 | Luby restart — phase saving | 4-6 h | rec. progrès | TODO | — | — |
-| 13 | Singleton propagation — delete (regression) | 30 min | simplicité | TODO | — | — |
+| 13 | Singleton propagation — delete (regression) | 30 min | simplicité | **DONE** | b70accf | dead-code removed (−153 LOC) |
 | 14 | Portfolio — corner-anchor diversification | 4-6 h | ×2-4 | TODO | — | — |
 | 15 | Shared nogoods — CAS lock-free | 1 d | ×2-3 contention | TODO | — | — |
 | 16 | Best partial — edge-match score tracking | 1 h | observabilité | TODO | — | — |

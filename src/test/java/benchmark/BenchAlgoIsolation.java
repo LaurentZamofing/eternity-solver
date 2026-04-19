@@ -31,40 +31,46 @@ public final class BenchAlgoIsolation {
     private static final int REPEATS = 3;
     private static final int WARMUP_SOLVES = 5;
 
+    /** Minimal config used as the OFF baseline for every isolation test:
+     *  AC-3 ON (can't disable without solver exploding on 5×5+), all
+     *  ultraplan features OFF, LCV OFF. Each test ON flips exactly one
+     *  flag on top of this. */
+    private static final Consumer<EternitySolverBuilder> MINIMAL = b ->
+        b.useNogoods(false).useColorBudget(false).usePreCheckLookahead(false);
+
     public static void main(String[] args) {
         warmup();
         System.out.printf("%-46s %-8s %-10s %-10s %-9s %-4s%n",
             "algo / case", "budget", "OFF_med", "ON_med", "speedup", "solv");
 
-        // #1 AC-3 — turn OFF AC-3 entirely, keep piece unicity. Should be massively worse.
-        runCase("AC-3 propagation (6×6/p5)", 6, 5, 120_000,
-            off -> off.useAC3(false).useNogoods(false).useColorBudget(false).usePreCheckLookahead(false),
-            on  -> on.useNogoods(false).useColorBudget(false).usePreCheckLookahead(false));
+        // Isolation tests on 5×5/p4 where MINIMAL still solves in budget.
+        // Each flips exactly one flag vs MINIMAL (AC-3 + nothing else).
+        runCase("Color-budget (5×5/p4)", 5, 4, 60_000,
+            MINIMAL,
+            MINIMAL.andThen(b -> b.useColorBudget(true)));
 
-        // #4 Color-budget alone — AC-3 off (so color budget is the only non-trivial prune)
-        runCase("Color-budget only (6×6/p5)", 6, 5, 120_000,
-            off -> off.useAC3(false).useColorBudget(false).useNogoods(false).usePreCheckLookahead(false),
-            on  -> on.useAC3(false).useColorBudget(true).useNogoods(false).usePreCheckLookahead(false));
+        runCase("Pre-commit lookahead (5×5/p4)", 5, 4, 60_000,
+            MINIMAL,
+            MINIMAL.andThen(b -> b.usePreCheckLookahead(true)));
 
-        // #5 Pre-commit lookahead alone — AC-3 off so lookahead actually does work (vs being duplicate of AC-3)
-        runCase("Lookahead only (5×5/p4)", 5, 4, 30_000,
-            off -> off.useAC3(false).usePreCheckLookahead(false).useNogoods(false).useColorBudget(false),
-            on  -> on.useAC3(false).usePreCheckLookahead(true).useNogoods(false).useColorBudget(false));
+        runCase("Zobrist nogoods (5×5/p4)", 5, 4, 60_000,
+            MINIMAL,
+            MINIMAL.andThen(b -> b.useNogoods(true)));
 
-        // #6 Zobrist nogoods alone — with AC-3 on (nogoods are a fast-path shortcut)
-        runCase("Nogoods only (6×6/p5)", 6, 5, 120_000,
-            off -> off.useNogoods(false).useColorBudget(false).usePreCheckLookahead(false),
-            on  -> on.useNogoods(true).useColorBudget(false).usePreCheckLookahead(false));
+        runCase("LCV ordering (5×5/p4)", 5, 4, 60_000,
+            MINIMAL,
+            MINIMAL.andThen(b -> b.sortOrder("lcv")));
 
-        // #3 LCV on a small puzzle where it helped in single-run bench
-        runCase("LCV ordering (5×5/p4)", 5, 4, 30_000,
-            off -> off,
-            on  -> on.sortOrder("lcv"));
+        // Stacked headline tests on 6×6 — where MINIMAL times out but the
+        // features ON finish. Speedup here is "unblock" rather than "faster".
+        runCase("Features ON vs MINIMAL (6×6/p5)", 6, 5, 120_000,
+            MINIMAL,
+            b -> {}); // defaults = all features ON
 
-        // All features stacked vs pure AC-3 — headline net gain
-        runCase("All features stacked (6×6/p5)", 6, 5, 180_000,
-            off -> off.useNogoods(false).useColorBudget(false).usePreCheckLookahead(false),
-            on  -> on);
+        // LCV on 6×6 with full features — known regression (from ablation2)
+        runCase("LCV vs pieceId (6×6/p5, features ON)", 6, 5, 120_000,
+            b -> {},
+            b -> { b.sortOrder("lcv"); });
     }
 
     private static void warmup() {

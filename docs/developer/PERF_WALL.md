@@ -309,9 +309,10 @@ precompute the LCV order once, filter-by-order O(n) per call.
 
 | Config | 5×5 | 6×6 |
 |--------|----:|----:|
-| default (pieceId asc) | 816 ms | 16 843 ms (2/3) |
-| LCV ON (precomputed) | **376 ms** | **58 664 ms (1/3)** |
-| LCV + features OFF | 2 150 ms | — |
+| default (pieceId asc) — features ON | 816 ms | **16 843 ms (2/3)** |
+| LCV ON (precomputed) — features ON | **376 ms** | 58 664 ms (1/3) |
+| LCV — features OFF | 2 150 ms | TIMEOUT (0/3) |
+| pieceId — features OFF | 2 028 ms | 54 018 ms (1/3) |
 
 ### Verdict
 
@@ -324,8 +325,15 @@ precompute the LCV order once, filter-by-order O(n) per call.
 - **Default kept as pieceId ascending**; LCV opt-in via `sortOrder("lcv")`.
 
 All five ultraplan items now behave as opt-in toggles:
-  - `useColorBudget` (default on — measured neutral on 5×5/6×6)
+  - `useColorBudget` (default on — part of the ×2.5 speedup from features ON)
   - `setStrictBorderFirst` (default off)
   - `useNogoods` (default on — +33 % on 5×5 confirmed)
-  - `usePreCheckLookahead` (default on — neutral)
+  - `usePreCheckLookahead` (default on — part of the ×2.5 features block)
   - `sortOrder("lcv")` (default off — −54 % on 5×5, +3.5× regression on 6×6)
+
+**Features block net effect**: `pieceId + features OFF` vs default on 5×5
+is 2 028 ms vs 816 ms (×2.5 slower without features) and on 6×6 is
+54 018 ms (1/3) vs 16 843 ms (2/3) — the features give the main win,
+LCV just shifts the trade-off. Overall **baseline 6×6 went from 25 s
+(pre-ultraplan) to 16.8 s (post-ultraplan default, 2/3 solved)**, a
+solid −33 % gain on the main solver hot path.

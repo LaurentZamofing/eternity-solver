@@ -20,42 +20,50 @@ import java.util.Map;
  */
 public final class BenchSharedNogoods {
 
-    private static final int[][] DIMS = { {7, 7}, {8, 8} };
-    private static final long[] SEEDS = {1L, 17L, 42L};
+    /** {@code {rows, cols, seed}} — three hardest cases from the reference
+     *  corpus where the 60-min retry bench showed a real wall (8×8 seed=42,
+     *  8×9 seed=17, 9×9 seed=1). A/B-comparing shared vs per-worker nogood
+     *  caches here is the direct test of whether shared nogoods help on
+     *  pathological puzzles. */
+    private static final long[][] HARD_CASES = {
+        { 8, 8, 42L },
+        { 8, 9, 17L },
+        { 9, 9,  1L },
+    };
     private static final long PER_RUN_TIMEOUT_MS = 1_800_000; // 30 min
 
     public static void main(String[] args) {
         System.out.printf("%-6s %-5s %-12s %-10s %-10s %-12s %-10s %-10s %-10s%n",
             "dim", "seed", "off_ms", "off_st", "off_best", "on_ms", "on_st", "on_best", "note");
-        for (int[] dim : DIMS) {
-            int rows = dim[0];
-            int cols = dim[1];
+        for (long[] spec : HARD_CASES) {
+            int rows = (int) spec[0];
+            int cols = (int) spec[1];
+            long seed = spec[2];
             int palette = Math.max(4, Math.max(rows, cols) - 1);
             int total = rows * cols;
-            for (long seed : SEEDS) {
-                Map<Integer, Piece> pieces = PuzzleGenerator.generate(rows, cols, palette, seed);
 
-                Result off = run(rows, cols, pieces, false);
-                Result on  = run(rows, cols, pieces, true);
+            Map<Integer, Piece> pieces = PuzzleGenerator.generate(rows, cols, palette, seed);
 
-                String note;
-                if (off.solved && on.solved) {
-                    double ratio = (double) off.ms / on.ms;
-                    note = String.format("%.1fx", ratio);
-                } else if (!off.solved && on.solved) {
-                    note = "on_fix";
-                } else if (off.solved && !on.solved) {
-                    note = "on_regress";
-                } else {
-                    note = String.format("best %d→%d", off.bestDepth, on.bestDepth);
-                }
+            Result off = run(rows, cols, pieces, false);
+            Result on  = run(rows, cols, pieces, true);
 
-                System.out.printf("%-6s %-5d %-12d %-10s %-10s %-12d %-10s %-10s %-10s%n",
-                    rows + "x" + cols, seed,
-                    off.ms, off.solved ? "SOLVED" : "TIMEOUT", off.bestDepth + "/" + total,
-                    on.ms, on.solved ? "SOLVED" : "TIMEOUT", on.bestDepth + "/" + total,
-                    note);
+            String note;
+            if (off.solved && on.solved) {
+                double ratio = (double) off.ms / on.ms;
+                note = String.format("%.1fx", ratio);
+            } else if (!off.solved && on.solved) {
+                note = "on_fix";
+            } else if (off.solved && !on.solved) {
+                note = "on_regress";
+            } else {
+                note = String.format("best %d→%d", off.bestDepth, on.bestDepth);
             }
+
+            System.out.printf("%-6s %-5d %-12d %-10s %-10s %-12d %-10s %-10s %-10s%n",
+                rows + "x" + cols, seed,
+                off.ms, off.solved ? "SOLVED" : "TIMEOUT", off.bestDepth + "/" + total,
+                on.ms, on.solved ? "SOLVED" : "TIMEOUT", on.bestDepth + "/" + total,
+                note);
         }
     }
 

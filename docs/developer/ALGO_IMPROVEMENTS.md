@@ -5,30 +5,51 @@ Per-algorithm audit lives in
 document tracks the **execution** of each proposed optimisation, with
 one row per optim and a measured gain line.
 
-## Baseline — robust measurement (2026-04-19 22:30)
+## Baseline — robust measurement (2026-04-20)
 
 Reference bench: `benchmark.BenchMainSolverRobust` — JIT warmup (5
-solves), 5 seeds, 3 repeats per (config, size, seed) = 15 samples per
-row. Config `default (pieceId + features ON)`, 30 s per-run timeout.
-Commit 4e37e73. The baseline is **after commit `4e37e73`** (which
-includes #5 — lookahead skipped when AC-3 on).
+solves), 5-8 seeds, 2-3 repeats per (config, dim×palette) = 10-16
+samples per row. Per-size timeouts: 5×5 = 30-60 s, 6×6 = 120-180 s,
+7×7 = 300 s. Commit 4e37e73+ (#10 unify sizeTrail applied).
 
-| Config | 5×5 median | 5×5 min | 6×6 median | 6×6 solved |
-|--------|-----------:|--------:|-----------:|-----------:|
-| **default (features ON)** | **264 ms** | 183 | **9 964 ms** | **9/15** |
-| LCV ON | 294 | 56 | 30 000 (timeout) | 6/15 |
-| features OFF | 587 | 227 | 30 000 | 0/15 |
-| LCV + features OFF | 1019 | 77 | 30 000 | 3/15 |
+### Full matrix — all four configs × five (dim, palette) cases
 
-**Net gain from the ultraplan features block**:
-- 5×5: features OFF median 587 → features ON median 264 ⇒ **×2.2**
-- 6×6: features OFF 0/15 solved → features ON 9/15 ⇒ **critical**
-- pre-ultraplan baseline (commit e83babe) 6×6 mean ≈ 25 s (2/3 at 120 s) →
-  current median 10 s at 30 s budget ⇒ **~×2.5 faster median**
+| Config | 5×5/p4 | 5×5/p6 | 6×6/p5 | 6×6/p7 | 7×7/p6 |
+|--------|-------:|-------:|-------:|-------:|-------:|
+| **default (pieceId + features ON)** | **221** | 54 | **10 325** | 130 | timeout |
+| LCV ON | 270 | 67 | 28 611 | 194 | timeout |
+| features OFF | 428 | **48** | 48 996 | **90** | timeout |
+| LCV + features OFF | 434 | 43 | 82 781 | 93 | timeout |
 
-Each future improvement re-runs this bench and records the new
-median/solved in the "Measured gain" column. Cumulative delta — each
-row builds on the previous tree state.
+(Values = median ms over samples.)
+
+### Solved counts
+
+| Config | 5×5/p4 | 5×5/p6 | 6×6/p5 | 6×6/p7 | 7×7/p6 |
+|--------|:------:|:------:|:------:|:------:|:------:|
+| default | 16/16 | 10/10 | **14/16** | 10/10 | 0/3 |
+| LCV ON | 16/16 | 10/10 | 13/16 | 10/10 | 0/3 |
+| features OFF | 16/16 | 10/10 | 12/16 | 10/10 | 0/3 |
+| LCV + features OFF | 16/16 | 10/10 | 10/16 | 10/10 | 0/3 |
+
+### Key findings
+
+1. **Features block gives ×4.7 on 6×6/p5 median** (10 325 vs 48 996)
+   and converts 2 extra seeds from timeout to solved. This is the
+   biggest measured gain.
+2. **Features block *hurts* on easy puzzles** — 6×6/p7 median 130
+   (ON) vs 90 (OFF) = −30 % regression from overhead > gain. 5×5/p6
+   shows the same pattern (54 vs 48).
+3. **LCV regresses consistently** — ~20 % on 5×5, ×2.8 on 6×6/p5.
+   `sortOrder("lcv")` is correctly left off by default.
+4. **7×7 is unreachable** by the main solver with or without features
+   at 5 min. Portfolio-bitmap remains the 7×7+ path.
+
+### Comparison to pre-ultraplan baseline
+
+- 5×5: pre 1 030 ms mean → post 221 ms median ⇒ **×4.7 faster**
+- 6×6: pre 25 269 ms mean (2/3 solved @ 120 s) → post 10 325 ms median
+  (14/16 @ 120 s) ⇒ **×2.4 faster median + 3× better solve rate**
 
 ## Roadmap
 

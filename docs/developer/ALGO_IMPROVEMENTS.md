@@ -62,13 +62,15 @@ listed per algo; additional ones added as they become interesting.
 | 1 | AC-3 — bitset domains | 2-3 d | ×3-5 | TODO | — | — |
 | 2 | MRV — priority queue incremental | 4-8 h | ×2 | TODO | — | — |
 | 3 | LCV — dynamic score on domains | 4-6 h | débloque 6×6 | TODO | — | — |
-| 4 | Color budget — incremental supply/demand | 4-6 h | 10-30 % | TODO | — | — |
+| 3b | LCV border-only (opt-in) | 1 h | restaure 5×5 win | **TRIED** | f583c9d | ×2.9 slower on 6×6 like full LCV — same regression, not shipped by default |
+| 3c | MCV (inverse LCV, opt-in) | 30 min | speculative flip | **TRIED** | 46c5175 | +60 % slower 5×5, ×2.3 slower 6×6 — not better than default, not shipped |
+| 4 | Color budget — incremental supply/demand | 4-6 h | 10-30 % | SKIP | — | analysed: per-call O(pieces+cells) is <µs, not the bottleneck |
 | 5 | Pre-commit lookahead — remove when AC-3 on | 30 min | 10-20 % | **DONE** | a22ef17 | noise-level (bench variance > gain) |
 | 6 | Zobrist nogoods — conflict-directed minimal | 2-3 d | ×3-10 | TODO | — | — |
 | 7 | Singleton — event-driven queue | 2-4 h | O(cells)→O(1) | TODO | — | — |
 | 8 | EdgeCompatIndex — BitSet replace HashSet | 2-3 h | ×5-10 lookup | TODO | — | — |
 | 9 | Bitmap DFS — CBJ (conflict-directed backjumping) | 3-5 d | ×2-10 | TODO | — | — |
-| 10 | Trail undo — unify domainSize trail | 2 h | marginal | TODO | — | — |
+| 10 | Trail undo — unify domainSize trail | 2 h | marginal | **DONE** | a476dd4 | −1 array per solve, −1 store per writeWord, regression green |
 | 11 | FC bitmap — full AC-3 cascade | 1-2 d | catche 2-hop | TODO | — | — |
 | 12 | Luby restart — phase saving | 4-6 h | rec. progrès | TODO | — | — |
 | 13 | Singleton propagation — delete (regression) | 30 min | simplicité | **DONE** | b70accf | dead-code removed (−153 LOC) |
@@ -101,11 +103,41 @@ listed per algo; additional ones added as they become interesting.
 
 ## Sprint plan
 
-**Sprint 1 (today)** — P0 + P1 en série: #5 → #13 → #3b → #3c → #8 → #10 → #16
-  Status: #5 ✅ · #13 ✅ · #3b ✅ (commit f583c9d, awaiting bench)
-         · #3c ✅ (commit 46c5175, awaiting bench) · #16 ✅ (no-op)
-**Sprint 2** — P2 prioritisé gain: #14 → #4 → #2
-**Sprint 3** — P3 #1 AC-3 bitset (foundation)
+**Sprint 1 (2026-04-19/20)** ✅ CLOSED
+  - #5 ✅ lookahead when AC-3 on (a22ef17, noise-level gain)
+  - #13 ✅ delete singleton propagation (b70accf, −153 LOC)
+  - #16 ✅ edge-match score (no-op, already available)
+  - #10 ✅ unify sizeTrail (a476dd4, memory + store reduction)
+  - #3b tried (f583c9d), same regression as full LCV on 6×6 — not shipped
+  - #3c tried (46c5175), worse than default — not shipped
+  - #4 skipped (per-call cost <µs, not the bottleneck — re-investigate
+    only if profiler shows color-budget hot)
+
+**Sprint 2 (next)** — P2 prioritisé gain:
+  - #14 portfolio corner-anchor (~4-6 h, ×2-4 on bitmap parallel)
+  - #2 MRV priority-queue (~6 h, ×2 on hot loop)
+
+**Sprint 3 (foundational)** — P3 #1 AC-3 bitset domains (2-3 d)
+  Unblocks #8 (EdgeCompat BitSet free) and #11 (FC cascade).
+
+## Sort-order bench results (2026-04-20, commit 5c0c63b+)
+
+Focused A/B over 4 sort orders, features ON default:
+
+| Order | 5×5/p4 med | 5×5/p4 solv | 6×6/p5 med | 6×6/p5 solv |
+|-------|-----------:|:-----------:|-----------:|:-----------:|
+| **default (pieceId asc)** | **247 ms** | 10/10 | **9 427 ms** | 8/10 |
+| lcv | 248 | 10/10 | 68 190 | 10/10 |
+| lcv-border | 224 | 10/10 | 68 093 | 9/10 |
+| mcv | 395 | 10/10 | 21 853 | 9/10 |
+
+- **LCV family all regress ~7-9× on 6×6/p5 median** versus pieceId
+- LCV unlocks +2 seeds on 6×6/p5 but at massive time cost → not worth
+- lcv-border preserves the regression — doesn't help
+- MCV (inverse LCV) lands between LCV and pieceId — confirms the sort
+  direction alone isn't the issue; any piece-order heuristic based on
+  global static score hurts the bulk of the search
+- **pieceId ascending is the correct default**
 
 ## Per-item log
 
